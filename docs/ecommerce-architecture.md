@@ -1,98 +1,111 @@
-# Ecommerce Architecture — Deep Build with Claude Code
+# Ecommerce Architecture
 
-## How to use this file
+**Single source of truth for design, invariants, tests, and slice order.** Read before writing code. If a request conflicts with this file, the slice ends `BLOCKED` with the conflict in its report — never silently pick the easier path.
 
-This is the single source of truth for the ecommerce build. Give it to Claude Code first, before any code is written, and tell Claude:
-
-> Read `ecommerce-architecture.md` first. Do not change the stack, the module boundaries, or the checkout invariants in this file. If a request conflicts with this file, stop and ask. Build one slice at a time, in slice order, and do not start the next slice until the current slice's tests pass.
-
-This file is for **learning deeply and building production-ready code**, not for a demo CRUD app. The goal is a system you can defend in a staff-engineer interview: tradeoffs, failure modes, and what breaks at 10x.
-
----
-
-## 1. Context — why this app, and who it is for
-
-**Builder:** Nathaniel, Sr. Software Developer at Henderson Engineers (Digital Innovations, Lenexa, KS). Windows 11 PC, no Mac.
-
-**Goal:** Become a staff software engineer by mastering system design and building scalable, maintainable, resilient systems. This ecommerce app is the practice vehicle for that goal, and also an interview anchor story: a familiar domain where the interviewer can skip domain explanation and go straight to the hard parts.
-
-**Important history, do not lose it:**
-- Nathaniel already built ecommerce before using Claude / AI. Repeating the familiar parts has diminishing returns. The value here is **depth, not breadth**: inventory races, idempotent payments, reservation expiry, outbox delivery, and failure handling — the parts that are easy to fake in a demo and hard to get right in production.
-- On 2026-11-01 an interactive ecommerce architecture diagram was delivered around a one-codebase Expo + React Native Web frontend (web + Android + iOS, store-ready but not submitted).
-- **Frontend decision, updated 2026-11-02:** This build now uses that **one-codebase Expo frontend**, not React web only. The backend in this file is unchanged in shape, so the API and modules do not need a redesign — only Section 5 and the frontend rows in Sections 2 and 13 change. Store submission is still NOT in scope: the Android/iOS builds are store-ready (signed AAB/IPA, store configs, pipelines) so submission is possible later, without submitting yet.
-
-**What "done" means:**
-- A customer can browse, search, add to cart, check out, pay, get an order confirmation, track fulfillment, and request a return — with no oversell, no double charge, and no lost order on crash or webhook retry.
-- An admin can manage products, inventory, orders, and customers.
-- Every hard invariant below has a failing test first, then code that makes it pass.
-
-**What this is NOT:**
-- Not a marketplace (no third-party sellers in v1).
-- Not a recommendation engine with ML in v1 (use simple rules: best sellers, related category).
-- Not microservices in v1. One deployable API. See Section 3 for why.
-- Not a product launch plan. No GTM, pricing, or marketing is decided in this file. This is a deep-study / production-code build.
-
----
-
-## 2. Stack lock — do not change without explicit approval
-
-| Layer | Choice | Version / notes |
+| Doc | Answers | Wins on |
 |---|---|---|
-| Backend language / framework | C# / ASP.NET Core | .NET 10 |
-| ORM | Entity Framework Core | Code-first migrations, Postgres provider |
-| Database (system of record) | PostgreSQL | 17. **All money, inventory, and order state lives here. Never in Redis alone.** |
-| Cache / rate limit / SignalR backplane (optional) | Redis | 7, cache only. Losing Redis must never lose an order or oversell stock. |
-| Frontend | Expo + React Native + React Native Web, TypeScript | ONE codebase for web, Android, and iOS. Expo Router, Metro, TanStack Query, StyleSheet. Web via `expo export --platform web` to CDN, Android via cloud EAS Build to signed AAB (no Android Studio, no local Android SDK), iOS via cloud EAS Build to signed IPA (no Mac needed). Store-ready, not submitted. |
-| Frontend state | TanStack Query for server state, Zustand for cart UI state only | Cart truth is re-validated server-side at checkout. Same state code across web, Android, and iOS. |
-| Auth | ASP.NET Core Identity + JWT access token + rotating refresh token | Roles: Customer, Admin, Support (read-only orders) |
-| Payments | Stripe PaymentIntents + webhooks | Test mode first. No real keys in this file, in code, or in chat |
-| Email | Provider-agnostic `IEmailSender` | SMTP / Resend / SendGrid behind the interface. Pick one at deploy time, do not hard-code it |
-| Object storage | S3-compatible storage (DigitalOcean Spaces or equivalent) + CDN | Product images only. Never store images in Postgres as blobs |
-| Real-time | SignalR | Order status updates to the customer only. Not required for checkout correctness |
-| Background jobs | .NET HostedService / Hangfire-style worker inside the monolith | Reservation expiry, outbox publisher, email retries. No separate worker service in v1 |
-| Logging / tracing | Serilog + OpenTelemetry | Correlation ID on every request, order ID on every order log |
-| Tests | xUnit + Testcontainers (Postgres) + WebApplicationFactory | Integration tests use real Postgres, not in-memory EF |
-| Hosting (default) | DigitalOcean App Platform + Managed Postgres + Managed Redis + Spaces | Docker image from CI. Any equivalent host works if it gives managed Postgres + a place to run one API container |
-| CI | GitHub Actions | Build, test, migrate check, Docker build. No deploy on red |
+| `docs/ecommerce-architecture.md` (this) | How is it built safely? | Invariants, boundaries, payments, data model, slice order |
+| `docs/ecommerce-app-context.md` | What does it do, for whom? | v1 product scope, workflows, screens |
+| `docs/quality-bar.md` | What must code prove to merge and ship? | Process gates |
 
-**Open decisions left blank on purpose — Claude must NOT invent these:**
-- Stripe publishable / secret keys and webhook secret: `________`
-- Production domain: `________`
-- Email provider and sender address: `________`
-- Spaces bucket / CDN domain: `________`
+Section numbers are referenced by agents and the quality bar. Do not renumber.
+
+---
+
+## 1. Context
+
+**Builder:** Nathaniel — Sr. Software Developer (.NET/C#, React/TypeScript), Windows 11, no Mac, solo. Goal: staff engineer. This build is practice and an interview anchor: a familiar domain, so the conversation goes straight to the hard parts.
+
+**Depth, not breadth.** The value is inventory races, idempotent payments, reservation expiry, outbox delivery, and failure handling — easy to fake in a demo, hard to get right in production.
+
+**Done means:** a customer can browse, search, add to cart, check out, pay, get a confirmation, track fulfillment, and request a return — with no oversell, no double charge, and no lost order on crash or webhook retry. An admin can manage products, inventory, orders, and customers. Every hard invariant has a test written first.
+
+**Not in scope:** marketplace, ML recommendations, microservices, store submission, go-to-market. Full list: app context §6.
+
+---
+
+## 2. Stack lock
+
+Only Nathaniel changes the stack. Agents never do — a slice that would need a change ends `BLOCKED`.
+
+| Layer | Choice | Notes |
+|---|---|---|
+| Backend | C# / ASP.NET Core, .NET 10 | Modular monolith: one API, one deployment |
+| ORM | EF Core, code-first migrations | Npgsql provider |
+| Database | PostgreSQL 17 | **System of record for all money, inventory, and order state** |
+| Cache | Redis 7 | Cache, rate-limit counters, optional SignalR backplane. Never truth |
+| Frontend | Expo + React Native + React Native Web, TypeScript, Expo Router, Metro | **One codebase** for web, Android, iOS. Store-ready, not submitted |
+| Frontend state | TanStack Query (server state), Zustand (cart UI state only) | Cart is re-validated server-side at checkout |
+| Auth | ASP.NET Core Identity + short-lived JWT + rotating refresh token | Roles: Customer, Support, Admin |
+| Payments | Stripe PaymentIntents + signed webhooks | Test mode first |
+| Email | `IEmailSender` (SMTP / Resend / SendGrid) | Provider chosen at deploy time |
+| Images | S3-compatible storage (DO Spaces) + CDN | Never blobs in Postgres |
+| Real-time | SignalR | Order status to the owning customer. Not required for correctness |
+| Background work | `IHostedService` workers in the API process | Expiry, outbox consumers, projectors. No separate worker or broker in v1 |
+| Observability | Serilog + OpenTelemetry | Correlation ID on every request, order ID on every order log |
+| Tests | xUnit + Testcontainers (Postgres) + WebApplicationFactory | Integration tests on real Postgres, never in-memory EF |
+| Frontend tests | Jest via `jest-expo` preset + React Native Testing Library (`@testing-library/react-native` + `test-renderer`) + `expo-router/testing-library` | Owner-approved amendment (Nathaniel, 2026-11-03). Expo's official runner; versions pinned to the SDK via `npx expo install`. Replaces nothing — the frontend had no runner. No Detox/Playwright/MSW in v1 (§11.3) |
+| Hosting | DigitalOcean App Platform + Managed Postgres + Managed Redis + Spaces | Docker image from CI |
+| CI | GitHub Actions | Build, test, migration check, secret scan, Docker build. No deploy on red |
+
+**Frontend delivery:** web via `expo export --platform web` → CDN. Android and iOS via **cloud EAS Build** → signed AAB / IPA. No Android Studio, local Android SDK, Xcode, or Mac. No committed `android/` or `ios/` folders. No Kotlin, Java, Swift, Capacitor, or separate React DOM app. Local testing: Expo Go on a physical phone + web export.
+
+**Open decisions — left blank on purpose. Never invent these; use config placeholders.**
+Stripe keys and webhook secret · production domain · email provider and sender · Spaces bucket / CDN domain.
 
 ---
 
 ## 3. Architecture principles
 
-### 3.1 Modular monolith, not microservices, not layered spaghetti
+### 3.1 Modular monolith
 
-One API, one database, one deployment — but with **hard module boundaries inside the monolith**. A module is a vertical slice: its own entities, services, repositories, API endpoints, and events. This is the staff-level point: you get most of microservices' isolation without paying for distributed transactions, network failures, and 8 deployments in v1.
+One API, one database, one deployment, **hard module boundaries inside**. Each module is a vertical slice that owns its entities, services, tables, endpoints, and events. This buys most of the isolation of microservices without distributed transactions.
 
-Rules Claude must enforce:
+1. A module reads another module only through its **public contract** (interface or domain event).
+2. A module owns its tables. No other module writes to them.
+3. Cross-module side effects go through the **outbox** (§8.4).
+4. Extraction test: a module must be movable as its two projects (`Ecommerce.<Module>` + `Ecommerce.<Module>.Contracts`, §6.2) + its tables + its contract. If it can't be, the boundary is broken.
 
-1. A module may only read another module's data through that module's **public contract** (interface or published domain event). Never `DbSet` from another module, never a cross-module SQL join in application code.
-2. A module owns its tables. No other module writes to them directly.
-3. Cross-module side effects go through the **outbox pattern** (Section 8.4). Never call Stripe, email, or another module's write and then hope the transaction commits.
-4. If a module needs to be extracted later, it should be extractable by moving its folder + its tables + its public contract. If it cannot be moved cleanly, the boundary is broken.
+### 3.2 SOLID, concretely
 
-### 3.2 SOLID, mapped to concrete code (not slogans)
-
-| Principle | How it shows up in this codebase |
+| | In this codebase |
 |---|---|
-| **S — Single Responsibility** | One service does one job: `InventoryReservationService` reserves/releases stock. It does not send email, charge cards, or calculate shipping. `OrderService` orchestrates, it does not own payment gateway code. |
-| **O — Open / Closed** | Pricing, shipping, and payment providers are strategies behind interfaces: `IPricingRule`, `IShippingRateProvider`, `IPaymentGateway`. Add a new shipping carrier by adding a class, not by editing `OrderService` if-statements. |
-| **L — Liskov Substitution** | Any `IPaymentGateway` (Stripe now, a fake in tests, another gateway later) must be substitutable without changing checkout flow. Same for `IInventoryStore`. If a fake behaves differently in tests than Stripe does in prod, the abstraction is leaking. |
-| **I — Interface Segregation** | Small interfaces: `IInventoryReader`, `IInventoryReserver`, `IOrderReader`. A read-only admin view does not depend on a write interface it never uses. No god `IRepository<T>` used everywhere. |
-| **D — Dependency Inversion** | Application layer depends on abstractions (`IPaymentGateway`, `IEmailSender`, `IClock`, `IIdempotencyStore`). Infrastructure implements them. Domain layer depends on nothing outside itself. `DateTime.UtcNow` is banned in domain/application code — inject `IClock` so expiry tests are deterministic. |
+| **S** | `InventoryReservationService` reserves and releases stock — nothing else. `OrderService` orchestrates; it does not own gateway code. |
+| **O** | Pricing, shipping, and payments are strategies: `IPricingRule`, `IShippingRateProvider`, `IPaymentGateway`. New carrier = new class, not a new `if`. |
+| **L** | Any `IPaymentGateway` (Stripe, test fake, future gateway) is substitutable without changing checkout. A fake that behaves differently from Stripe is a leaking abstraction. |
+| **I** | Small interfaces: `IInventoryReader`, `IInventoryReserver`, `IOrderReader`. No god `IRepository<T>`. |
+| **D** | Application depends on `IPaymentGateway`, `IEmailSender`, `IClock`, `IIdempotencyStore`. A module's `Infrastructure/` folder (or `Ecommerce.Persistence` for platform tables, the host for `IClock`) implements them. Domain depends only on `Ecommerce.SharedKernel` (§6.2). |
 
 ### 3.3 Production-ready means
 
-- **Correct under concurrency** before it is fast. Oversell and double-charge are bugs, slow search is a tuning task.
-- **Idempotent everywhere money or state moves.** Same request twice = same result once.
-- **Observable.** If it fails in prod, you can answer: which order, which user, which step, which external call, in under 5 minutes from logs + correlation ID.
-- **Recoverable.** Crash mid-checkout, webhook retry, email provider down — the system converges to a correct state by retry / expiry / outbox, without manual database edits.
-- **Secure by default.** See Section 10. No trust in client-submitted prices, totals, or discount codes.
+- **Correct under concurrency before fast.** Oversell and double charge are bugs; slow search is tuning.
+- **Idempotent wherever money or state moves.** Same request twice = one effect.
+- **Observable.** Which order, user, step, and external call failed — answerable in under 5 minutes from logs + correlation ID.
+- **Recoverable.** Crash, webhook retry, provider outage → the system converges by retry, expiry, or outbox, with no manual DB edits.
+- **Secure by default.** §10.1.
+
+### 3.4 Hard rules
+
+The canonical list. Breaking any rule blocks a merge (quality bar §1). Rules 1–6 can never be waived for a release.
+
+1. **Server owns money.** Prices, discounts, shipping, tax, and totals are calculated server-side. Write DTOs are explicit — no client-settable `grand_total`, `status`, or price.
+2. **Idempotency.** One idempotency key → at most one order. One Stripe event ID → at most one transition and one outbox event.
+3. **No oversell.** Lock inventory rows in ascending variant-ID order, reserve in one transaction, commit only on Paid. Available = on_hand − reserved, enforced by a DB check constraint.
+4. **Postgres is truth.** Redis is cache only. Checkout never reads stock from cache. Losing Redis loses nothing.
+5. **Webhook is truth for payment.** Signature verified, unsigned requests rejected. Frontend success is a hint.
+6. **Side effects via outbox**, inserted in the same transaction as the state change. No external call (Stripe, email, SignalR) inside a database transaction.
+7. **Thin controllers.** Validate, call an application service, map the response. No business logic.
+8. **Module boundaries.** No cross-module `DbSet` and no cross-module SQL join in application code.
+9. **No `DateTime.UtcNow`** in domain or application code. Inject `IClock`.
+10. **No secrets** in git, code, logs, or chat. No card numbers, passwords, full JWTs, or Stripe secrets in logs. Secrets live in env vars / secret manager.
+11. **Authorization per endpoint and per resource.** A customer reads only their own orders and cart. Hiding UI is not authorization.
+12. **Tests ship with the slice.** Every public method that moves money or stock is tested in the same slice. Hard invariants are test-first.
+13. **Audit.** Stock adjusts, status overrides, and refunds write `audit_log` with actor, before, after, and reason.
+14. **Legal transitions only** (§7.3), enforced in the domain and tested.
+15. **Consistency boundary** (§8.8). Checkout, payment, and inventory never read from an eventually consistent read model. No message broker in v1.
+16. **No unplanned dependency.** A NuGet/npm package is added only if Rob's plan names it, its reason, and what it replaces. A new database or external service is a stack change (§2).
+17. **Frontend is Expo one-codebase** (§2). Platform-specific code lives only in `lib/platform.ts`.
+18. **Migrations are backward-compatible** (§10.5). Rollback = redeploy the previous image against the current schema.
 
 ---
 
@@ -100,712 +113,668 @@ Rules Claude must enforce:
 
 ```mermaid
 flowchart TB
-    Customer[Customer<br/>React web browser]
-    Admin[Admin / Support<br/>React web browser]
-    CDN[CDN<br/>Static frontend + product images]
-    API[ASP.NET Core API<br/>Modular monolith - one deployment]
+    Clients[Expo app<br/>Web · Android · iOS<br/>Customer / Support / Admin]
+    CDN[CDN<br/>Web bundle + product images]
+    API[ASP.NET Core API<br/>Modular monolith + hosted workers]
     PG[(PostgreSQL 17<br/>System of record)]
     Redis[(Redis 7<br/>Cache only)]
-    Stripe[Stripe<br/>PaymentIntents + Webhooks]
-    Email[Email provider<br/>SMTP / Resend / SendGrid]
-    Spaces[Object storage<br/>Product images]
-    Worker[Background worker<br/>Inside the API process]
+    Stripe[Stripe]
+    Email[Email provider]
+    Spaces[Object storage]
 
-    Customer --> CDN
-    Admin --> CDN
-    CDN --> API
-    Customer --> API
-    Admin --> API
+    Clients --> CDN
+    Clients --> API
+    Clients -- confirm payment<br/>client_secret only --> Stripe
     API --> PG
     API --> Redis
     API --> Stripe
-    Stripe --> API
+    Stripe -- signed webhook --> API
     API --> Email
     API --> Spaces
-    API --> Worker
-    Worker --> PG
-    Worker --> Email
+    Spaces --> CDN
 ```
 
-Notes:
-- The browser never talks to Postgres, Stripe secret keys, or object storage directly.
-- Stripe talks back to the API only via a signed webhook endpoint. That endpoint is the only place a payment can change order state from outside.
-- The worker is not a separate service in v1. It is a hosted service in the same process, reading the outbox and expiring reservations.
+- Clients never touch Postgres, Stripe secret keys, or object storage credentials.
+- The signed webhook is the only path by which the outside world changes payment state.
+- Workers (expiry, outbox consumers, projectors) run in the API process in v1.
 
 ---
 
-## 5. Frontend architecture — Expo one codebase (web + Android + iOS)
+## 5. Frontend architecture
 
 ### 5.1 Structure
 
 ```
-apps/store/            # single Expo app
-  app/                 # Expo Router screens: index, products, products/[slug], cart, checkout, orders, orders/[id], admin/*
-    features/
-      catalog/         # product list, search, product detail hooks + components
-      cart/            # cart UI state (Zustand) + server validation hooks
-      checkout/        # checkout form, PaymentIntent flow, idempotency key handling
-      orders/          # order list, tracking, return request
-      admin/           # product/inventory/order management (Admin role only)
-    components/        # shared UI: Button, Price, ProductCard, Pagination (React Native components, rendered to DOM on web via React Native Web)
-    lib/
-      api-client.ts    # typed fetch client, auth token attach, correlation ID header — same client on all platforms
-      query-keys.ts    # TanStack Query keys, one source of truth for invalidation
-      platform.ts      # only the code that must differ per platform (payments SDK, push, storage) — keep this file tiny
-  # No local android/ or ios/ folders required. EAS Build generates them in the cloud.
-  # Do not commit android/ or ios/ folders, do not open them in Android Studio or Xcode.
-  # Frontend is full React Native: all screens are React Native components, web is those same
-  # components rendered via React Native Web. No native Kotlin/Java, no Swift, no Capacitor,
-  # no separate React DOM web app.
+frontend/apps/store/
+  app/            # Expo Router screens (app context §5)
+  features/       # catalog, cart, checkout, orders, admin — hooks + components
+  components/     # shared RN components (rendered to DOM on web via RN Web)
+  lib/
+    api-client.ts # typed fetch client: auth, correlation ID — all platforms
+    query-keys.ts # TanStack Query keys — single source for invalidation
+    platform.ts   # ONLY per-platform code: payments SDK, push, secure storage, deep links
 ```
-
-### 5.1a How it deploys to each platform
-
-- **Web:** `expo export --platform web` → static output to CDN / static host. No separate React web app.
-- **Android:** Cloud EAS Build → signed AAB. No Android Studio, no local Gradle, no local Android SDK.
-- **iOS:** Cloud EAS Build → signed IPA → TestFlight / App Store when ready. No local Xcode, no Mac.
-- **Shared vs platform-only:** Screens, cart/order logic, API client, validation, and state are shared. Only payments SDK wiring, push notifications (FCM/APNs), deep links, and native permissions are platform-specific, and they live behind the `lib/platform.ts` boundary.
-- **SEO note:** This is a client-rendered React Native Web app, not Next.js. Product pages will be weaker for SEO than a server-rendered storefront in v1. That is an accepted tradeoff for one codebase; a Next.js storefront is the exit if SEO becomes the bottleneck, and it would reuse the same .NET API.
-- **Backend unchanged:** All three frontends call the same .NET Core API in Section 2. No per-platform API is needed.
 
 ### 5.2 Rules
 
-- **Never trust the client for money.** Prices, totals, discounts, and shipping are calculated server-side at checkout. The frontend shows an estimate, the API returns the authoritative total.
-- **Server state via TanStack Query, UI state via Zustand.** Cart items are kept locally for speed, but checkout re-validates price + stock server-side and shows a clear "price/stock changed" step if anything moved.
-- **Idempotency key on checkout.** The frontend generates one UUID per checkout attempt and sends it as `Idempotency-Key`. Retry (double-click, network retry) sends the same key and gets the same order, not a second order. See Section 8.2.
-- **Optimistic UI only where it is safe.** Cart add can be optimistic. Checkout submit, payment confirm, and return request must not be optimistic — wait for the server result.
-- **Accessibility + performance budgets (v1 targets, not guarantees):** product list renders without a full-page reload on filter change, images lazy-loaded with width/height to avoid layout shift, no page ships more than one large hero image unoptimized.
+- **Estimate, never authority.** The UI shows an estimated total; the API returns the authoritative one.
+- **Checkout idempotency.** One UUID per checkout attempt, sent as `Idempotency-Key`. Retries (double-click, network) reuse it.
+- **Optimistic UI only where safe.** Cart add: yes. Checkout submit, payment confirm, return request: no — wait for the server.
+- **Server result wins.** If price or stock moved, show what changed; never silently keep the old value.
+- **Tokens.** SecureStore on native, secure storage on web — behind `platform.ts`.
+- **SEO tradeoff accepted.** RN Web is client-rendered. If SEO becomes the measured bottleneck, add a Next.js storefront on the same API.
+- **v1 budgets (targets):** no full reload on filter change, lazy images with explicit dimensions, at most one large hero image per page.
 
-### 5.3 Routes (v1)
+### 5.3 Routes
 
-| Route | Who | Purpose |
+Defined in app context §5. Admin routes are hidden in the UI **and** blocked by role in the API.
+
+### 5.4 Naming conventions
+
+One rule underneath all of these: **a file is named after its single primary export when it has one (component → `PascalCase.tsx`, hook → `useThing.ts`); every other file and every folder is `kebab-case`.**
+
+| Thing | Convention | Example |
 |---|---|---|
-| `/` | Public | Home, best sellers, categories |
-| `/products?search=&category=&sort=&page=` | Public | Search + filter + pagination, server-driven |
-| `/products/:slug` | Public | Detail, variants, stock indicator, reviews |
-| `/cart` | Customer (guest cart allowed, merged on login) | Review, update qty, remove |
-| `/checkout` | Customer | Address, shipping method, payment (Stripe), review authoritative total |
-| `/orders`, `/orders/:id` | Customer | History, status timeline, tracking, return request |
-| `/admin/products`, `/admin/orders`, `/admin/inventory` | Admin | CRUD, stock adjust with audit reason, order status override with audit |
-
-Guest cart: stored locally, merged into the user cart on login by server rule — same product + variant sums quantity, capped at available stock, never silently drops items without showing the merge result.
+| Route files in `app/` | Router-mandated. Lowercase `kebab-case` segments, `index.tsx`, `[param].tsx`, `_layout.tsx`, `+not-found.tsx`, `(group)/`. Never rename against the router: the file name **is** the URL | `app/reset-password.tsx`, `app/orders/[id].tsx` |
+| Route component | `export default function` (required by Expo Router), named `<Area?><Entity>ListScreen` for `index.tsx` lists, `<Area?><Entity>DetailScreen` for `[param].tsx`, otherwise `<Area?><Name>Screen`. Layouts are `<Segment>Layout` | `OrderDetailScreen`, `AdminProductListScreen`, `CheckoutScreen`, `RootLayout` |
+| `app/` contents | Routes and layouts only. No components, hooks, helpers, or tests in `app/` — the router turns every file there into a route | — |
+| Feature folders | `features/<feature>/`, `kebab-case`, matching §5.1 and the backend module names. Inside: `components/`, `hooks/`, `api.ts`, `types.ts`, `store.ts` (Zustand, cart only) | `features/checkout/hooks/useCheckout.ts` |
+| Components | `PascalCase.tsx`, file name = component name, **named export** | `components/PriceText.tsx` → `export function PriceText` |
+| Props type | `<Component>Props`, a `type` declared beside the component; exported only if another file needs it | `type PriceTextProps = { … }` |
+| Hooks | `useThing.ts` (camelCase, file = hook name), named export. TanStack Query hooks say what they do: `use<Entity>Query`, `use<Action>Mutation` | `useOrderQuery`, `usePlaceOrderMutation` |
+| Lib / util modules | `kebab-case.ts`, named exports | `lib/api-client.ts`, `lib/query-keys.ts` |
+| Platform splits | Metro extensions on the same base name, only under `lib/` (§5.2) | `lib/platform.native.ts`, `lib/platform.web.ts` |
+| Types | `PascalCase`, no `I` prefix, no `T` prefix. Prefer `type`. API payloads are named after the API resource, with `Request` for bodies sent | `OrderSummary`, `CheckoutRequest` |
+| Enumerations | No TS `enum`. A string-literal union whose values equal the API wire values exactly | `type OrderStatus = 'PendingPayment' \| 'Paid' \| …` |
+| Constants | Module-level primitive constants `SCREAMING_SNAKE_CASE`; objects and functions `camelCase` | `MAX_CART_LINES`, `queryKeys`, `styles` |
+| Variables / functions | `camelCase`. Booleans `is/has/can…`; handler props `on…`, handler functions `handle…` | `isPaid`, `onSubmit`, `handleSubmit` |
+| Imports | Absolute alias `@/` (tsconfig `paths`, natively supported by Expo/Metro) instead of `../../..`. No barrel `index.ts` files — import the file directly | `import { ScreenStub } from '@/components/ScreenStub'` |
+| Tests | Co-located `<file>.test.ts(x)`, same base name as the file under test — never under `app/`. Tests whose subject is a route live in top-level `tests/`: the route-table smoke test is `tests/routes.test.tsx`; a route-specific test mirrors the route path under `tests/app/` (§11.3) | `lib/query-keys.test.ts`, `tests/app/checkout.test.tsx` |
+| Styles | `const styles = StyleSheet.create({…})` at the bottom of the file; keys `camelCase` | — |
+| `app.json` | `name` = display name; `slug` and `scheme` lowercase `kebab-case`. `ios.bundleIdentifier` and `android.package` stay **unset** until the production domain is chosen (§2 open decisions), then reverse-DNS of that domain (`android.package` lowercase, no hyphens). Never invented | `"slug": "ecommerce-store"` |
 
 ---
 
-## 6. Backend — modular monolith diagram
+## 6. Backend modules
 
-```mermaid
-flowchart TB
-    subgraph API[ASP.NET Core API - one deployment]
-        direction TB
-        Web[Web layer<br/>Controllers, auth, validation,<br/>problem details, rate limiting]
-        App[Application layer<br/>Use cases, orchestration,<br/>no EF, no HTTP here]
-        Dom[Domain layer<br/>Entities, value objects,<br/>invariants, domain events]
-        Infra[Infrastructure layer<br/>EF Core, Stripe adapter,<br/>email adapter, outbox, cache]
-        Shared[Shared kernel<br/>Result, Money, IClock,<br/>IdempotencyKey, CorrelationId]
-    end
+### 6.1 Modules
 
-    subgraph Modules[Modules - each owns its tables]
-        Identity[Identity<br/>Users, roles]
-        Catalog[Catalog<br/>Products, variants, categories]
-        Inventory[Inventory<br/>Stock, reservations]
-        Cart[Cart<br/>Cart, cart items]
-        Orders[Orders<br/>Orders, order items, shipments]
-        Payments[Payments<br/>Payment intents, refunds]
-        Notifications[Notifications<br/>Email templates, outbox events]
-        Admin[Admin<br/>Read models, audit log]
-    end
-
-    Web --> App
-    App --> Dom
-    App --> Shared
-    App --> Modules
-    Infra --> PG[(PostgreSQL)]
-    Modules --> Infra
-```
-
-### 6.1 Module table — responsibility, owns, must never do
-
-| Module | Owns / responsible for | Public contract (what others may call) | Must NEVER do |
+| Module | Owns | Public contract | Must never |
 |---|---|---|---|
-| Identity | Users, password hashing (Identity), roles, refresh tokens | `IUserReader`, `ICurrentUser` | Store order or payment data |
-| Catalog | Products, variants, categories, images metadata, search index data, reviews | `IProductReader`, `ProductPublished` event | Change stock. That is Inventory. |
-| Inventory | Stock levels, reservations, release, decrement on paid order | `IInventoryReader`, `IInventoryReserver` (reserve / release / commit) | Charge a card or create an order |
-| Cart | Guest + user carts, merge on login, cart validation snapshot | `ICartReader`, cart validated snapshot for checkout | Calculate final tax/shipping. That is Orders/Pricing at checkout time. |
-| Orders | Order aggregate, totals, tax, shipping, status machine, shipments, returns | `IOrderReader`, `OrderPlaced`, `OrderPaid`, `OrderShipped` events | Call Stripe directly. That is Payments via interface. |
-| Payments | Stripe PaymentIntent creation, webhook handling, refunds, idempotency | `IPaymentGateway` (create intent, refund), `PaymentSucceeded` / `PaymentFailed` events | Change inventory or order items. It only reports payment outcome. |
-| Notifications | Email templates, outbox dispatch, SignalR order updates | Consumes domain events only | Write order state |
-| Admin | Admin read models, stock adjust with reason, audit log | Reads via other modules' readers | Bypass module contracts to edit tables directly |
+| Identity | Users, roles, refresh tokens | `IUserReader`, `ICurrentUser` | Store order or payment data |
+| Catalog | Products, variants, categories, image metadata, search data | `IProductReader`, `ProductPublished` | Change stock |
+| Inventory | Stock, reservations | `IInventoryReader`, `IInventoryReserver` (reserve / release / commit) | Charge a card or create an order |
+| Cart | User carts, guest merge, validation snapshot | `ICartReader` | Calculate final tax or shipping |
+| Orders | Order aggregate, totals, status machine, shipments, returns | `IOrderReader`, `OrderPlaced`, `OrderPaid`, `OrderShipped` | Call Stripe directly |
+| Payments | PaymentIntents, webhooks, refunds | `IPaymentGateway`, `PaymentSucceeded`, `PaymentFailed` | Change inventory or order items |
+| Notifications | Email templates, email + SignalR consumers | Consumes events only | Write order state |
+| Admin | Read models, dashboard projector, audit log | Reads via other modules' contracts | Bypass contracts to edit tables |
 
-### 6.2 Layer rules per module
+Each module is **two projects** (owner decision, Nathaniel, 2026-11-03 — "Module + Contracts", §13.2): `Ecommerce.<Module>` (implementation, `internal` by default) and `Ecommerce.<Module>.Contracts` (the "Public contract" column above: reader/reserver interfaces, integration events, DTOs). A contract that no other module consumes yet is added in the slice that first needs it; until then the Contracts project may be empty.
+
+### 6.2 Repository layout and layers
 
 ```
-src/
-  Ecommerce.Domain/          # no dependencies on EF, ASP.NET, Stripe
-    Catalog/ Orders/ Inventory/ Payments/ Identity/ Shared/
-  Ecommerce.Application/     # depends on Domain only + abstractions
-    Catalog/ Orders/ Inventory/ Payments/ ...
-  Ecommerce.Infrastructure/  # EF Core, Stripe, email, Redis, outbox, clock
-  Ecommerce.Api/             # controllers, middleware, auth, DI wiring
-  Ecommerce.Web/             # (see Section 5, separate Vite app)
-tests/
-  Ecommerce.Domain.Tests/
-  Ecommerce.Application.Tests/
-  Ecommerce.Api.IntegrationTests/   # Testcontainers Postgres
+backend/
+  src/
+    Ecommerce.Api/                    # host only: Program.cs, middleware, observability, health endpoints,
+                                      # SystemClock, DI + module composition, module controller discovery,
+                                      # design-time DbContext factory (dotnet-ef startup project)
+    Ecommerce.SharedKernel/           # cross-cutting abstractions, no EF/ASP.NET/Npgsql: IClock, DomainException,
+                                      # later Result/errors, shared Money, outbox/unit-of-work abstractions
+    Ecommerce.Persistence/            # the one EcommerceDbContext, IModuleDbModel, DatabaseOptions,
+                                      # Postgres readiness check, the single migration stream (Migrations/);
+                                      # later the outbox/idempotency/audit platform tables (§7.1)
+    Modules/
+      Catalog/
+        Ecommerce.Catalog/            # CatalogModule.cs (the only public type) +
+                                      #   Domain/ Application/ Infrastructure/ (EF configs, read store, dev seed) Api/ (controllers)
+        Ecommerce.Catalog.Contracts/  # public: IProductReader, ProductPublished, … (when first consumed)
+      Inventory/
+        Ecommerce.Inventory/          # InventoryModule.cs + Infrastructure/ (UnknownInventoryReader until Slice 2)
+        Ecommerce.Inventory.Contracts/ # public: IInventoryReader, StockStatus (later IInventoryReserver)
+      <Module>/ …                     # Identity, Cart, Orders, Payments, Notifications, Admin — same shape when their slice lands
+  tests/
+    Ecommerce.<Module>.Tests/         # per-module unit tests: Domain/ and Application/ (fakes), InternalsVisibleTo
+    Ecommerce.ArchitectureTests/      # reference, visibility, layer, clock, and model-ownership rules (below)
+    Ecommerce.Api.IntegrationTests/   # WebApplicationFactory + Testcontainers Postgres, real HTTP
+frontend/
+  apps/store/                         # Expo app (§5)
+docs/
 ```
 
-Dependency direction is one-way: Api -> Application -> Domain. Infrastructure -> Application (implements its interfaces). Domain -> nothing. If a using statement points the wrong way, the slice is wrong.
+**Project reference rules** (compiler- and test-enforced; a violation fails `dotnet test`):
+
+| Project | May reference (projects) | Packages / frameworks |
+|---|---|---|
+| `Ecommerce.SharedKernel` | nothing | none |
+| `Ecommerce.<M>.Contracts` | `Ecommerce.SharedKernel` only | none |
+| `Ecommerce.Persistence` | `Ecommerce.SharedKernel` | EF Core, Npgsql, health checks |
+| `Ecommerce.<M>` | `SharedKernel`, `Persistence`, its own `Contracts`, other modules' `*.Contracts` — **never another module's implementation project, never `Ecommerce.Api`** | as its slice plan names; `Microsoft.AspNetCore.App` framework reference for controllers |
+| `Ecommerce.Api` (host) | everything in `src/`; it must reference every module | Serilog, EF Core Design (design-time only, `PrivateAssets=all`) |
+
+**Inside a module** the layers are namespaces/folders, `Ecommerce.<M>.Domain` / `.Application` / `.Infrastructure` / `.Api`. Dependencies point one way: **Api → Application → Domain**; Infrastructure implements Application interfaces; Domain depends only on `SharedKernel` and itself (not even its own or another module's Contracts); Application may also use Contracts (its own and other modules'); Api (controllers) never uses Infrastructure or EF. Only `<M>Module.cs` at the module root wires them together. A `using` that points the wrong way means the slice is wrong.
+
+**Visibility.** Every implementation type is `internal`. The only public type in `Ecommerce.<M>` is the static `<M>Module` class: `Add<M>Module(IServiceCollection, IConfiguration)` plus any host-facing extras (Catalog: `DevSeedEnabledKey`, `AddCatalogDevSeed()`). `InternalsVisibleTo` is granted only to `Ecommerce.<M>.Tests` and, where HTTP fixtures need domain factories, `Ecommerce.Api.IntegrationTests` — never to another module. Controllers are internal; the host's `ModuleComposition.AddModuleControllers()` adds each module assembly (`ModuleComposition.ModuleAssemblies`) as an application part and registers `ModuleControllerFeatureProvider`, which discovers their internal `[ApiController]` types.
+
+**Persistence.** One `EcommerceDbContext` (in `Ecommerce.Persistence`), one migration stream, one `__EFMigrationsHistory`, `public` schema, table names unchanged. Each module contributes its EF configuration through an internal `IModuleDbModel` registered by `Add<M>Module`; the context applies every registered model. Entity types are `internal` to their module, so no module can name — let alone `Set<T>()` — another module's entity (rule 8 by the compiler). Checkout (§8.2) gets Inventory + Orders + Payments + outbox in one transaction because every module in a request scope shares the same scoped context and connection; the transaction abstraction (`SharedKernel`, implemented in `Persistence`) is planned in Slice 2/4. Migrations: `dotnet-ef … --project backend/src/Ecommerce.Persistence --startup-project backend/src/Ecommerce.Api`.
+
+**Architecture tests** (`Ecommerce.ArchitectureTests`, reflection + csproj/source scan, no extra package): project-reference table above (csproj `ProjectReference` and compiled assembly references); SharedKernel/Contracts free of EF, ASP.NET Core, Npgsql, Serilog, Stripe, Redis; the only exported type of a module implementation is `<M>Module`; `InternalsVisibleTo` only to allowed test assemblies; per-module layer rules (type signatures + source scan, no `global using` in modules); controllers live only in `Ecommerce.<M>.Api`; each `IModuleDbModel` configures only its own module's entities, all in `.Domain`; the host composes every module; no system-clock reads outside `Ecommerce.Api` (rule 9). Each rule evaluator has a self-test that proves it fails on a violating input.
 
 ---
 
 ## 7. Data model
 
-Postgres is the system of record. Use `numeric(19,4)` for money, never `float`/`double`. Store currency with every money amount. Use UTC timestamps (`timestamptz`).
+Money is `numeric(19,4)` with a currency on every amount — never `float`/`double`. Timestamps are `timestamptz` UTC. Migrations are the source of truth; this is the v1 shape.
 
 ```mermaid
 erDiagram
     USERS ||--o{ ORDERS : places
-    USERS ||--o{ CARTS : owns
+    USERS ||--o| CARTS : owns
     USERS ||--o{ ADDRESSES : has
-    PRODUCTS ||--o{ PRODUCT_VARIANTS : has
     CATEGORIES ||--o{ PRODUCTS : contains
-    PRODUCT_VARIANTS ||--o{ INVENTORY_STOCK : tracked_by
-    PRODUCT_VARIANTS ||--o{ CART_ITEMS : in
-    PRODUCT_VARIANTS ||--o{ ORDER_ITEMS : in
+    PRODUCTS ||--o{ PRODUCT_VARIANTS : has
+    PRODUCTS ||--o{ PRODUCT_IMAGES : has
+    PRODUCT_VARIANTS ||--|| INVENTORY_STOCK : tracked_by
     CARTS ||--o{ CART_ITEMS : contains
     ORDERS ||--o{ ORDER_ITEMS : contains
-    ORDERS ||--o{ SHIPMENTS : has
+    ORDERS ||--o{ ORDER_STATUS_HISTORY : records
     ORDERS ||--o{ PAYMENTS : paid_by
-    ORDERS ||--o{ INVENTORY_RESERVATIONS : reserved_for
-    ORDERS ||--o{ OUTBOX_EVENTS : emits
-    IDEMPOTENCY_KEYS ||--o{ ORDERS : protects
+    ORDERS ||--o{ INVENTORY_RESERVATIONS : reserves
+    ORDERS ||--o{ SHIPMENTS : has
+    ORDERS ||--o{ RETURN_REQUESTS : has
+    PAYMENTS ||--o{ REFUNDS : has
 ```
 
-### 7.1 Core tables (v1, simplified — migrations are the source of truth)
+### 7.1 Tables
 
-**users** (via ASP.NET Core Identity tables, plus profile): id, email (unique, citext), display_name, created_at.
-**addresses:** id, user_id, label, full_name, line1, line2, city, region, postal_code, country, is_default.
-**categories:** id, slug (unique), name, parent_id (nullable, one level in v1).
-**products:** id, slug (unique), name, description, category_id, is_active, created_at, updated_at.
-**product_variants:** id, product_id, sku (unique), name (e.g. "Black / Large"), price (numeric), compare_at_price (nullable), weight_grams, is_active.
-**product_images:** id, product_id, storage_key, alt_text, sort_order.
-**inventory_stock:** product_variant_id (PK), quantity_on_hand, quantity_reserved, version (rowversion / xmin for optimistic checks). Invariant: `quantity_on_hand - quantity_reserved >= 0` always, enforced in DB with a check constraint, not just in code.
-**inventory_reservations:** id, order_id, product_variant_id, quantity, status (Active, Committed, Released, Expired), expires_at, created_at. Unique partial index: one active reservation per (order_id, variant_id).
-**carts:** id, user_id (nullable for guest), session_key, created_at, updated_at.
-**cart_items:** id, cart_id, product_variant_id, quantity, added_at. Unique (cart_id, variant_id).
-**orders:** id, order_number (human readable, unique, e.g. ORD-2026-000123), user_id, status, subtotal, discount_total, shipping_total, tax_total, grand_total, currency, shipping_address_snapshot (jsonb), billing_address_snapshot (jsonb), idempotency_key (unique), stripe_payment_intent_id (unique, nullable), created_at, updated_at.
-**order_items:** id, order_id, product_variant_id, sku_snapshot, name_snapshot, unit_price_snapshot, quantity. Prices are snapshots — changing a product price later must never rewrite history.
-**order_status_history:** id, order_id, from_status, to_status, changed_by, reason, created_at. Every status change is audited.
-**payments:** id, order_id, provider, provider_payment_id (unique), amount, currency, status (RequiresAction, Succeeded, Failed, Refunded, PartiallyRefunded), created_at.
-**shipments:** id, order_id, carrier, tracking_number, status, shipped_at, delivered_at.
-**outbox_events:** id, aggregate_type, aggregate_id, event_type, payload (jsonb), created_at, published_at (nullable), attempts. Publisher marks published only after successful dispatch.
-**idempotency_keys:** key (PK), user_id, request_hash, response_body (jsonb), created_at, expires_at. Used for checkout and for Stripe webhook event IDs.
-**audit_log:** id, actor_id, entity_type, entity_id, action, before_json, after_json, created_at. Used for admin stock adjusts and order overrides.
+| Table | Columns and constraints |
+|---|---|
+| users | Identity tables + `display_name`, `created_at`. `email` unique (citext) |
+| addresses | id, user_id, label, full_name, line1, line2, city, region, postal_code, country, is_default |
+| categories | id, slug (unique), name, parent_id (nullable, one level in v1) |
+| products | id, slug (unique), name, description, category_id, is_active (default false), created_at, updated_at |
+| product_variants | id, product_id, sku (unique), name, size, colour, price, currency, compare_at_price, weight_grams, is_active |
+| product_images | id, product_id, storage_key, alt_text, sort_order |
+| inventory_stock | product_variant_id (PK), quantity_on_hand, quantity_reserved, `xmin` concurrency token. **CHECK (on_hand − reserved ≥ 0 AND reserved ≥ 0)** |
+| inventory_reservations | id, order_id, product_variant_id, quantity, status, expires_at, created_at. Unique partial (order_id, variant_id) WHERE status = 'Active' |
+| carts | id, user_id (unique — one cart per user), updated_at |
+| cart_items | id, cart_id, product_variant_id, quantity, added_at. Unique (cart_id, variant_id) |
+| orders | id, order_number (unique, e.g. `ORD-2026-000123`), user_id, status, subtotal, discount_total, shipping_total, tax_total, grand_total, currency, shipping_method, shipping_address_snapshot (jsonb), billing_address_snapshot (jsonb), idempotency_key (unique), stripe_payment_intent_id (unique, nullable), version, created_at, updated_at |
+| order_items | id, order_id, product_variant_id, sku_snapshot, name_snapshot, unit_price_snapshot, quantity, line_total |
+| order_status_history | id, order_id, from_status, to_status, changed_by, reason, created_at |
+| payments | id, order_id, provider, provider_payment_id (unique), amount, currency, status, created_at |
+| refunds | id, payment_id, provider_refund_id (unique), amount, reason, actor_id, created_at |
+| shipments | id, order_id, carrier, tracking_number, shipped_at, delivered_at |
+| return_requests | id, order_id, items (jsonb: variant, quantity), reason, status, admin_note, created_at, decided_at |
+| idempotency_keys | key, scope (`checkout` / `stripe-event`), PK (scope, key), user_id, request_hash, result_ref, created_at, expires_at |
+| outbox_events | sequence (bigint identity, PK), event_id (uuid, unique), event_type, aggregate_type, aggregate_id, aggregate_version, payload (jsonb), occurred_at. **Append-only**, retained for replay |
+| consumer_checkpoints | consumer (PK), last_sequence, updated_at |
+| processed_events | consumer, event_id, PK (consumer, event_id), status (`Done` / `DeadLetter`), attempts, next_attempt_at, last_error, processed_at |
+| audit_log | id, actor_id, action, entity_type, entity_id, before_json, after_json, reason, created_at |
 
-### 7.2 Indexes that matter on day one
+### 7.2 Day-one indexes
 
-- `products(slug)`, `products(category_id, is_active)`, full-text index on product name + description (Postgres `tsvector`, generated column).
-- `product_variants(sku)`, `product_variants(product_id)`.
-- `orders(user_id, created_at DESC)`, `orders(idempotency_key)`, `orders(stripe_payment_intent_id)`.
-- `inventory_reservations(expires_at) WHERE status = 'Active'` — for the expiry job.
-- `outbox_events(published_at) WHERE published_at IS NULL` — for the publisher job.
-- `order_items(order_id)`, `cart_items(cart_id)`.
+- `products(category_id, is_active)`; generated `tsvector` on name + description with a GIN index.
+- `product_variants(product_id)`.
+- `orders(user_id, created_at DESC)`, `orders(status, created_at DESC)`.
+- `inventory_reservations(expires_at) WHERE status = 'Active'` — expiry job.
+- `processed_events(next_attempt_at) WHERE status <> 'Done'` — retry scan.
+- `order_items(order_id)`, `cart_items(cart_id)`. Unique constraints above already index their columns.
 
-### 7.3 Order status machine — the only allowed transitions
+### 7.3 State machines — the only legal transitions
 
 ```mermaid
 stateDiagram-v2
-    [*] --> PendingPayment : checkout created
-    PendingPayment --> Paid : Stripe webhook succeeded
-    PendingPayment --> Cancelled : reservation expired / payment failed finally
-    Paid --> Processing : inventory committed
+    [*] --> PendingPayment : checkout
+    PendingPayment --> Paid : verified webhook
+    PendingPayment --> Cancelled : reservation expired
+    Paid --> Processing : admin picks order
+    Paid --> Refunded : refund
     Processing --> Shipped : shipment created
+    Processing --> Refunded : refund / fulfillment compensation
     Shipped --> Delivered : delivery confirmed
-    Paid --> Refunded : refund approved
-    Processing --> Refunded : refund approved
-    Shipped --> Returned : return approved
-    Delivered --> Returned : return approved
+    Delivered --> Returned : return approved + refunded
     Cancelled --> [*]
-    Delivered --> [*]
     Refunded --> [*]
     Returned --> [*]
 ```
 
-Any transition not in this diagram is rejected by the domain, not just by the UI. The UI hiding a button is not a security control.
+- **Order:** as above. A failed card does not cancel — the order stays `PendingPayment` and can be retried until the reservation expires. `Cancelled` is terminal; the customer checks out again (new key, new order). An admin **override** may force only a transition on this diagram, with a reason, and is audited. No transition rewrites totals or deletes history.
+- **Payment:** `Pending → Succeeded | Failed`; `Succeeded → PartiallyRefunded | Refunded`; `PartiallyRefunded → Refunded`. `Succeeded` is set only by a verified webhook. A retry creates a new payment record on the same order.
+- **Reservation:** `Active → Committed | Released | Expired`. All three are terminal — an expired reservation never commits.
+- **Return request:** `Requested → Approved | Declined`; `Approved → Refunded`. Approval moves no money; the refund does, and it is audited.
 
+Every transition is rejected in the domain unless it is listed here. A hidden button is not a control.
 
 ---
 
-## 8. Workflows and workflow diagrams
+## 8. Workflows
 
-Read these before writing checkout, payment, or inventory code. If code contradicts a diagram, the diagram wins until the diagram is explicitly updated and the test is updated with it.
+If code contradicts this section, this section wins until it and its tests are explicitly updated.
 
-### 8.1 Browse, search, add to cart
+### 8.1 Browse, search, cart
 
-```mermaid
-flowchart TD
-    A[Customer opens /products] --> B[React calls GET /api/products?search=&category=&sort=&page=]
-    B --> C[API validates query, Catalog returns page]
-    C --> D[Frontend renders list from server data]
-    D --> E[Customer adds variant to cart]
-    E --> F[POST /api/cart/items - variant_id + qty]
-    F --> G{Variant active and qty > 0?}
-    G -- No --> H[400 with clear message, no cart change]
-    G -- Yes --> I[Upsert cart item, cap at reasonable max per order]
-    I --> J[Return updated cart summary]
-    J --> K[Cart badge updates]
-```
+- Search, filter, sort, and pagination are server-side. Never "load all and filter on the client."
+- Sorts in v1: relevance (full-text rank), price asc/desc, newest.
+- The stock indicator (available = on_hand − reserved) may be cached for 10s. Checkout always re-reads Postgres under lock.
+- `POST /cart/items` validates: variant exists and is active, 0 < qty ≤ per-order cap (config). Otherwise 400, no change.
+- Guest cart lives on the device. On login, `POST /cart/merge` applies the merge rule (app context §4.4) and returns a merge result.
 
-Search notes:
-- Search is server-side, paginated, never "load all products and filter in the browser."
-- Sort options in v1: relevance (full-text rank), price asc/desc, newest. No sort may bypass pagination.
-- Stock indicator on product detail comes from Inventory reader (available = on_hand - reserved), cached briefly in Redis, but checkout always re-checks Postgres.
+### 8.2 Checkout — the core workflow
 
-### 8.2 Checkout — the core workflow (read this twice)
+The build is judged on this. It must survive double-click, network retry, refresh after payment, duplicate webhook, late webhook, and a crash between any two steps.
 
-This is the workflow the whole build is judged on. It must survive double-click, network retry, browser refresh after payment, Stripe webhook arriving twice, and a crash between any two steps.
+**Invariants**
 
-**Invariants (non-negotiable):**
-1. One checkout attempt (one idempotency key) creates at most one order.
-2. One Stripe PaymentIntent is linked to at most one order.
-3. Stock is never oversold: committed quantity can never exceed on-hand quantity.
-4. Client-submitted totals are ignored. The server recalculates subtotal, discount, shipping, and tax from current catalog + inventory + shipping rules.
-5. A reservation that is not paid within its TTL is released automatically, so stock is not held hostage by abandoned checkouts.
-6. Payment success without an order, or an order without a payment record, must be impossible to end in — webhook handling reconciles both.
-
-**Reservation TTL:** 15 minutes in v1. Long enough to complete Stripe payment, short enough to free stock quickly. Make it a config value, not a hard-coded magic number.
+1. One idempotency key → at most one order.
+2. One PaymentIntent → at most one order.
+3. Committed quantity never exceeds on-hand quantity.
+4. Client totals are ignored; the server recalculates everything.
+5. Unpaid reservations expire after a TTL (config, default **15 min**).
+6. No end state may be "paid without an order" or "order without a payment record."
 
 ```mermaid
 sequenceDiagram
-    participant C as Customer (React)
-    participant API as API (Orders + Inventory + Payments)
+    participant C as Expo app
+    participant API as API
     participant PG as PostgreSQL
     participant S as Stripe
-    participant W as Webhook endpoint
-    participant O as Outbox + Worker
+    participant W as Workers
 
-    C->>API: POST /api/checkout {cart, address, shipping, Idempotency-Key}
-    API->>PG: BEGIN transaction
-    API->>PG: Check idempotency_key - return existing order if present
-    API->>PG: Re-validate cart: variant active, price snapshot, stock available
-    API->>PG: Reserve stock: quantity_reserved += qty, insert reservation (expires +15m)
-    API->>PG: Create order PendingPayment + order_items (price snapshots) + payment record
+    C->>API: POST /checkout (Idempotency-Key)
+    API->>PG: BEGIN
+    API->>PG: Existing order for key? → return it
+    API->>PG: Re-validate cart, lock stock rows (variant-ID order)
+    API->>PG: reserved += qty, insert reservation (expires_at)
+    API->>PG: Insert order PendingPayment + items (snapshots) + payment Pending
     API->>PG: COMMIT
-    API->>S: Create PaymentIntent (amount = grand_total, metadata order_id)
-    API->>PG: Store stripe_payment_intent_id on order
-    API->>C: Return order + client_secret (frontend confirms with Stripe.js)
-    C->>S: Confirm payment (card / wallet)
-    S->>W: Webhook payment_intent.succeeded (signed, verified)
-    W->>PG: Check webhook event id in idempotency_keys - skip if already processed
-    W->>PG: BEGIN transaction: order -> Paid, reservation -> Committed, on_hand -= qty, reserved -= qty
-    W->>PG: Insert outbox event OrderPaid, COMMIT
-    O->>O: Publisher picks up OrderPaid, sends confirmation email, SignalR update
-    O->>PG: Mark outbox event published
+    API->>S: Create PaymentIntent (server total, metadata order_id, Stripe idempotency key)
+    API->>PG: Store payment_intent_id
+    API-->>C: order + client_secret
+    C->>S: Confirm payment
+    S->>API: Webhook payment_intent.succeeded (signed)
+    API->>PG: BEGIN · event ID seen? → 200, no-op
+    API->>PG: Order Paid, reservation Committed, on_hand −= qty, reserved −= qty, history, outbox OrderPaid
+    API->>PG: COMMIT → 200
+    W->>PG: Consume OrderPaid → email, SignalR, projectors
 ```
 
-**Step-by-step, in plain language:**
+**Rules**
 
-1. **Idempotency check first.** If the idempotency key already has an order, return that order. Do not create a second one, do not charge again.
-2. **Validate in one Postgres transaction.** Lock the inventory rows you need (`SELECT ... FOR UPDATE` on `inventory_stock` for the variants in the cart, in a consistent order to avoid deadlocks). Check active + available stock. If any line fails, roll back everything and return a precise error: which item, why (out of stock, price changed).
-3. **Reserve, do not decrement yet.** `quantity_reserved` goes up, `quantity_on_hand` stays until payment succeeds. Insert a reservation row with `expires_at = now + 15 minutes`.
-4. **Create the order as PendingPayment** with price snapshots. The order total is the server total, not the frontend total.
-5. **Create the Stripe PaymentIntent after the transaction commits.** If PaymentIntent creation fails, the order stays PendingPayment and the reservation will expire, or the customer can retry payment on the same order — never create a second order for the retry.
-6. **Frontend confirms payment with Stripe.js.** The secret key never leaves the server. The frontend only ever sees `client_secret`.
-7. **Webhook is the source of truth for payment success.** Do not mark an order Paid just because the frontend says payment succeeded. The frontend result is a hint; the signed webhook is the proof.
-8. **Webhook handling is idempotent.** Store the Stripe event ID in `idempotency_keys`. Second delivery of the same event is a no-op with a 200 response (Stripe retries webhooks — a 500 on duplicate would cause an infinite retry loop).
-9. **Commit inventory only on Paid.** In the same transaction as the status change: reservation Committed, `on_hand -= qty`, `reserved -= qty`, status history row inserted.
-10. **Side effects via outbox only.** Confirmation email, SignalR update, and any future fulfillment trigger are outbox events published after commit, not inline calls inside the payment transaction. If email is down, the order is still Paid and the email retries from the outbox.
+1. **Idempotency first.** An existing order for the key is returned as-is. If it has no PaymentIntent yet (crash after commit), create one now.
+2. **One short transaction.** Lock `inventory_stock` rows with `SELECT … FOR UPDATE` in ascending variant-ID order (prevents deadlocks). On any failure, roll back everything and return which item failed and why.
+3. **Reserve, don't decrement.** `on_hand` changes only on Paid.
+4. **Stripe after commit, never inside the transaction.** Every Stripe call carries a Stripe idempotency key derived from the order (e.g. `pi:{orderId}:{attempt}`). If creation fails, the order stays `PendingPayment`; `POST /orders/{id}/retry-payment` creates a new intent on the same order.
+5. **The client sees only `client_secret`.** The secret key never leaves the server.
+6. **Webhook is truth.** Verify the signature; dedupe the event ID in `idempotency_keys`; apply the transition, inventory commit, and outbox insert in **one** transaction. A duplicate returns 200 (a 500 makes Stripe retry forever).
+7. **Expiry.** The expiry worker releases the reservation, moves the order to `Cancelled`, and emits `PaymentIntentCancelRequested` (outbox → Stripe cancel).
+8. **Late success.** If `payment_intent.succeeded` arrives for a `Cancelled` order, never resurrect it: record the payment, issue an idempotent automatic refund, audit it, and alert. This closes invariant 6.
+9. **Side effects only via the outbox** (§8.4).
 
-### 8.3 Inventory race — why this diagram exists
+### 8.3 Inventory race
+
+Ten concurrent checkouts for the last unit: each locks the row; the first commits its reservation; the other nine see available < qty, roll back, and get a per-item out-of-stock error. The UI shows the item that sold out and offers to remove it and retry. Abandoned reservations expire with no manual fix. Proven by test 1 (§11.2).
+
+### 8.4 Outbox
 
 ```mermaid
-flowchart TD
-    A[10 customers checkout last item at same time] --> B[Each request opens transaction]
-    B --> C[SELECT inventory_stock FOR UPDATE - rows lock in variant_id order]
-    C --> D{Available = on_hand - reserved >= qty?}
-    D -- Yes for first committer --> E[Reserve, commit, proceed to payment]
-    D -- No for the other 9 --> F[Rollback, return out-of-stock for that item]
-    F --> G[Frontend shows which item sold out, offers to remove it and retry]
-    E --> H[If payment not completed in 15 min, expiry job releases reservation]
-    H --> I[Stock becomes available again, no manual fix needed]
+flowchart LR
+    A[State change + outbox row<br/>same transaction] --> B[Consumer polls by sequence]
+    B --> C{Handle}
+    C -- ok --> D[processed_events Done<br/>advance checkpoint]
+    C -- fail --> E[attempts++ · exponential backoff]
+    E -- attempts > 5 --> F[DeadLetter · alert · admin retry]
 ```
 
-Test that proves it (write this test before the code): 10 parallel checkout attempts for 1 unit in stock must produce exactly 1 successful reservation, 9 clean failures, and `on_hand - reserved` must never go negative.
+- The outbox is an append-only event log. Each consumer (email, SignalR, Stripe-cancel, dashboard, search) tracks its own checkpoint and dedupes on `(consumer, event_id)`.
+- Why not send inline? Email after commit can fail silently (paid order, no confirmation, no record). Email before a rollback confirms an order that doesn't exist. The outbox removes both.
+- **External effects are at-least-once.** Make them idempotent at the receiver: provider idempotency keys where supported (Stripe), otherwise a `(consumer, event_id)` check before sending. A crash between send and mark can still cause one duplicate send when the provider has no idempotency key — this is documented, tested (test 15), and must be harmless.
+- Dead letters never change order state. Count > 0 is an alert, not a log line.
 
-### 8.4 Outbox pattern — how side effects survive a crash
+### 8.5 Cancellation and refund
 
-```mermaid
-flowchart TD
-    A[Order transaction commits] --> B[Outbox row inserted in SAME transaction]
-    B --> C[API returns success - email not yet sent, and that is OK]
-    C --> D[Background publisher polls outbox every 5-10s]
-    D --> E{Dispatch email / SignalR}
-    E -- Success --> F[Mark published_at, done]
-    E -- Fail --> G[Increment attempts, exponential backoff]
-    G --> H{Attempts > 5?}
-    H -- No --> D
-    H -- Yes --> I[Dead-letter: log, alert, manual retry from admin - order state unchanged]
-```
+- Refunds go through `IPaymentGateway` with an idempotency key per refund; webhook-confirmed; the order goes to `Refunded` (or `Returned` for a return) with an audit entry.
+- A refund never deletes an order or rewrites totals. It adds a refund record and a status change.
+- **No auto-restock in v1.** Restock is a separate, audited admin stock adjust with a reason.
 
-Why not "just send email in the controller"? If the email call fails after the order commits, you have a paid order with no confirmation and no record that email was supposed to go out. If email succeeds and the transaction then rolls back, you sent a confirmation for an order that does not exist. Outbox removes both failure modes.
+### 8.6 Fulfillment
 
-### 8.5 Payment failure, cancellation, and refund
+Manual in v1: `Paid → Processing` (admin picks) → `Shipped` (carrier + tracking; `OrderShipped` → email) → `Delivered`. Automation can plug into the same transitions later. Compensation on unfulfillable orders: §8.8.4.
 
-```mermaid
-flowchart TD
-    A[Payment fails / customer abandons] --> B{Reservation expired or payment failed finally?}
-    B --> C[Expiry job or cancel endpoint releases reservation]
-    C --> D[Order -> Cancelled, status history recorded]
-    D --> E[Stock available again]
-    F[Paid order, refund requested] --> G[Admin approves refund with reason]
-    G --> H[Payments module calls Stripe refund - idempotent by refund id]
-    H --> I[Order -> Refunded, payment -> Refunded, audit log entry]
-    I --> J[Inventory: do NOT auto-restock on refund in v1 - admin decides restock separately with reason]
-```
+### 8.7 Admin catalog and inventory
 
-Rules:
-- A refund never deletes an order or rewrites its totals. It adds a payment record and a status change.
-- Restock on return/refund is an explicit admin action with a reason, so inventory audits stay honest.
+- Products are created with `is_active = false`. Images go to object storage; only keys are stored.
+- Initial stock is set via an audited adjust, then the product is published.
+- An adjust that would make available < 0 is rejected **and audited**.
+- Price changes never touch existing orders (snapshots).
+- Production data changes happen only through audited endpoints — no direct SQL.
 
-### 8.6 Fulfillment workflow
+### 8.8 Eventual consistency (Slice 6b)
 
-```mermaid
-flowchart TD
-    A[Order Paid] --> B[Admin / worker picks order - Processing]
-    B --> C[Pack + create shipment with carrier + tracking]
-    C --> D[Order -> Shipped, outbox event triggers shipped email]
-    D --> E[Customer sees tracking on /orders/:id]
-    E --> F{Delivered confirmed?}
-    F -- Yes --> G[Order -> Delivered]
-    F -- Return requested --> H[Return approved -> Returned, restock decision by admin]
-```
+#### 8.8.1 The boundary
 
-In v1, fulfillment is manual admin action, not an automatic warehouse integration. The status machine and audit trail are the point — automation can plug into the same transitions later.
+| Strongly consistent — one Postgres transaction | Eventually consistent — outbox → consumer |
+|---|---|
+| Checkout + reservation · Paid transition + inventory commit + outbox insert · refunds · stock adjusts · status changes | Dashboard KPIs · search read model · email · SignalR · customer analytics |
 
-### 8.7 Admin product and inventory workflow
+Nothing on the left may read from anything on the right. No RabbitMQ, Kafka, or other broker in v1 — the outbox table is the log.
 
-```mermaid
-flowchart TD
-    A[Admin creates product + variants] --> B[Upload images to object storage, store keys only]
-    B --> C[Product is_active = false until stock is set]
-    C --> D[Admin sets initial stock with reason - audit log]
-    D --> E[Admin publishes product - is_active = true]
-    E --> F[Customer can now see and buy it]
-    G[Admin adjusts stock] --> H[Adjust with reason, audit log, never direct SQL in prod]
-    H --> I[If adjustment would make available negative, reject]
-```
+#### 8.8.2 Projectors
+
+- An event carries `event_id`, `aggregate_id`, and a per-aggregate monotonic `aggregate_version`.
+- A projector updates its read model **and** inserts `processed_events` in one transaction — so a duplicate delivery is a no-op.
+- **Out of order:** the read model stores the last applied version per aggregate. version ≤ stored → skip. version > stored + 1 → gap: retry with backoff, then dead-letter and alert. Never apply past a gap.
+- **Sequence gaps:** identity values can commit out of order. Consumers read only up to rows older than a safety window (config, e.g. 2s), or rescan a trailing window; dedupe makes rescans safe.
+- **Replay:** truncate the read model, reset the checkpoint to 0, and re-consume. Outbox rows are retained in v1 to make this possible.
+
+#### 8.8.3 Lag and health
+
+- Proposed v1 targets (confirm in the Slice 6b plan): dashboard and search ≤ 60s behind, email ≤ 2 min p95.
+- The dashboard shows an **as-of** time. Each projector exposes last processed event, lag, and dead-letter count. Lag beyond target or any dead letter is an alert.
+- Orders and payments are always correct even when a projector is stopped.
+
+#### 8.8.4 Fulfillment compensation (saga)
+
+The fulfillment process is a persisted saga keyed by order. If a fulfillment step fails finally (retries exhausted, or admin marks the order unfulfillable with a reason), compensation issues **exactly one** refund (idempotency key = saga ID + step), moves the order to `Refunded`, and audits it. A saga retry never creates a second shipment or a second refund. Rob challenges this design in plan mode before Slice 6b.
+
+#### 8.8.5 Tests
+
+Tests 11–18 in §11.2.
 
 ---
 
 ## 9. API surface (v1)
 
-Base: `/api/v1`. All responses use Problem Details (`application/problem+json`) on errors. All list endpoints are paginated (`page`, `pageSize`, max 100) and return total count. Auth: `Authorization: Bearer <access_token>` except public catalog reads and Stripe webhook (signed, not Bearer).
+Base `/api/v1`. Errors are Problem Details (`application/problem+json`). Lists are paginated (`page`, `pageSize` ≤ 100) with a total count. Auth is Bearer, except public reads and the Stripe webhook (signature). Breaking changes go to `/api/v2`; v1 is never silently changed.
 
-| Method + path | Role | Purpose / notes |
+| Endpoint | Role | Notes |
 |---|---|---|
-| `GET /api/v1/products?search=&category=&sort=&page=&pageSize=` | Public | Search, filter, paginate |
-| `GET /api/v1/products/{slug}` | Public | Detail + variants + images + stock indicator |
-| `GET /api/v1/categories` | Public | Category tree |
-| `POST /api/v1/cart/items` | Customer / guest | Add or update qty. Body: variant_id, quantity |
-| `GET /api/v1/cart` | Customer / guest | Current cart with server-validated prices |
-| `DELETE /api/v1/cart/items/{variantId}` | Customer / guest | Remove line |
-| `POST /api/v1/checkout` | Customer | Header `Idempotency-Key` required. Creates PendingPayment order + reservation, returns PaymentIntent client_secret |
-| `POST /api/v1/orders/{id}/retry-payment` | Customer (owner) | Reuse same order, create new PaymentIntent if previous expired/failed. Never creates a second order |
-| `GET /api/v1/orders`, `GET /api/v1/orders/{id}` | Customer (owner) | History + detail + status timeline |
-| `POST /api/v1/orders/{id}/return-request` | Customer (owner) | Return request, admin approves separately |
-| `POST /api/v1/webhooks/stripe` | Stripe (signed) | Payment outcome only. Verify signature, check event idempotency, then apply transition |
-| `GET /api/v1/admin/products`, `POST /api/v1/admin/products`, `PUT /api/v1/admin/products/{id}` | Admin | Product management |
-| `POST /api/v1/admin/inventory/adjust` | Admin | Stock adjust with reason, audited |
-| `GET /api/v1/admin/orders`, `POST /api/v1/admin/orders/{id}/ship`, `POST /api/v1/admin/orders/{id}/refund` | Admin | Fulfillment + refund, audited |
+| `POST /auth/register` · `login` · `refresh` · `logout` · `password-reset` · `password-reset/confirm` | Public / Customer | Refresh tokens rotate; reuse revokes the family |
+| `GET /products?search=&category=&sort=&page=&pageSize=` | Public | Active products only |
+| `GET /products/{slug}` | Public | Variants, images, stock indicator. Inactive → 404 (admin preview via admin API) |
+| `GET /categories` | Public | |
+| `GET /cart` · `POST /cart/items` · `DELETE /cart/items/{variantId}` | Customer | Server-validated prices |
+| `POST /cart/merge` | Customer | Guest lines in; merge result out |
+| `POST /checkout` | Customer | `Idempotency-Key` required. Returns order + `client_secret` |
+| `POST /orders/{id}/retry-payment` | Owner | `PendingPayment` only. Same order, new intent |
+| `GET /orders` · `GET /orders/{id}` | Owner | History, detail, timeline |
+| `POST /orders/{id}/return-request` | Owner | `Delivered` only |
+| `POST /webhooks/stripe` | Stripe | Signature verified, event-idempotent |
+| `GET /admin/dashboard?period=` | Admin | Projected KPIs with as-of time |
+| `GET/POST /admin/products` · `PUT /admin/products/{id}` · `POST /admin/products/{id}/images` · `POST /admin/products/{id}/publish` · `…/unpublish` | Admin | |
+| `GET /admin/inventory` · `POST /admin/inventory/adjust` | Admin | Adjust requires a reason; audited |
+| `GET /admin/orders` · `GET /admin/orders/{id}` | Admin, Support | |
+| `POST /admin/orders/{id}/process` · `ship` · `deliver` · `refund` · `status-override` | Admin | Audited. Override requires a reason |
+| `GET /admin/returns` · `POST /admin/returns/{id}/approve` · `decline` | Admin | Reason required |
+| `GET /admin/customers` · `GET /admin/customers/{id}` | Admin, Support | Read-only. Support sees no revenue KPIs |
 
-Versioning: `/api/v1` stays stable. Breaking changes go to `/api/v2`, v1 is not silently changed.
-
+**Catalog read contract (Slice 1a):**
+- **Visible** = `is_active` and ≥ 1 active variant; otherwise list-excluded and detail 404 (also 404 for a malformed slug).
+- `page` ≥ 1 (default 1), `pageSize` 1–100 (default 20); out of range → 400, never clamped. Past the last page → 200, empty `items`, real `totalCount`. Response `{ items, page, pageSize, totalCount, totalPages }`.
+- `sort` = `relevance | price-asc | price-desc | newest`; default `relevance` with `search`, else `newest`; `relevance` without `search` → 400. Every sort ends in a unique tie-breaker (`id`). Product price = minimum **active** variant price.
+- `search` trimmed, ≤ 100 chars, `websearch_to_tsquery('english')` over the weighted generated `search_vector` (name A, description B).
+- `category` = slug; matches the category and its direct children; unknown slug → 200 empty.
+- `GET /categories` → `{ items: [{ slug, name, parentSlug }] }`, unpaginated (bounded one-level set — exception to the pagination rule).
+- Slugs: `^[a-z0-9]+(?:-[a-z0-9]+)*$`, ≤ 100 chars, unique, not case-folded.
+- Money on the wire: `{ "amount": "24.50", "currency": "USD" }` — amount is a decimal **string**; clients format only. `stockStatus` = `Unknown | InStock | Low | Out`.
 
 ---
 
-## 10. Cross-cutting concerns — production-ready checklist in code
+## 10. Cross-cutting concerns
 
-### 10.1 Auth, authorization, and security (OWASP-minded)
+### 10.1 Security
 
-- Passwords: ASP.NET Core Identity defaults (hashed, never plain text, never logged).
-- JWT: short-lived access token (15 min), rotating refresh token stored hashed, revoked on logout / password change.
-- Authorization is enforced in the API per endpoint **and** per resource: a customer can only read their own orders/cart. `GET /orders/{id}` checks `order.user_id == current_user_id` or Admin role. Frontend hiding a link is not authorization.
-- Input validation: FluentValidation or data annotations on every write DTO. Reject unknown fields that change price/total/status.
-- No mass assignment: DTOs are explicit. An order DTO has no `grand_total` or `status` field a client can set.
-- Stripe webhook: verify signature with the webhook secret, reject unsigned requests, return 200 only after idempotent processing (or intentional skip of a duplicate).
-- Rate limiting: checkout and login endpoints rate-limited per IP + per user. Catalog reads have a higher, generous limit.
-- CORS: allow only the frontend origin(s) in config, never `*` with credentials.
-- Secrets: environment variables / secret manager only. No keys in git, no keys in this file.
-- Audit: admin stock adjusts, order status overrides, and refunds always write to `audit_log` with actor, before, and after.
+- Passwords: Identity defaults; never stored plain or logged. Lockout on repeated failures.
+- JWT access token 15 min. Refresh token rotated, stored hashed, revoked on logout and password change.
+- Per-resource authorization: `GET /orders/{id}` requires owner, Admin, or Support. Another customer's order returns **403** (test 7).
+- Validation (FluentValidation) on every write DTO. No mass assignment.
+- Rate limits per IP + user on login, checkout, and webhook (the webhook must still accept Stripe retries). Generous limits on catalog reads.
+- CORS: configured frontend origins only, never `*` with credentials.
 
-### 10.2 Caching strategy — cache is a performance layer, never a truth layer
+### 10.2 Caching — performance layer, never truth
 
 | Data | Cache | Invalidation |
 |---|---|---|
-| Product list / detail | Redis, 60s, plus CDN for images | On product/variant update, delete those keys. Stale product name for 60s is acceptable; stale stock at checkout is not — checkout never reads cache for stock |
-| Categories | Redis, 5 min | On category change |
-| Stock indicator (display only) | Redis, 10s | Display only. Checkout re-reads Postgres with a lock |
-| User cart, order totals, payment state | **No cache** | Always Postgres |
+| Product list / detail | Redis 60s, images on CDN | Delete keys on product/variant change |
+| Categories | Redis 5 min | On change |
+| Stock indicator (display) | Redis 10s | TTL only. Checkout re-reads Postgres under lock |
+| Cart, totals, orders, payments | **Never cached** | — |
 
-If Redis is down, the API must still work (cache-aside with fallback to Postgres), just slower. If Postgres is down, there is no fallback — that is correct, because Postgres is the truth.
+Redis down → cache-aside falls back to Postgres (slower, correct). Postgres down → no fallback, by design.
 
-### 10.3 Errors, logging, and observability
+### 10.3 Observability
 
-- Every API error returns Problem Details: `type`, `title`, `status`, `detail`, `traceId`. No stack traces to the client.
-- Every log line for an order flow includes `order_id` and `correlation_id`. Correlation ID comes from the request header if present, otherwise generated, and is returned in the response header.
-- Health endpoints: `/health/live` (process up) and `/health/ready` (Postgres + Redis reachable). The host uses Ready for traffic routing.
-- Metrics to expose from day one (even if the dashboard comes later): checkout attempts, checkout success rate, payment webhook failures, reservation expiries, outbox dead-letters, p95 checkout latency. If outbox dead-letters > 0, that is an alert, not a log line to ignore.
-- Structured logging with Serilog: log events, not string concatenation. `Log.Information("Order {OrderId} paid", orderId)` — never log card numbers, Stripe secrets, passwords, or full JWTs.
+- Every error is Problem Details with `traceId`; no stack traces to clients.
+- Correlation ID: taken from the request header or generated, and echoed in the response. Every order log carries `OrderId` + `CorrelationId`. Structured templates only (`Log.Information("Order {OrderId} paid", id)`).
+- `/health/live` (process only) and `/health/ready` (Postgres reachable **and** no pending migrations → 200, else 503). Redis, once added (Slice 7), reports `Degraded` only — still 200 — because Redis is never truth (§10.2, rule 4). Traffic routes on Ready.
+- Day-one metrics: checkout attempts and success rate, webhook failures, reservation expiries, dead letters, projector lag, p95 checkout latency.
 
-### 10.4 Performance and scaling — back-of-envelope (planning estimates, not guarantees)
+### 10.4 Scaling — planning estimates, not promises
 
-Assume a small store to start, then scale in steps. These numbers are for reasoning, not promises:
-
-| Stage | Rough load | What changes |
+| Stage | Load | Change |
 |---|---|---|
-| v1 launch | ~100 orders/day, ~10k product views/day | Single API container, managed Postgres (small), Redis optional. Postgres full-text search is enough. No extra services. |
-| Growing | ~1,000 orders/day, ~100k views/day | Add API container replicas (stateless API makes this safe), Redis cache on, CDN for images, read the slow queries from Postgres logs and add the missing index before adding hardware. |
-| Scaling | ~10,000 orders/day, ~1M views/day | Separate the outbox publisher / expiry worker into its own process (same code, different entry point), Postgres read replica for catalog reads only (writes still go to primary), consider dedicated search (OpenSearch) only when full-text ranking or faceting actually becomes the bottleneck — measured, not guessed. |
+| Launch | ~100 orders/day, ~10k views/day | One API container, small managed Postgres, Postgres full-text |
+| Growing | ~1k orders/day, ~100k views/day | API replicas (stateless), Redis on, CDN, fix slow queries with indexes before hardware |
+| Scaling | ~10k orders/day, ~1M views/day | Workers in their own process (same code, new entry point), read replica for catalog reads, dedicated search only if measured |
 
-Scaling rule for this build: **do not add a service until a metric proves the current layer is the bottleneck.** Adding Kafka, Elasticsearch, or microservices on day one is not "production-ready," it is premature complexity that hides the real invariants.
+**Add a service only when a metric proves the current layer is the bottleneck.** Checkout is write- and lock-heavy and will never scale like reads; keep transactions short and external calls outside them.
 
-Checkout math to keep in mind: checkout is write-heavy and lock-heavy by nature. It will never scale like a product list read. That is why reservations are short-lived, locks are held for the shortest transaction possible, and no external call (Stripe, email) happens inside the Postgres checkout transaction.
-
-### 10.5 Deployment diagram
+### 10.5 Deployment
 
 ```mermaid
-flowchart TB
-    Dev[Developer - Windows 11<br/>VS / VS Code + Claude Code]
-    GH[GitHub<br/>main branch]
-    CI[GitHub Actions<br/>build + test + Docker build]
-    DO[DigitalOcean App Platform<br/>API container - stateless, scalable]
-    PG[(Managed PostgreSQL)]
-    RD[(Managed Redis)]
-    SP[Spaces + CDN<br/>Product images + frontend static]
-    ST[Stripe - test then live]
-
-    Dev --> GH
-    GH --> CI
-    CI --> DO
-    DO --> PG
-    DO --> RD
-    DO --> SP
-    DO --> ST
-    ST --> DO
+flowchart LR
+    Dev[Windows 11<br/>VS / VS Code + Claude Code] --> GH[GitHub]
+    GH --> CI[GitHub Actions<br/>build · test · migrate check · scan · Docker]
+    CI --> DO[DO App Platform<br/>API container]
+    GH --> EAS[EAS Build<br/>AAB / IPA on demand]
+    DO --> PG[(Managed Postgres)]
+    DO --> RD[(Managed Redis)]
+    DO --> SP[Spaces + CDN]
+    DO <--> ST[Stripe]
 ```
 
-Deploy rules:
-- Migrations run as a separate, reviewed step before the new API version serves traffic, and are backward-compatible (add column nullable first, backfill, then make required in a later deploy). No migration may drop a column the old code still reads in the same deploy.
-- Rollback = redeploy previous Docker image. Database migrations in v1 must be rollback-safe or the deploy is blocked until they are.
-- No manual production data edits except through an audited admin endpoint. If you need SQL in prod, you need a reason in the audit log.
+- Migrations run as a separate, reviewed step before the new version takes traffic. Use expand/contract: add nullable → backfill → require in a later deploy. Never drop a column that the running version reads.
+- Rollback = redeploy the previous image against the current schema. A migration that breaks this blocks the deploy.
+- No manual production data edits — audited endpoints only.
 
 ---
 
-## 11. Testing strategy — prove the hard parts, not just the happy path
+## 11. Testing
 
-### 11.1 Test pyramid for this build
+### 11.1 Pyramid
 
-- **Domain unit tests (fast, many):** order status machine rejects illegal transitions, money calculations round correctly, pricing rules apply in the right order.
-- **Application tests (medium):** checkout orchestration with fakes for Stripe/email, reservation expiry logic with a fake clock.
-- **Integration tests (slower, fewer but mandatory):** WebApplicationFactory + Testcontainers Postgres. Real transactions, real locks, real webhook signature verification with a test secret. These are the tests that catch oversell and double-charge.
+- **Domain (fast, many):** state machines, money rounding, pricing order, expiry math with a fake clock.
+- **Application (medium):** checkout orchestration and saga steps with fake gateway, email, and clock.
+- **Integration (mandatory):** WebApplicationFactory + Testcontainers Postgres — real transactions, locks, constraints, and webhook signatures with a test secret.
 
-### 11.2 The 10 tests that must exist before v1 is called done
+### 11.2 Required tests for v1
 
-1. 10 parallel checkouts for 1 unit in stock → exactly 1 reservation succeeds, 9 fail cleanly, available never goes negative.
-2. Same checkout idempotency key sent twice → exactly 1 order, 1 PaymentIntent link.
-3. Same Stripe webhook event delivered twice → order transitions once, email outbox event created once.
-4. Reservation expires after TTL → stock released, order Cancelled, customer can retry.
-5. Client sends a fake lower total → server total wins, PaymentIntent amount equals server total.
-6. Product price changes after order placed → order item snapshot unchanged.
-7. Customer A cannot read, cancel, or refund customer B's order (403, not 404 leak or success).
-8. Payment succeeds but API crashes before webhook → webhook retry reconciles order to Paid without a duplicate order.
-9. Email provider down → order still Paid, outbox retries, email eventually sent, no duplicate email on retry.
-10. Admin stock adjust to a negative available quantity → rejected, audit log shows the attempt and the actor.
+| # | Scenario | Must prove |
+|---|---|---|
+| 1 | 10 parallel checkouts, 1 unit in stock | Exactly 1 reservation; 9 clean failures; available never < 0 |
+| 2 | Same idempotency key twice | 1 order, 1 PaymentIntent |
+| 3 | Same webhook event twice | 1 transition, 1 outbox event |
+| 4 | Reservation passes TTL | Stock released, order `Cancelled`, new checkout succeeds |
+| 5 | Client sends a lower total | Server total wins; intent amount = server total |
+| 6 | Price changes after order | Order item snapshot unchanged |
+| 7 | Customer A requests customer B's order | 403 on read, cancel, and refund |
+| 8 | Paid, then API crashes before webhook processing | Webhook retry reconciles to `Paid`; no duplicate order |
+| 9 | Email provider down | Order stays `Paid`; retry delivers; no duplicate email |
+| 10 | Admin adjust below available 0 | Rejected; audit shows actor and attempt |
+| 11 | `OrderPaid` twice → dashboard projector | Revenue counted once |
+| 12 | `OrderPaid` twice → search projector | Index unchanged on second delivery |
+| 13 | Dashboard projector down 10 min, restarted | Catches up from checkpoint; nothing lost or double-counted |
+| 14 | Version 5 arrives before version 4 | No wrong status; holds or alerts on the gap |
+| 15 | Crash after email send, before mark | At most one email, or the duplicate is proven harmless — state which |
+| 16 | Fulfillment step fails finally | Exactly one refund; order `Refunded` with audit; no duplicate shipment or refund on retry |
+| 17 | Search read model dropped and replayed | Results match pre-drop results on a fixed dataset |
+| 18 | Dashboard projector stopped | Order still reaches `Paid` with correct detail; dashboard shows as-of time |
+| 19 | Webhook succeeds for a `Cancelled` order | Order stays `Cancelled`; exactly one automatic refund; alert raised |
 
-Write the failing test first for tests 1, 2, 3, and 4. That is the deep-learning part: if you cannot write the test, you do not yet understand the invariant.
+**Test-first:** 1, 2, 3, 4, 11, 13, 16, 19. If you can't write the test, you don't understand the invariant yet.
+
+### 11.3 Frontend tests
+
+Runner: Jest (`jest-expo` preset) + React Native Testing Library + `expo-router/testing-library` (§2). Tests run in Node against the RN component tree; they prove UI contracts, never money or stock — those are proven server-side by §11.2.
+
+**What must be tested (every slice that touches the frontend):**
+
+- **Pure logic** in `lib/` and `features/*/` (`api.ts`, `store.ts`, `types.ts` helpers, hooks): every exported function or hook has a co-located test.
+- **Components with behavior** (props that change output, state, handlers, conditional rendering, navigation): a co-located test of the behavior and its accessible role/label. Purely static markup needs no test.
+- **Routes:** every route in app context §5 renders under the real root layout at its URL (`tests/routes.test.tsx`). Screen-level behavior belongs in `features/` and is tested there; screens stay thin.
+- **Network:** mock `fetch` with `jest.fn()` / `jest.spyOn(globalThis, 'fetch')`. No MSW or other mocking package in v1.
+- **Platform splits:** when `lib/platform.native.ts` / `lib/platform.web.ts` land, the Jest config switches to per-platform projects (`jest-expo/ios`, `jest-expo/android`, `jest-expo/web`) in the same slice, so each split is tested on its platform.
+- **Not in v1:** device E2E (Detox/Maestro) and browser E2E (Playwright). EAS release candidates are smoke-tested by hand on Expo Go and the web export.
+
+| # | Slice | Scenario | Must prove |
+|---|---|---|---|
+| F1 | 0 (retro) | Route table | Every app context §5 route renders its screen at its URL under `RootLayout`; an unknown URL renders Not found |
+| F2 | 1 | `lib/api-client.ts` | Sends the correlation ID and bearer token; maps ProblemDetails to a plain-language error with a retry action; never logs the token |
+| F3 | 3 | Cart re-validation / merge | Server result wins: changed price or stock is shown to the user, the old value is never kept; merge result is shown, never dropped silently |
+| F4 | 4 | Checkout idempotency key | One UUID per checkout attempt; double-submit and network retry reuse the same `Idempotency-Key`; a new attempt gets a new key |
+| F5 | 4 | Checkout submit | No optimistic order: submit is disabled while pending; the success screen shows `PendingPayment` until the server reports `Paid` |
+| F6 | 4 | Checkout request and total | The request body carries no price, total, or status field; the displayed total is the server's response value |
+| F7 | 1 | Role-gated admin UI | Admin routes are hidden and redirect for a Customer (UI only — API test 7 is the real authorization) |
+| F8 | 6 | Return request | No optimistic submit; server error shows a plain-language message with retry |
+
+**Frontend test-first:** F4, F5, F6 (they are the client side of hard rules 1, 2, and 5).
+
+**F2 split (Slice 1a/1b):** 1a proves the correlation ID, ProblemDetails → plain-language error mapping, and retry; 1b adds the bearer token and the "never logs the token" assertion, when tokens exist.
+
+### 11.4 Enforcement in CI
+
+- **Backend:** `dotnet test` fails when any test project discovers zero tests (`TreatNoTestsAsError` in `backend/tests/test.runsettings`). Coverage is collected (`Code Coverage`, cobertura) and uploaded as an artifact with TRX results — **no percentage gate** (quality bar §5).
+- **Frontend:** `npm test -- --ci --coverage` (Jest fails on zero tests by default; `--passWithNoTests` is banned). Coverage is uploaded as an artifact — no percentage gate.
+- **Hygiene step (frontend job):** fails on any test file under `app/` and on any focused test (`it.only`, `test.only`, `describe.only`, `fit`, `fdescribe`), because a focused test silently drops every other test.
+- **Not gated:** lint and formatting (style never blocks, quality bar §3); skipped tests are a review check (quality bar §4.2).
 
 ---
 
-## 12. How to build this deeply with Claude Code
+## 12. Working with Claude Code
 
-This section is the difference between "Claude built an ecommerce app for me" and "I learned to design a production system with Claude's help." Follow it literally.
-
-### 12.1 Who owns what
+### 12.1 Ownership
 
 | Owner | Work |
 |---|---|
-| **You (Nathaniel)** | This architecture file, the 1-page spec per slice, the hard invariants and their failing tests, review of every diff, the tradeoff decisions in Section 13 |
-| **Claude Code** | Boilerplate, CRUD scaffolding, DTOs, migrations from your approved schema, seed data, routine tests, refactoring that does not change behavior |
-| **Neither, without a test** | Checkout, inventory reservation, payment webhook handling, refund logic |
+| Nathaniel | Owns the stack lock (§2) and scope. Reads each final report and Rob's review. Commits |
+| Rob (architect agent) | Slice plans, plan-mode challenges, boundary and invariant reviews, keeps this file current |
+| Marco (developer agent) | Implements one planned slice and fixes review findings |
+| Nobody, without a test first | Checkout, reservation, webhook handling, refunds, projectors |
 
-### 12.2 Rules for Claude (paste these into your first Claude prompt)
+Session workflow, prompts, and deny rules: `CLAUDE.md`. Gates: `docs/quality-bar.md`.
 
-1. Read `ecommerce-architecture.md` first. Do not change stack, module boundaries, or checkout invariants.
-2. Build one slice at a time, in the order in Section 12.3. Do not start the next slice until the current slice's tests pass and I have reviewed the diff.
-3. Use plan mode first for any slice that touches Orders, Inventory, or Payments. Return risks only, no code, until I approve the plan.
-4. Never invent Stripe keys, secrets, domains, or email providers. Leave them as config placeholders.
-5. Never add a new NuGet package, external service, or database without asking and naming what it replaces.
-6. Never put business logic in controllers. Controllers validate, call application services, and map to responses.
-7. Every new public method that moves money or stock gets a test in the same slice, not "later."
-8. If my request conflicts with this file, stop and tell me the conflict. Do not silently pick the easier path.
+### 12.2 Process rules
 
-### 12.3 Slice plan — build in this order
+1. **Autonomous loop, no approvals** (`CLAUDE.md`): Rob plans → Marco builds → Rob reviews → fix (at most 3 rounds) → final report → agents AVAILABLE.
+2. One slice per request, in §12.3 order. Every slice starts with a Rob plan; Orders, Inventory, Payments, and 6b get the full plan-mode challenge.
+3. **No agent commits.** Changes stay in the working tree for Nathaniel.
+4. A slice reports PASS only on a real PASS. Otherwise it reports `BLOCKED` with reasons.
 
-| Slice | What | Done when |
+### 12.3 Slice plan
+
+| Slice | Scope | Done when |
 |---|---|---|
-| 0. Foundation | Solution structure (Domain / Application / Infrastructure / Api / Web), DI wiring, Postgres + migrations pipeline, health endpoints, Serilog + correlation ID, CI build passes | `dotnet test` passes, `/health/ready` returns 200 with Postgres up |
-| 1. Identity + Catalog (read) | Users, roles, products, variants, categories, product list/detail/search with Postgres full-text | Public can browse/search/paginate, admin can create a product (no stock yet) |
-| 2. Inventory | Stock table, reservation, release, expiry job, available calculation, check constraint | Test 1 (parallel oversell) passes |
-| 3. Cart | Guest + user cart, merge on login, server validation snapshot | Cart survives login merge without silent drops |
-| 4. Checkout + Payments (the core) | Idempotent checkout, reservation in transaction, Stripe PaymentIntent, signed webhook, Paid transition + inventory commit, outbox | Tests 2, 3, 4, 5, 8 pass |
-| 5. Orders + Fulfillment | Order history, status timeline, admin ship, tracking, status machine enforcement | Illegal transition rejected in domain test + API test |
-| 6. Notifications + Returns/Refunds | Outbox publisher, confirmation/shipped emails, SignalR order updates, return request + admin refund flow | Tests 9, 10 pass, no duplicate email on retry |
-| 7. Hardening | Rate limiting, admin audit log, caching per Section 10.2, performance pass on slow queries, production deploy checklist | Section 14 checklist is green, deploy to DigitalOcean staging works end-to-end |
+| 0 Foundation | Solution + Expo scaffold (screens stubbed), DI, Postgres + migrations, health, Serilog + correlation ID, CI | `dotnet test` green; `/health/ready` 200 with Postgres up; web export builds |
+| 1 Identity + Catalog | Auth, roles, products, variants, categories, list/detail/search (full-text), admin create. **Split into 1a → 1b** (below) | Public browse/search/paginate; admin creates a product (no stock) |
+| 1a Catalog browse | Catalog module (products, variants, categories, image metadata), `GET /products`, `/products/{slug}`, `/categories`, Postgres full-text search, stock indicator via `IInventoryReader` stub (`Unknown`), Development-only idempotent seeder; Expo Home (search + categories), `/products`, `/products/[slug]` on TanStack Query | Public browse/search/filter/sort/paginate end to end; inactive invisible by direct link; F2 (correlation ID + ProblemDetails part) |
+| 1b Identity + admin create | Auth (register/login/refresh rotation/logout/reset), roles, admin product create/edit/publish, admin preview, bearer in `api-client` | Admin creates a product (no stock); F2 (bearer part), F7 |
+| 2 Inventory | Stock, reservation, release, expiry worker, check constraint, audited adjust | Tests 1, 10 |
+| 3 Cart | User cart, guest merge, validation snapshot | Merge never drops silently; merge result shown |
+| 4 Checkout + Payments | Idempotent checkout, Stripe intent, signed webhook, Paid + commit, outbox insert, late-success refund | Tests 2, 3, 4, 5, 6, 8, 19 |
+| 5 Orders + Fulfillment | History, timeline, process/ship/deliver, tracking, status machine, overrides | Test 7; illegal transitions rejected in domain and API |
+| 6 Notifications + Returns | Outbox consumers (email, SignalR), return requests, admin refunds | Test 9; no duplicate email on retry |
+| 6b Eventual consistency | Dashboard + search projectors, checkpoints, gaps, replay, fulfillment saga | Tests 11–18 |
+| 7 Hardening | Rate limits, caching (§10.2), slow-query pass, staging deploy | §14 green; staging end-to-end works |
 
-Do not skip to Slice 4. The slices before it are what make Slice 4 testable.
+**Do not skip to Slice 4.** Slices 0–3 make it testable.
 
-### 12.4 Verbatim starter prompts (copy, do not paraphrase away the constraints)
-
-**First prompt:**
-> Read ecommerce-architecture.md in this repo. Build Slice 0 only: solution structure, DI, Postgres migrations pipeline, health endpoints, Serilog with correlation ID. Do not build catalog, cart, or checkout yet. Return the files changed and the test command result.
-
-**Plan-mode challenge for Slice 4 (before any checkout code):**
-> In plan mode only, no code: challenge the checkout design in ecommerce-architecture.md Section 8.2. Tell me where a double order can still happen, where stock can still be oversold, where a payment can succeed without an order, and where an email can be lost or duplicated. Return risks only, do not change the stack, schema, or slice order.
-
-**Failing test first:**
-> Write the failing test for 10 parallel checkouts for 1 unit in stock (Section 11, test 1) using Testcontainers Postgres. Do not write the implementation yet. Show me the test failing for the right reason.
-
-### 12.5 Review checklist — use it on every Claude diff
-
-- [ ] Does this change respect module boundaries (no cross-module DbSet)?
-- [ ] Does it add a test for money/stock movement?
-- [ ] Does it use `IClock`, not `DateTime.UtcNow`, in domain/application code?
-- [ ] Are prices/totals calculated server-side, never trusted from the client?
-- [ ] Is there an idempotency or outbox consideration if this moves state externally?
-- [ ] Can I explain this diff in an interview without reading Claude's explanation back?
-
-If you cannot explain it, do not merge it. Ask Claude to explain it in plain language, then rewrite the part you do not own until you can.
+**Slice 1 split (Rob, 2026-11-03, owner-requested):** 1a → 1b → 2; 1b must PASS before Slice 2. Browse is entirely public (§9), so it has no auth dependency; auth (rotation, reuse detection, lockout) deserves its own review. **Deferred within v1:** Home "best sellers" and detail "related products" (app context §4.1.1, §4.2.4) need Paid order data — scheduled by Rob in the Slice 5 plan. Plan: `slice-plans/slice-1a-plan.md`.
 
 ---
 
-## 13. Tradeoffs — the decisions you should be able to defend
+## 13. Tradeoffs
 
-### 13.0 Overall reasoning
+### 13.0 Constraints that drive every choice
 
-This stack was not chosen to be fashionable. It was chosen for one builder, Nathaniel, with three constraints that decide almost everything else:
+1. **Staff path is .NET.** Depth in one stack beats breadth in three.
+2. **Solo, Windows, no Mac.** Anything that needs three frontends, a Mac, or a team to operate fails on day one.
+3. **Correctness under failure over feature count.** Each choice is judged first on whether it makes the invariants easier to prove.
 
-1. **His staff path is .NET.** He is a Sr. Software Developer at Henderson on React/TypeScript and .NET/C#, and his staff goal is in .NET, not in learning a second backend language at the same time as system design. Depth in one stack beats shallow breadth in three.
-2. **He is solo, on Windows 11, with no Mac.** Any stack that needs three frontends, a Mac for iOS, or a team to run microservices fails on day one, no matter how good it looks on paper.
-3. **The learning point is correctness under failure, not feature count.** Checkout, inventory, payments, and notifications must survive concurrency, retries, and crashes. Every stack choice below is judged first on whether it makes those invariants easier or harder to prove, and only second on speed or novelty.
+If a constraint changes, re-argue the stack. The interview form: *"I chose X because of these constraints, gave up Y, and would switch to Z when this metric changes."*
 
-If any of those three constraints changes, the stack should be re-argued, not blindly kept. That is the interview-ready way to defend it: "I chose X because of these constraints, I gave up Y, and I would change to Z when this metric or constraint changes."
+### 13.1 Stack
 
-### 13.1 Stack reasoning and tradeoffs — technology by technology
+| Choice | Why | Gave up | Rejected | Revisit when |
+|---|---|---|---|---|
+| **.NET 10 / ASP.NET Core** | Day-job and interview stack; strong typing; built-in DI, middleware, Identity | One language end to end; npm breadth; fewer copy-paste starters (more deliberate code) | Node (splits depth), Django, Rust, Spring (language friction over design) | Targeting a non-.NET staff role |
+| **EF Core** | Migrations versioned with code; transactions fit checkout; Postgres locking and constraints supported | SQL visibility; N+1 risk — hence explicit `FOR UPDATE`, slow-query pass, real-Postgres tests | Dapper alone (hand-written everything, more ways to get transactions wrong) | A hot path needs hand-tuned SQL (use raw SQL there, keep EF elsewhere) |
+| **PostgreSQL 17** | ACID across reservation, order, and outbox; row locks; check and unique constraints; full-text — no extra service | Horizontal write scale; dialect differs from SQL Server | MongoDB (weaker integrity for money and stock), SQL Server (valid, but managed Postgres is simpler and cheaper on DO) | Load exceeds primary + replicas, or a workload needs a dedicated engine beside it |
+| **Redis 7, cache only** | Read-heavy catalog; rate-limit counters; future SignalR backplane | Simplicity; invalidation bugs; every read needs a Postgres fallback | Redis as lock or stock truth (a flush = oversell); in-memory cache (breaks with replicas) | — |
+| **Expo one codebase** | Only credible way for one Windows developer to ship web + Android + iOS; stays in React; EAS removes the Mac | Web SEO vs Next.js; heavier web bundle; DOM-only libraries unavailable; SDK upgrades move together | Three native codebases (scope), Capacitor (thin wrapper, store-rejection risk), Flutter (new language), Next.js + native (two codebases) | SEO measured as the bottleneck → add a Next.js storefront on the same API |
+| **TypeScript, Metro, Expo Router** | One typed API client for all platforms; file-based routing | Vite's faster web loop and plugins | — | — |
+| **TanStack Query + Zustand** | Server state with caching and invalidation; tiny UI state without Redux | Redux devtools; needs query-key discipline | Redux (boilerplate), bare `useState` (collapses at scale) | — |
+| **Identity + JWT + rotating refresh** | Tested hashing, lockout, and roles; short tokens limit leak damage | Session simplicity; revocation is not free; per-platform secure storage | Hand-rolled auth; hosted provider (less learning, extra vendor) | Need for SSO / social login at scale |
+| **Stripe PaymentIntents + webhooks** | Keeps PCI scope small; mature test mode and CLI; event IDs make idempotency testable | Fees, lock-in, webhook latency (honest `PendingPayment` UI), reconciliation work | Own card handling (PCI), PayPal only, cash on delivery (skips the lesson) | Need another method → second `IPaymentGateway` |
+| **`IEmailSender`, Spaces + CDN, SignalR** | Swappable provider; images out of Postgres; .NET-native real-time | Deliverability setup (SPF/DKIM) not automated; SignalR needs a backplane at scale | Images in Postgres, inline email, separate WebSocket service | — |
+| **In-process workers** | One deploy, one log stream, same transaction rules | Independent scaling; shares the API process | Separate worker, broker | Background load measured as the bottleneck → same code, own process |
+| **Serilog + OTel, Testcontainers** | Traceable in minutes; real-Postgres tests catch lock and constraint bugs | Slower tests, needs Docker | In-memory EF (hides exactly these bugs) | — |
+| **Jest + `jest-expo` + RNTL** (owner-approved 2026-11-03) | Expo's official, SDK-pinned runner; mocks native modules; `expo-router/testing-library` renders real routes; same Babel transform as the app | Speed and native ESM of Vitest; a real device or browser | Vitest (no maintained RN/Expo preset), Detox/Maestro and Playwright E2E (device/browser infra a solo Windows dev can't run per PR) | A bug class appears that only a device or browser reproduces → add on-demand E2E against EAS / web export |
+| **DigitalOcean + Docker + Actions** | Managed DB backups and failover; portable image; no deploy on red | AWS/Azure breadth | Azure (more cost and complexity at this scale), raw VPS (ops burden, backup risk) | A needed managed service is missing — Docker + standard Postgres keep the move cheap |
 
-**Backend: .NET 10 / ASP.NET Core / C# — chosen**
-- Reasoning: This is Nathaniel's working stack and his interview stack. Strong typing catches contract errors at compile time, ASP.NET Core is fast and mature for APIs, built-in dependency injection, middleware, and Identity fit this app without extra frameworks, and the .NET hiring market for staff roles is far larger than for a niche backend language. Performance is more than enough for v1 to scaling stages in Section 10.4, and Docker makes a Windows-built API deploy cleanly to Linux.
-- Tradeoff given up: The JavaScript/TypeScript backend ecosystem (a huge npm library set, and one language across frontend and backend) and the startup speed of a batteries-included Python framework. C# also has a smaller pool of copy-paste ecommerce starters than Node, so more code is written deliberately, which is a cost in speed but a benefit for learning.
-- Rejected: Node/Express (would split his depth and lose .NET staff leverage), Python/Django (not his target staff path), Rust (Gabbex's backend is now Rust, but Rust is not his staff goal, has a steeper learning curve for this build, and has a smaller staff .NET-equivalent job market), Java/Spring (similar power, but not his background, so every hour would go to language friction instead of system design).
-- Would change when: He deliberately targets a non-.NET staff role, or a future product needs a specific ecosystem .NET cannot serve well.
+### 13.2 Architecture decisions
 
-**ORM and data access: Entity Framework Core, code-first — chosen**
-- Reasoning: Migrations are versioned with the code, LINQ covers most reads cleanly, transactions and change tracking fit the checkout flow, and the Postgres provider supports the locking and constraints this build depends on. It keeps the domain model as the source of truth, which matches the modular monolith in Section 3.
-- Tradeoff given up: Raw SQL control and visibility. EF can hide expensive queries, cause N+1 reads, and generate SQL that looks fine until load grows. That is why this build requires slow-query review in Slice 7, explicit `FOR UPDATE` locking where it matters, and integration tests on real Postgres instead of trusting in-memory behaviour.
-- Rejected: Dapper alone (faster and more explicit, but every query, migration, and mapping is hand-written, which slows a solo builder and adds places to get transactions wrong), a document database as primary store (see Postgres below).
-
-**Database: PostgreSQL 17 as the system of record — chosen**
-- Reasoning: ACID transactions are the foundation of the whole checkout story. One transaction can reserve stock, create the order, and insert the outbox event, or roll all of it back. Row-level locks (`SELECT ... FOR UPDATE`), check constraints (available can never go negative), unique constraints (idempotency keys, SKUs), and full-text search cover the hard parts without adding another service. Managed Postgres on DigitalOcean gives backups and patching without running a database server by hand.
-- Tradeoff given up: Horizontal write scaling. Postgres scales vertically first, then with read replicas for catalog reads, then with sharding or a different store only when metrics prove it. It is also not SQL Server, which Henderson uses, so dialect details (locking hints, full-text syntax, migration SQL) differ even though the transaction, locking, and constraint concepts transfer directly.
-- Rejected: MongoDB or another document store as primary (flexible schema, but weaker relational integrity for money and stock, no check-constraint equivalent for "available never negative" in the same simple way, and transactions across documents are harder to reason about for a solo builder), SQL Server in this build (a valid choice and closer to Henderson, but managed Postgres on DigitalOcean is simpler and cheaper for a solo learning build, and its full-text and JSON support fit v1 without extra services).
-- Would change when: Read load or write load provably exceeds one primary plus read replicas, or a future product needs a workload Postgres genuinely cannot serve (for example, a dedicated search or analytics engine, added beside Postgres, not instead of it).
-
-**Cache and rate limiting: Redis 7, cache only — chosen**
-- Reasoning: Catalog reads, category lists, and stock indicators are read-heavy and cache well. Redis also gives a clean place for rate-limit counters and, later, a SignalR backplane if the API runs as multiple replicas. It is fast, simple to reason about, and managed, so it adds almost no operations burden.
-- Tradeoff given up: Simplicity of having no second service at all. Cache invalidation is a real bug source (stale product name for 60 seconds is acceptable, stale stock at checkout is not), and every cache read needs a fallback to Postgres when Redis is down.
-- Rejected: Redis as the lock or as the truth for inventory (if Redis is flushed, restarted, or evicted, stock truth would be lost and oversell would follow — that is exactly the failure this build is designed to prevent), in-memory cache only (breaks as soon as there are two API replicas, because each replica would have a different view of the cache).
-- Rule that makes this safe: Checkout never reads stock from cache. It always re-reads Postgres with a lock. Cache is a performance layer, never a truth layer.
-
-**Frontend: Expo + React Native + React Native Web, one codebase — chosen**
-- Reasoning: One TypeScript codebase ships web, Android, and iOS from the same screens, cart and order logic, and API client. That is the only way a solo builder on Windows can credibly ship three platforms without tripling the frontend work. Expo Router gives file-based routing, Metro bundles for all platforms, React Native Web maps RN components to the DOM for web, Android and iOS both build in the cloud with EAS Build, which solves the no-Mac constraint without buying hardware. It also keeps Nathaniel in React, his existing frontend skill, instead of learning Swift, Kotlin, and web separately.
-- Tradeoff given up: Web quality versus a dedicated web stack. A React Native Web storefront is client-rendered, so SEO is weaker than Next.js server rendering, initial web bundle and startup can be heavier than a Vite React app, some web libraries assume DOM APIs and do not work in React Native, and styling is StyleSheet-based rather than the Tailwind web workflow. Expo SDK versioning also locks native dependencies together — upgrading one native module can force an SDK upgrade.
-- Rejected: Separate React web + Swift iOS + Kotlin Android (best per-platform quality, impossible scope for one builder), Capacitor wrap of a React web app (earlier rejected: a web UI wrapped as an app feels like a website, has limited native access, and risks store rejection for a thin wrapper), Flutter/Dart (one codebase too, but a new language and ecosystem, losing React depth for no staff benefit in his .NET/React path), Next.js web + separate native apps (best SEO, but doubles frontend work and reintroduces the three-codebase problem).
-- Would change when: SEO becomes the measured bottleneck for the storefront (then add a Next.js storefront beside the same .NET API, keeping Expo for mobile), or a platform needs native performance or APIs Expo cannot provide cleanly (then add a native module or a native screen, not a rewrite).
-
-**Frontend tooling: TypeScript, Metro, Expo Router — chosen**
-- Reasoning: TypeScript types the API client once and shares it across web, Android, and iOS, catching contract breaks at compile time instead of at checkout. Expo Router keeps navigation declarative and file-based, which is easier to review than hand-wired navigation state.
-- Tradeoff given up: Vite's faster web dev loop and its larger web plugin ecosystem. Metro is the price of one codebase, and web-specific optimisations need extra care.
-
-**Frontend state: TanStack Query + Zustand — chosen**
-- Reasoning: TanStack Query owns server state — caching, invalidation, retries, and loading states — with one source of truth for query keys. Zustand owns only small UI state, mainly the cart UI, so there is no Redux boilerplate for a solo app. Together they keep the rule clear: server state comes from the API, UI state stays local, and checkout re-validates everything server-side.
-- Tradeoff given up: Redux's larger tooling and time-travel debugging, and the simplicity of plain `useState` everywhere (which collapses once cart, auth, and order state interact). TanStack Query also requires discipline: a wrong query key or a missing invalidation creates stale UI bugs that look like backend bugs.
-
-**Auth: ASP.NET Core Identity + JWT + rotating refresh tokens — chosen**
-- Reasoning: Password hashing, lockout, and role handling come built in and tested, instead of hand-rolled auth, which is where solo apps most often get security wrong. Short-lived access tokens limit the damage of a leaked token, rotating refresh tokens (stored hashed, revoked on logout or password change) give a usable mobile and web session without storing a long-lived credential in the frontend.
-- Tradeoff given up: Simplicity of server-side sessions or a hosted auth service. JWT revocation is not free — a revoked token is still valid until it expires unless a denylist or a short lifetime is enforced, which is why access tokens are short-lived here. Mobile secure storage (SecureStore on native, secure cookies or storage on web) also differs per platform and must be handled in the platform boundary, not in shared code that assumes a browser.
-- Rejected: Hand-rolled password hashing and session tables (too easy to get wrong), a hosted auth provider in v1 (less learning about Identity, roles, and token rotation, which are part of the staff story, and an extra vendor for a solo build).
-
-**Payments: Stripe PaymentIntents + signed webhooks — chosen**
-- Reasoning: Stripe is the industry default for this shape of problem, has a mature test mode, handles card data so the app never touches raw card numbers (which keeps PCI scope small), retries webhooks automatically, and gives a clean idempotency story through PaymentIntent IDs and event IDs. That makes the hard parts — double charge, duplicate webhook, crash before webhook — testable with the Stripe CLI in development.
-- Tradeoff given up: Vendor lock-in and fees, webhook latency (confirmation is not instant, the UI must handle PendingPayment honestly), and the need for a reconciliation path when a webhook is delayed or missed. Stripe's API and dashboard also become a dependency for refunds and disputes.
-- Rejected: Building own card handling (PCI compliance alone rules this out for a solo builder), PayPal only (lower checkout conversion for many stores, and its webhook and idempotency story is no simpler), cash on delivery only (avoids the entire payment learning point, which is the core of Slice 4).
-- Would change when: A future product needs a different payment method mix (then add a second `IPaymentGateway` implementation behind the existing interface, not a checkout rewrite — that is what the interface in Section 3.2 is for).
-
-**Email, storage, and real-time: provider-agnostic email, Spaces + CDN, SignalR — chosen**
-- Reasoning: Email behind `IEmailSender` means the provider (SMTP, Resend, or SendGrid) can be swapped at deploy time without touching order code. Object storage plus CDN keeps large product images out of Postgres and makes web and mobile image delivery fast. SignalR is .NET-native, fits the API without a new language or service, and is enough for order status updates to a customer who has an order open.
-- Tradeoff given up: Email deliverability expertise (a new provider still needs domain, SPF/DKIM, and bounce handling, which this architecture does not automate), and SignalR scale (at multi-replica scale it needs a Redis backplane, and connection management for mobile apps that go to background is fiddly). SignalR is also explicitly not required for checkout correctness — if it is down, orders still complete and the customer sees the correct status on refresh.
-- Rejected: Storing images in Postgres (simple at first, painful at scale, and bloats backups), sending email inline in the controller (see outbox in Section 8.4 — it creates lost or duplicated confirmations), a separate WebSocket service in v1 (extra deployment for a feature that is a convenience, not a correctness requirement).
-
-**Background work: hosted worker inside the monolith — chosen**
-- Reasoning: Reservation expiry, outbox publishing, and email retries live in the same deployment as the API. One process to deploy, one log stream, no queue service to run, and the same code and database transaction rules apply. For v1 load this is more than enough.
-- Tradeoff given up: Independent scaling of background work. If outbox publishing or expiry ever becomes the bottleneck, it cannot be scaled without scaling the whole API. Long or stuck background jobs also share the API process in v1.
-- Would change when: Background load is measured as the bottleneck (then extract the same worker code into its own process with the same entry point, as noted in Section 10.4, without redesigning the outbox).
-
-**Observability and testing: Serilog + OpenTelemetry, xUnit + Testcontainers — chosen**
-- Reasoning: Correlation IDs on every request and order IDs on every order log mean a production failure can be traced in minutes, not by guessing. Structured logging avoids string-concatenation logs that cannot be searched. Testcontainers runs integration tests against real Postgres, which is the only way to catch locking, transaction, and constraint bugs — in-memory EF would hide exactly the bugs this build exists to teach.
-- Tradeoff given up: Test speed and setup complexity. Testcontainers tests are slower than unit tests and need Docker running, which is why the pyramid in Section 11 keeps fast domain unit tests for the status machine and money math, and reserves integration tests for the flows that actually need a real database.
-
-**Hosting and delivery: DigitalOcean App Platform + Managed Postgres + Managed Redis + Spaces, Docker, GitHub Actions — chosen**
-- Reasoning: Managed databases remove backup, patching, and failover work a solo builder should not be doing by hand. App Platform removes server provisioning while Docker keeps the API portable — the same image can move to another host without a rewrite. GitHub Actions gives build, test, migration check, and Docker build on every push, with no deploy on red, which is the cheapest form of production discipline.
-- Tradeoff given up: The breadth of AWS or Azure (more regions, more managed services, more knobs) and the raw cheapness of an unmanaged VPS (which would trade a lower bill for hands-on server operations, security patching, and backup responsibility). DigitalOcean is also a smaller ecosystem than AWS/Azure, so a future move to a service DigitalOcean does not offer would need a different provider or a self-hosted piece.
-- Rejected: Azure in this build (a strong choice and closer to some enterprise work, but more complex and more expensive to run well for a solo learning build, and its advantage only appears at a scale this app does not have yet), a raw VPS with manual Postgres and Redis (cheapest on paper, highest operations burden, and a single missed backup or patch can lose the very data the invariants protect).
-- Portability note: Because the API is Dockerised and Postgres is standard Postgres, moving hosts later is a migration exercise, not a rewrite. That is deliberate — it keeps the hosting choice reversible.
-
-### 13.2 Architecture decisions (existing table, kept)
-
-| Decision | Chose | Gave up | Why it is the right v1 call |
+| Decision | Chose | Gave up | Why |
 |---|---|---|---|
-| Modular monolith vs microservices | Monolith, hard modules | Independent deploy/scale per service | One transaction for checkout + reservation + order. Distributed transactions would make the core invariant harder, not easier, at this scale |
-| Postgres lock vs Redis-only lock for inventory | Postgres `FOR UPDATE` + check constraint | Slightly lower raw throughput than Redis | Postgres is the truth. Redis loss must never cause oversell |
-| Reservation (15 min) vs immediate decrement | Reservation, commit on Paid | Stock held briefly by abandoned carts | Prevents paid-order stock loss and abandoned-cart stock loss from being the same bug |
-| Webhook as truth vs frontend success as truth | Webhook | Slight delay in UI confirmation | Frontend can be faked, refreshed, or closed. Signed webhook cannot |
-| Postgres full-text vs dedicated search engine | Postgres full-text in v1 | Advanced ranking, faceting at huge scale | Search is not the bottleneck at launch. Add a search service when metrics prove it |
-| React web only vs Expo one-codebase in this file | Expo one-codebase | Next.js SEO and web-only optimisation | One codebase ships web, Android, and iOS from the same screens, cart/order logic, and API client. API is unchanged, so the backend invariants stay the focus. |
-| Manual fulfillment vs warehouse automation | Manual admin fulfillment in v1 | Automatic picking/packing | Status machine + audit trail are the learning point. Automation plugs into the same transitions later |
+| Monolith vs microservices | Modular monolith | Independent deploys | Checkout + reservation + order in one transaction. Distributed transactions make the core invariant harder |
+| Inventory lock | Postgres `FOR UPDATE` + check constraint | Some raw throughput | Truth stays in Postgres; Redis loss can't oversell |
+| Reserve vs decrement at checkout | 15-min reservation, commit on Paid | Stock held briefly by abandoned checkouts | Keeps "paid but no stock" and "stock lost to abandoned carts" separate problems |
+| Payment truth | Signed webhook | Slower UI confirmation | The client can be faked, refreshed, or closed |
+| Search | Postgres full-text | Advanced ranking and facets | Not the bottleneck at launch |
+| Read models | Outbox + in-process projectors | Broker features (fan-out, retention tooling) | Same transaction guarantees; no new infrastructure in v1 |
+| Fulfillment | Manual admin transitions | Automation | State machine + audit are the lesson; automation plugs into the same transitions |
+| Readiness vs Redis | Postgres + migrations gate Ready; Redis only degrades | Early warning that cache is down via readiness | A Redis outage must not pull traffic when cache-aside still serves correct data |
+| Backend project layout (owner decision, Nathaniel, 2026-11-03) | **Module + Contracts**: per module `Ecommerce.<M>` (internal implementation with Domain/Application/Infrastructure/Api folders) + `Ecommerce.<M>.Contracts`; shared `Ecommerce.SharedKernel`, `Ecommerce.Persistence`; host `Ecommerce.Api`. Replaces the shared layer projects (`Ecommerce.Domain/Application/Infrastructure`) organized by module folder | Fewer projects; layer purity enforced by assembly references (Domain could not reference EF at all) — now layers are folders checked by architecture tests (signatures + source scan) | Module boundaries become compiler-enforced: a module cannot reference another module's implementation, and `internal` types make cross-module entity or service use impossible to compile. Still one deployable modular monolith; stack lock unchanged. **Revisit when** project count slows the build measurably, or a module needs its own process (§10.4) |
+| DbContext layout (re-argued for Module + Contracts) | One `EcommerceDbContext` in `Ecommerce.Persistence`, one migration stream and history table, `public` schema; modules plug in internal `IModuleDbModel` configurations | Per-module DbContexts, schemas, and migration histories (fully independent persistence per module) | §8.2 needs inventory + order + payment + outbox in **one** transaction; one scoped context makes that the default instead of a cross-context shared-connection protocol. Moving tables to per-module schemas breaks rule 18 (the previous image reads `public.*`). Rule 8 is compiler-enforced by internal entity types. **Revisit when** a module is extracted (§3.1.4) |
+| Migrations location | Migrations + snapshot in `Ecommerce.Persistence`; `IDesignTimeDbContextFactory` in the host (`Ecommerce.Api/Composition`) built from the same `AddEcommerceModules` composition as runtime; `Microsoft.EntityFrameworkCore.Design` referenced by the host with `PrivateAssets=all` (existing package, version already pinned — not new) | `Design` assemblies ship in the API image; a separate `Ecommerce.Migrations` project would avoid that | The design-time model must include every module, and only the host references every module. One composition function for runtime and design time means the drift check cannot miss a module. Migrations stay in the context's own assembly, so no `MigrationsAssembly` setting can silently find zero migrations |
+| Module controllers | `internal` controllers in `Ecommerce.<M>.Api`, discovered by a host `ModuleControllerFeatureProvider` over the module assemblies | MVC's default public-only discovery | Public controllers would force their services, criteria, and result types public, leaking the module's implementation |
+| Clock in the host | `SystemClock` lives in `Ecommerce.Api/Time` and is registered by the host; everything in `SharedKernel`, `Persistence`, and `Modules/` reads time only through `IClock` | — | Rule 9, widened: the architecture test scans all of them, so the only system-clock read is in the composition root |
+| Frontend exports and imports | Named exports + `@/` alias everywhere except `app/` routes (default, router-mandated) | Shorter `import X from` lines; relative paths with zero config | Named exports keep one name across files (grep, rename, auto-import); the alias survives moving files between features. Both use built-in Expo/TypeScript support — no new package |
+| Frontend test runner | Jest via `jest-expo` + RNTL + `expo-router/testing-library`, dev dependencies only (§2 amendment, owner-approved) | Zero-dependency frontend; Vitest speed | The frontend had no runner, so F4–F6 (client side of rules 1, 2, 5) could not be proven. Replaces nothing; never shipped in the bundle |
+| Test enforcement | CI fails on zero discovered tests (backend `TreatNoTestsAsError`, Jest default) and on focused tests; coverage uploaded as an artifact with **no % gate** | A coverage number to point at | Quality bar §5: coverage proves nothing about oversell. A silently empty or focused suite is the real hole |
+| Route test location | Top-level `tests/` (`tests/routes.test.tsx`, `tests/app/<route path>.test.tsx`) | Strict co-location for routes | Expo Router turns every file in `app/` into a route, so route tests can't sit beside their file |
+| Lint / format in CI | Not gated (no ESLint, no `dotnet format --verify-no-changes`) | Automatic style consistency | Quality bar §3: style never blocks. `tsc --strict` and `dotnet build` are the static gates. Revisit at Slice 7 with the warnings-as-errors switch |
+| Local Postgres 17 | Docker only (Testcontainers + Compose on 127.0.0.1:5434, trust auth) | Native-DB speed | Stack lock is PG17; CI and local use the same engine; no secret in local config |
+| Stock indicator before Inventory exists (1a) | Catalog calls `IInventoryReader` (Inventory's contract) once per request; Slice 1a registers a stub returning `Unknown`, and the UI shows no badge for `Unknown`. Slice 2 swaps the registration; Slice 7 caches it 10s | A visible indicator in 1a | Rule 8 — no cross-module DbSet/join; never claim "In stock" without data; Inventory classifies (threshold), Catalog never sees quantities |
+| Search source in 1a | Generated weighted `tsvector` + GIN on the `products` table (system of record) | Read-model decoupling until 6b | Strongly consistent and correct now; the 6b search projector replaces the source behind `ICatalogReadStore` with the same HTTP contract |
+| Money on the wire | Decimal **string** + currency (`{ amount: "24.50", currency }`) | Arithmetic-friendly JSON numbers | Rule 1 — JS parses JSON numbers as binary floats; the client only formats |
+| Dev data and images | Development-only, config-gated, idempotent seeder via domain + EF (startup fails if enabled outside Development); image URL = config `Catalog:Images:BaseUrl` + key, `null` while the placeholder is empty | Realistic images in local dev | "No direct SQL" and §2 open decisions — no invented bucket/CDN domain |
+| CORS | `Cors:AllowedOrigins` config only (`http://localhost:8081` in Development; empty in committed prod config), no credentials in 1a | Zero-config cross-origin | §10.1 — configured origins only; production origin is an open decision |
+| Expo SDK patch alignment (Rob, 1a review) | CI keeps `npx expo install --check` as a blocking gate; when Expo publishes new SDK patches, the next slice aligns them with `npx expo install --fix` and re-pins exact. That is not a new package (same package, SDK-recommended patch) | A hermetic CI: the check reads Expo's live recommended versions, so it can turn red with no code change | Native-module/SDK mismatch is invisible in Jest and web export but breaks EAS builds and Expo Go; a red gate is the cheap warning. Any slice whose diff fails it is blocked |
+| Catalog list query shape (1a) | One EF statement: page subquery (`LIMIT/OFFSET`, unique tie-breaker) joined to `ROW_NUMBER() OVER (PARTITION BY product_id)` derived tables for cheapest active variant and first image; count is a separate statement (2 round-trips) | Per-page-only work: the window may scan all active variants/images before the join | Correct and N+1-free at launch scale. **Slice 7 slow-query item:** measure; if needed, a `LATERAL ... LIMIT 1` or a denormalized "from price" column. Count and page are separate snapshots (READ COMMITTED), so a publish between them can skew `totalCount` by one — acceptable for display |
 
 ---
 
-## 14. Production readiness checklist (v1 launch gate)
+## 14. Production readiness (release gate)
 
-- [ ] Tests 1–10 in Section 11.2 pass, including parallel oversell and double webhook
-- [ ] Stripe test-mode end-to-end works: checkout → webhook → Paid → confirmation email → shipment → Delivered
-- [ ] Reservation expiry job runs and releases stock in staging (prove it with a short TTL in staging, not just in a unit test)
-- [ ] Outbox dead-letter alert is wired (even if the alert is just a log + admin view in v1)
-- [ ] No secrets in git (search the repo for `sk_live`, `sk_test`, webhook secrets before deploy)
-- [ ] Migrations are backward-compatible and have been applied to a staging Postgres that mirrors prod shape
-- [ ] Rate limiting on login/checkout/webhook is on, and the webhook endpoint still accepts Stripe retries
-- [ ] Admin audit log records stock adjusts, refunds, and status overrides
-- [ ] Rollback tested: previous Docker image redeploys cleanly against the current database
-- [ ] README in the repo explains how to run locally (Postgres via Docker, Stripe CLI for webhook testing with `stripe listen`)
-
----
-
-## 15. What to do next (in order)
-
-1. Review this file and correct any stack or scope line you disagree with — especially Section 13.1, the stack reasoning and tradeoffs. Do not start coding from a file you have not approved.
-2. Fill in the blanks in Section 2 (Stripe test keys, domain, email provider) in your local config only, never in this file.
-3. Give this file to Claude Code with the Slice 0 prompt in Section 12.4.
-4. Build Slice 1–4 slowly. Slice 4 is the interview story. If Slice 4 feels easy, you have missed an invariant — go back to Section 8.2 and the failing tests.
+- [ ] Tests 1–19 (§11.2) pass on real Postgres; frontend tests F1–F8 (§11.3) pass.
+- [ ] Stripe test mode end to end: checkout → webhook → Paid → email → shipped → delivered.
+- [ ] Reservation expiry proven in staging with a short TTL.
+- [ ] Dead-letter and projector-lag alerts wired (log + admin view at minimum).
+- [ ] Secret scan clean on the release branch (`sk_live`, `sk_test`, `whsec_`, private keys).
+- [ ] Migrations backward-compatible and applied to a staging DB that mirrors prod.
+- [ ] Rate limits on login, checkout, and webhook; Stripe retries still accepted.
+- [ ] Audit log covers stock adjusts, refunds, and overrides.
+- [ ] Rollback tested: previous image runs against the current schema.
+- [ ] README covers local run (Postgres via Docker, `stripe listen`) and tests.
 
 ---
 
-*File status: Architecture lock for the Claude deep build, updated 2026-11-02. Backend: .NET 10 + Postgres modular monolith. Frontend for this build: Expo one codebase (web + Android + iOS, store-ready, not submitted). Section 13.1 added 2026-11-02 with stack reasoning and tradeoffs per technology.*
+## 15. Next steps
+
+1. Nathaniel reads this file — especially §7.3, §8.2, §8.8, and §13 — and edits anything he disagrees with.
+2. Fill the §2 open decisions in local config or a secret manager only, never in docs.
+3. Ask for Slice 0. The loop in `CLAUDE.md` runs it end to end and returns a final report.
+4. Build Slices 1–4 slowly. If Slice 4 feels easy, an invariant is missing — go back to §8.2.
+
+*Updated 2026-11-03 · .NET 10 + Postgres modular monolith · Module + Contracts backend projects (§6.2, owner decision) · Expo one-codebase frontend · §8.8 eventual consistency · §11.3–11.4 frontend tests and CI test enforcement (owner-approved §2 amendment).*

@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <UserSecretsId>4ea49380-7ca2-49c4-a691-90292a2b336d</UserSecretsId>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Ecommerce.SharedKernel\Ecommerce.SharedKernel.csproj" />
+    <ProjectReference Include="..\Ecommerce.Persistence\Ecommerce.Persistence.csproj" />
+    <ProjectReference Include="..\Modules\Catalog\Ecommerce.Catalog\Ecommerce.Catalog.csproj" />
+    <ProjectReference Include="..\Modules\Inventory\Ecommerce.Inventory\Ecommerce.Inventory.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Serilog.AspNetCore" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="all" />
+  </ItemGroup>
+</Project>
