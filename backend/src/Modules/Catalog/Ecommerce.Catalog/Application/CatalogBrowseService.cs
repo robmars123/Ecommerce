@@ -10,20 +10,20 @@ internal sealed class CatalogBrowseService(
 {
     public async Task<ProductListPage> SearchAsync(ProductSearchCriteria criteria, CancellationToken ct)
     {
-        var rows = await store.SearchAsync(criteria, ct);
+        ProductPageRows rows = await store.SearchAsync(criteria, ct);
 
-        var allIds = rows.Items.SelectMany(r => r.ActiveVariantIds).Distinct().ToList();
+        List<Guid> allIds = rows.Items.SelectMany(r => r.ActiveVariantIds).Distinct().ToList();
         IReadOnlyDictionary<Guid, StockStatus> statuses = allIds.Count == 0
             ? new Dictionary<Guid, StockStatus>()
             : await inventory.GetStockStatusesAsync(allIds, ct);
 
-        var items = rows.Items.Select(row => new ProductListItem(
+        List<ProductListItem> items = rows.Items.Select(row => new ProductListItem(
             row.Id, row.Slug, row.Name, row.Category, row.Price, row.CompareAtPrice, row.Currency,
             row.PrimaryImageKey is null ? null : new ImageView(images.Resolve(row.PrimaryImageKey), row.PrimaryImageAlt ?? ""),
             StockStatusRollup.Rollup(row.ActiveVariantIds.Select(id => statuses.GetValueOrDefault(id, StockStatus.Unknown)))))
             .ToList();
 
-        var totalPages = (int)Math.Ceiling(rows.TotalCount / (double)criteria.PageSize);
+        int totalPages = (int)Math.Ceiling(rows.TotalCount / (double)criteria.PageSize);
         return new ProductListPage(items, criteria.Page, criteria.PageSize, rows.TotalCount, totalPages);
     }
 
@@ -34,13 +34,13 @@ internal sealed class CatalogBrowseService(
             return null;
         }
 
-        var row = await store.GetVisibleBySlugAsync(slug, ct);
+        ProductDetailRow? row = await store.GetVisibleBySlugAsync(slug, ct);
         if (row is null)
         {
             return null;
         }
 
-        var statuses = await inventory.GetStockStatusesAsync(row.Variants.Select(v => v.Id).ToList(), ct);
+        IReadOnlyDictionary<Guid, StockStatus> statuses = await inventory.GetStockStatusesAsync(row.Variants.Select(v => v.Id).ToList(), ct);
         return new ProductDetail(
             row.Id, row.Slug, row.Name, row.Description, row.Category,
             row.Images.Select(i => new ImageView(images.Resolve(i.StorageKey), i.AltText)).ToList(),

@@ -1,95 +1,109 @@
 # CLAUDE.md
 
-Single-store ecommerce app (web, Android, iOS) built to production standards to practice staff-level system design. **Depth over breadth:** checkout, inventory, payments, and notifications must stay correct under concurrency, retries, and crashes.
+Single-store ecommerce app (web, Android, iOS). **Depth over breadth:** checkout, inventory, payments and notifications stay correct under concurrency, retries and crashes. **Minimal code:** the smallest change that meets the docs; nothing speculative or unplanned.
 
-## Read first, in order
+**Truth:** architecture (`docs/ecommerce-architecture.md` → `docs/architecture/`) for stack, invariants and boundaries · `docs/ecommerce-app-context.md` for scope · `docs/quality-bar.md` for done (Nathaniel's; no agent edits it). Never code from a prompt alone or an unread section.
 
-1. `docs/ecommerce-architecture.md` — stack lock (§2), hard rules (§3.4), data model and state machines (§7), checkout (§8.2), eventual consistency (§8.8), API (§9), required tests (§11.2), slice order (§12.3).
-2. `docs/ecommerce-app-context.md` — v1 scope, roles, workflows, screens, out of scope.
-3. `docs/quality-bar.md` — the gate every slice must pass.
+## Scope: read little, read once
 
-Never code from a prompt alone, or from a doc you haven't read.
+| Task | Read | Search only in |
+|---|---|---|
+| Slice | Plan `Read:` line + plan + `git diff --stat` | The plan's files |
+| Backend | arch §2, §3.4, §6 + cited sections | `backend/src/Modules/<M>`, `backend/tests/Ecommerce.<M>.Tests` |
+| Frontend | arch §5 + cited sections | `frontend/apps/store/features/<f>`, `lib/` |
+| Docs | Index → those files; `grep -n "^### N.N"` + `offset`/`limit` | That file |
+| Decision | `grep -n -i "<term>"` on `13.2-decision-log.md` | — |
 
-## Stack (locked — details in architecture §2)
+- **Banned:**
+  - repo-wide globs or greps; all of `docs/` or the whole decision log;
+  - `bin/`, `obj/`, `node_modules/`, `dist/`, `artifacts/`, `.expo/`;
+  - lock files, migration `*.Designer.cs` and snapshots, `slice-plans/archive/` — unless the task or plan is about them.
+- **Widen** only with a one-line reason · **cap output** (`head`, `head_limit`, `offset`/`limit`) · **read each file once**, no re-read after your own edit.
+- **Caps:** plan ≤ 20 KB · review round ≤ 10 KB · Marco report ≤ 6 KB. Cite sections (`arch §8.2`), never copy. Quality bar: Marco §1, §2, §4 · Rob §1, §3, §4.
 
-.NET 10 / ASP.NET Core / EF Core / PostgreSQL 17 modular monolith · Redis 7 (cache only) · Stripe PaymentIntents + signed webhooks (test mode) · Expo + React Native + RN Web, one codebase, EAS cloud builds — no Android Studio, Xcode, Capacitor, committed `android/`/`ios/`, or separate React web app.
+## Guardrails
 
-## Team
+**Stack locked (arch §2):** .NET 10 modular monolith · EF Core · PostgreSQL 17 · Redis 7 (cache only) · Stripe PaymentIntents + signed webhooks · Expo + RN Web, one codebase · EAS cloud builds. No Android Studio, Xcode, Capacitor, committed `android/`/`ios/`, separate React web app or Kubernetes.
 
-- **Nathaniel** — owner. Reads the final report and the code review, and commits when ready. **Not an approval step.**
-- **Rob** (`~/.claude/agents/rob.md`) — architect. Plans and reviews. Writes no implementation code.
-- **Marco** (`~/.claude/agents/marco.md`) — developer. Builds and fixes.
+**Hard rules** (all 18: arch §3.4):
+- **Money:** the server calculates every price and total.
+- **Stock:** lock rows in variant-ID order, reserve in one transaction, commit only on Paid.
+- **Payment:** the signed webhook is the only proof; dedupe by event ID.
+- **Side effects:** via the outbox, in the same transaction. No external call inside a DB transaction.
+- **Code:** thin controllers · no cross-module `DbSet` or join · `IClock`, not `DateTime.UtcNow`.
+- **Boundaries (§6.2):** a module references only SharedKernel, Persistence and other modules' `*.Contracts`. Implementation types are `internal`; the only public type is `<M>Module`. `ArchitectureTests` enforce it.
 
-## Running a slice — fully autonomous, no approvals
+**C# style:** no `var`, ever; explicit types (build error IDE0008 + `verify.sh hygiene`; use named records, not anonymous types).
 
-When asked to build Slice [N], the main session orchestrates the whole thing without stopping to ask:
+**Never (any agent, any session):**
+- **Git writes:** no `commit`, `push`, `merge`, `rebase`, `reset`, `stash`, `checkout`/`switch`, `restore`, `clean` or branch. Read-only commands only; Nathaniel commits.
+- **Deploy** anywhere, or touch production data or secrets.
+- **Secrets:** none in code, config, logs, docs or chat; never invent Stripe keys, domains, email providers or buckets (use placeholders).
+- **Packages and services:** only if Rob's plan names each one, why, and what it replaces.
+- **Data:** no dropping tables or columns, no deleting databases or volumes (no `down -v`), no direct-SQL edits.
+- **Tests:** never weaken, skip or delete one to get a PASS.
+- **Processes:** never kill one you didn't start. The owner uses :5080, :8081, :5081 and :8082.
+- **Protected files:** `docs/quality-bar.md`, `.github/workflows/`, `.claude/` — only on Nathaniel's written request.
 
-1. **Plan** — run `rob`: plan Slice [N] and list risks, gates, and required tests.
-2. **Build** — run `marco` with Rob's plan: implement it, run the commands, and complete the quality-bar §2 self-check.
-3. **Review** — run `rob` on the diff (`git diff` + untracked files) against quality-bar §3.
-4. **Fix loop** — on BLOCKED, or on any open bug, run `marco` with Rob's blocking items, then repeat step 3. **Maximum 3 fix rounds.**
-5. **Report** — give Nathaniel the final report (below). Set both agents AVAILABLE in `AGENT_STATUS.md`.
+## TDD (arch §11)
 
-One slice per request, in slice order. Never start the next slice on your own.
+- **Hard invariants** (test-first lists in §11.2/§11.3): red → green → refactor; quote the red output in the report.
+- **Same slice:** every money or stock movement, state transition and auth rule is tested in the slice that adds it.
+- **New endpoint:** integration tests for the happy path, 401/403, and 400.
+- **Frontend:** Jest for logic and screens.
+- **Numbered tests:** §11.2 and F tests belong to the slice whose §12.3 row names them. No PASS without them.
+- **Mutation check:** for each security or money test, break the guard (lock, ownership, dedupe), see red, restore it, report it.
+- **Changed or deleted tests** are listed and reviewed as a weakened invariant.
+- **Coverage:** collected, no percentage gate (§11.4).
 
-**Honesty rule:** report `PASS` and `Bugs open: None` only when Rob's last verdict is PASS, every §4 command succeeded, and no bug is open. If 3 rounds can't reach that, report `BLOCKED` with the reasons — never claim a pass.
+## Running a slice
 
-**Decisions:** agents don't wait for approval. Rob decides within the docs and lists every decision in the report. Anything that would break the stack lock (architecture §2) or a hard rule (§3.4) is not decided — the slice ends `BLOCKED` with the reason.
+**Team:** Nathaniel (owner, commits; approves only in Learning mode) · Rob (`.claude/agents/rob.md`: plans, reviews, no code) · Marco (`.claude/agents/marco.md`: builds, fixes). An agent missing from `/agents` → stop and say so; never role-play one.
 
-### Final report
+**Autonomous (default)** — for "Slice [N]", don't ask:
+1. Rob → `slice-plans/slice-N-plan.md`.
+2. Marco builds, runs the full `verify.sh` → `slice-N-marco-report.md`.
+3. Rob reviews `git diff` + untracked against quality-bar §3, re-runs `verify.sh` → `slice-N-rob-review.md`.
+4. On BLOCKED or an open bug: resume the same agents with only the blocking items. **Max 3 rounds.**
+5. Final report (below); both agents AVAILABLE in `AGENT_STATUS.md`.
+
+**Learning mode** (only when Nathaniel says so):
+- He writes `slice-N-nathaniel-plan.md`; Rob completes it and names the gaps (on 2, 4, 6, 6b he also plans independently and lists differences).
+- Marco never edits **Nathaniel drives** files; the session stops with `Waiting on Nathaniel: [files]`.
+- Rob reviews all of it at the same bar and writes `slice-N-learning.md` (agents never read it).
+
+**Always:**
+- One slice per request, in order: 0 · 1a · 1b · 2 · 3 · 4 · 5 · 6 · 6b · 7.
+- The previous slice's files move to `slice-plans/archive/`.
+- Rob lists every decision; anything breaking §2 or §3.4 ends the slice `BLOCKED`.
+- **Honesty:** `PASS` and `Bugs open: None` only when Rob's last verdict is PASS, the full `verify.sh` passed, and no bug is open.
 
 ```
 Slice [N] — [name]
-Code review:   Done by Rob — Verdict: PASS | BLOCKED
-Quality bar:   PASS | BLOCKED  (§2 self-check · §3 review · §4 commands)
-Bugs open:     None | [list]
-Fix rounds:    [0–3]
-Decisions made: [Rob's decisions] | None
-Review notes:  [non-blocking notes] | None
+Mode: Autonomous | Learning
+Code review: Done by Rob — Verdict: PASS | BLOCKED
+Quality bar: PASS | BLOCKED (§2 · §3 · §4)
+Bugs open: None | [list]
+Fix rounds: [0–3]
+Decisions made: [list] | None
+Review notes: [list] | None
 Files changed: [list]
-Commands:      dotnet build ✔ · dotnet test ✔ [n passed] · tsc ✔ · npm test ✔ [n passed] · expo export ✔
-Status:        Marco AVAILABLE · Rob AVAILABLE
-Git:           Nothing committed — changes are in the working tree.
+verify.sh: secrets ✔ · hygiene ✔ · build ✔ [n warnings] · test ✔ [n] · drift ✔ · expo-check ✔ · tsc ✔ · jest ✔ [n] · export ✔
+Status: Marco AVAILABLE · Rob AVAILABLE
+Git: Nothing committed — changes are in the working tree.
 ```
 
-Follow it with Rob's full code review, so Nathaniel can read it.
+## Environment and commands
 
-**Slice order:** 0 Foundation · 1 Identity + Catalog · 2 Inventory · 3 Cart · 4 Checkout + Payments · 5 Orders + Fulfillment · 6 Notifications + Returns · 6b Eventual Consistency · 7 Hardening. Never skip ahead.
-
-## Rules you're most likely to break (full list: architecture §3.4)
-
-- The server calculates every price and total. Never trust the client for money.
-- Lock stock rows in variant-ID order, reserve in one transaction, commit only on Paid.
-- The signed webhook is the only proof of payment. Dedupe by event ID.
-- Side effects go through the outbox in the same transaction. No external calls inside a DB transaction.
-- Thin controllers. No cross-module `DbSet` or join. `IClock`, never `DateTime.UtcNow`.
-- A module (`backend/src/Modules/<M>/Ecommerce.<M>`) references only `Ecommerce.SharedKernel`, `Ecommerce.Persistence`, and other modules' `*.Contracts`. Implementation types are `internal`; the only public type is `<M>Module`. `Ecommerce.ArchitectureTests` enforces it (architecture §6.2).
-- Every money or stock movement is tested in the same slice. Hard invariants are test-first.
-
-## Never — no agent, no session
-
-- **Git writes:** no `commit`, `push`, `merge`, `rebase`, `reset`, `stash`, `checkout`/`switch`, or branch creation. Read-only `git status`, `git diff`, and `git log` are fine. Nathaniel commits.
-- Deploy anywhere, or touch production data or secrets.
-- Put secrets in code, logs, or chat — or invent Stripe keys, domains, email providers, or buckets (use config placeholders).
-- Add a package or service outside the stack lock without Rob listing it as a decision, with its reason and what it replaces.
-- Drop tables or columns, delete databases, or edit data with direct SQL.
-- Weaken or delete a test to get a PASS.
-
-## Commands
-
-Available once Slice 0 lands:
+- **Shell:** Windows 11, PowerShell and Git Bash. Read-only git: `git -c safe.directory='*'`.
+- **Postgres:** `docker compose up -d postgres` → `localhost:5434`, user/db `ecommerce`, trust auth (dev).
+- **API:** :5080. Build `-c Release` (VS may hold Debug); smoke tests on :5090.
+- **App:** `frontend/apps/store`, `.env.local` from `.env.example`, `npx expo start` (web :8081).
 
 ```
-dotnet build
-dotnet test                           # needs Docker running (Testcontainers)
-dotnet tool run dotnet-ef migrations has-pending-model-changes --project backend/src/Ecommerce.Persistence --startup-project backend/src/Ecommerce.Api
-cd frontend/apps/store && npx tsc --noEmit
-cd frontend/apps/store && npm test -- --ci
-cd frontend/apps/store && npx expo export --platform web
+dotnet test backend/tests/Ecommerce.<M>.Tests -c Release · npx jest <path> · bash scripts/verify.sh changed   # inner loop
+bash scripts/verify.sh          # THE gate, once before a report
+bash scripts/verify.sh docker   # image builds
 ```
 
-Reports quote real output, never a summary from memory.
-
-## Check
-
-`rob` and `marco` must appear in `/agents` (user agents, `~/.claude/agents/`). If they're missing, stop and say so. Never role-play an agent without its file.
+Integration tests (Postgres container; Docker must run) only when the API or persistence changed. Quote real output, never from memory.

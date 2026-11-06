@@ -9,9 +9,9 @@ public class ModuleCompositionTests
     [Fact]
     public void Runtime_model_matches_the_migration_snapshot()
     {
-        using var factory = new ApiFactory(ApiFactory.Unreachable);
-        using var scope = factory.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<EcommerceDbContext>();
+        using ApiFactory factory = new ApiFactory(ApiFactory.Unreachable);
+        using IServiceScope scope = factory.Services.CreateScope();
+        EcommerceDbContext db = scope.ServiceProvider.GetRequiredService<EcommerceDbContext>();
 
         Assert.False(db.Database.HasPendingModelChanges());
     }
@@ -19,11 +19,11 @@ public class ModuleCompositionTests
     [Fact]
     public void Runtime_context_discovers_both_existing_migrations()
     {
-        using var factory = new ApiFactory(ApiFactory.Unreachable);
-        using var scope = factory.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<EcommerceDbContext>();
+        using ApiFactory factory = new ApiFactory(ApiFactory.Unreachable);
+        using IServiceScope scope = factory.Services.CreateScope();
+        EcommerceDbContext db = scope.ServiceProvider.GetRequiredService<EcommerceDbContext>();
 
-        var migrations = db.Database.GetMigrations().ToList();
+        List<string> migrations = db.Database.GetMigrations().ToList();
 
         Assert.Contains("20261103043930_InitialBaseline", migrations);
         Assert.Contains("20261103185341_AddCatalog", migrations);

@@ -10,16 +10,16 @@ public class AssemblyReferenceRuleTests
     [Fact]
     public void Compiled_assembly_references_follow_the_module_rules()
     {
-        var byName = SolutionLayout.Projects.ToDictionary(p => p.Name);
-        var violations = new List<string>();
+        Dictionary<string, BackendProject> byName = SolutionLayout.Projects.ToDictionary(p => p.Name);
+        List<string> violations = new List<string>();
 
-        foreach (var project in SolutionLayout.Projects)
+        foreach (BackendProject project in SolutionLayout.Projects)
         {
-            var targets = project.Assembly.GetReferencedAssemblies()
+            List<ProjectNode> targets = project.Assembly.GetReferencedAssemblies()
                 .Select(a => a.Name ?? "")
                 .Where(n => n.StartsWith("Ecommerce.", StringComparison.Ordinal))
                 .Distinct()
-                .Select(n => byName.TryGetValue(n, out var t)
+                .Select(n => byName.TryGetValue(n, out BackendProject? t)
                     ? t.Node
                     : throw new InvalidOperationException($"{project.Name} links unknown Ecommerce assembly {n}"))
                 .ToList();
@@ -33,12 +33,12 @@ public class AssemblyReferenceRuleTests
     [Fact]
     public void SharedKernel_and_contracts_reference_no_infrastructure_framework()
     {
-        var projects = SolutionLayout.Projects
+        List<BackendProject> projects = SolutionLayout.Projects
             .Where(p => p.Node.Kind is ProjectKind.SharedKernel or ProjectKind.ModuleContracts)
             .ToList();
         Assert.NotEmpty(projects);
 
-        var offenders = projects
+        List<string> offenders = projects
             .SelectMany(p => p.Assembly.GetReferencedAssemblies()
                 .Select(a => a.Name ?? "")
                 .Where(n => ForbiddenInKernelAndContracts.Any(f => n.StartsWith(f, StringComparison.Ordinal)))

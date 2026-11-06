@@ -13,49 +13,56 @@ internal sealed class CatalogDevSeeder
 {
     public async Task SeedAsync(EcommerceDbContext db, IClock clock, CancellationToken ct)
     {
-        var now = clock.UtcNow;
+        DateTimeOffset now = clock.UtcNow;
 
-        var categoriesBySlug = await db.Set<Category>().ToDictionaryAsync(c => c.Slug, ct);
-        foreach (var seed in CatalogDevSeedData.Categories)
+        Dictionary<string, Category> categoriesBySlug = await db.Set<Category>().ToDictionaryAsync(c => c.Slug, ct);
+        foreach (CatalogDevSeedData.SeedCategory seed in CatalogDevSeedData.Categories)
         {
             if (categoriesBySlug.ContainsKey(seed.Slug))
             {
                 continue;
             }
 
-            var parentId = seed.ParentSlug is null ? (Guid?)null : categoriesBySlug[seed.ParentSlug].Id;
-            var category = Category.Create(NewId(clock), seed.Slug, seed.Name, parentId);
+            Guid? parentId = seed.ParentSlug is null ? (Guid?)null : categoriesBySlug[seed.ParentSlug].Id;
+            Category category = Category.Create(NewId(clock), seed.Slug, seed.Name, parentId);
             db.Add(category);
             categoriesBySlug[seed.Slug] = category;
         }
 
-        var productsBySlug = await db.Set<Product>().Include(p => p.Variants).ToDictionaryAsync(p => p.Slug, ct);
-        var existingSkus = (await db.Set<ProductVariant>().Select(v => v.Sku).ToListAsync(ct)).ToHashSet();
+        Dictionary<string, Product> productsBySlug = await db.Set<Product>().Include(p => p.Variants).ToDictionaryAsync(p => p.Slug, ct);
+        HashSet<string> existingSkus = (await db.Set<ProductVariant>().Select(v => v.Sku).ToListAsync(ct)).ToHashSet();
 
-        var offset = 0;
-        foreach (var seed in CatalogDevSeedData.Products)
+        int offset = 0;
+        foreach (CatalogDevSeedData.SeedProduct seed in CatalogDevSeedData.Products)
         {
             // Spread created_at so "newest" ordering is meaningful.
-            var createdAt = now.AddMinutes(-offset++);
+            DateTimeOffset createdAt = now.AddMinutes(-offset++);
 
-            var isNew = !productsBySlug.TryGetValue(seed.Slug, out var product);
-            if (isNew)
+            Product product;
+            bool isNew;
+            if (productsBySlug.TryGetValue(seed.Slug, out Product? existing))
+            {
+                product = existing;
+                isNew = false;
+            }
+            else
             {
                 product = Product.Create(
                     NewId(clock), seed.Slug, seed.Name, seed.Description, categoriesBySlug[seed.CategorySlug].Id, createdAt);
+                isNew = true;
                 db.Add(product);
                 productsBySlug[seed.Slug] = product;
 
-                for (var n = 1; n <= seed.ImageCount; n++)
+                for (int n = 1; n <= seed.ImageCount; n++)
                 {
                     product.AddImage(NewId(clock), $"dev-seed/{seed.Slug}/{n}.jpg", $"{seed.Name}, view {n}", n, createdAt);
                 }
             }
 
-            var added = new List<(ProductVariant Variant, bool Active)>();
-            foreach (var v in seed.Variants.Where(v => !existingSkus.Contains(v.Sku)))
+            List<(ProductVariant Variant, bool Active)> added = new List<(ProductVariant Variant, bool Active)>();
+            foreach (CatalogDevSeedData.SeedVariant? v in seed.Variants.Where(v => !existingSkus.Contains(v.Sku)))
             {
-                var variant = product.AddVariant(
+                ProductVariant variant = product.AddVariant(
                     NewId(clock), v.Sku, v.Name, v.Size, null, v.Price, CatalogDevSeedData.Currency, v.CompareAt, 250, createdAt);
                 existingSkus.Add(v.Sku);
                 added.Add((variant, v.Active));
@@ -67,7 +74,7 @@ internal sealed class CatalogDevSeeder
             }
 
             // Deactivate after publishing: Publish requires an active variant.
-            foreach (var (variant, active) in added.Where(a => !a.Active))
+            foreach ((ProductVariant? variant, bool active) in added.Where(a => !a.Active))
             {
                 variant.Deactivate();
             }

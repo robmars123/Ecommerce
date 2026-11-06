@@ -69,7 +69,7 @@ export function SearchBar({ value = '', onSearch, onSubmit, debounceMs = SEARCH_
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  input: { flex: 1, minHeight: 44, borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, fontSize: 16 },
+  input: { flex: 1, minWidth: 0, minHeight: 44, borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, fontSize: 16 },
   clear: { minHeight: 44, minWidth: 44, justifyContent: 'center', alignItems: 'center' },
   clearText: { fontSize: 16 },
 });

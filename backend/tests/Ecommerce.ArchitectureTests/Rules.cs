@@ -8,8 +8,8 @@ internal static class ReferenceRules
 {
     public static List<string> Violations(ProjectNode from, IEnumerable<ProjectNode> to)
     {
-        var violations = new List<string>();
-        foreach (var target in to)
+        List<string> violations = new List<string>();
+        foreach (ProjectNode target in to)
         {
             switch (from.Kind)
             {
@@ -44,15 +44,15 @@ internal static class LayerRules
 
     public static bool IsFrameworkAssembly(Assembly assembly)
     {
-        var name = assembly.GetName().Name ?? "";
+        string name = assembly.GetName().Name ?? "";
         return name is "netstandard" or "mscorlib" or "System" || name.StartsWith("System.", StringComparison.Ordinal);
     }
 
     /// <summary>layer is Domain, Application or Api. owner is only used in the message.</summary>
     public static List<string> Violations(string module, string layer, Assembly ownAssembly, string owner, IEnumerable<Type> dependencies)
     {
-        var violations = new List<string>();
-        foreach (var dep in dependencies)
+        List<string> violations = new List<string>();
+        foreach (Type dep in dependencies)
         {
             if (!IsAllowed(module, layer, ownAssembly, dep))
             {
@@ -64,12 +64,12 @@ internal static class LayerRules
 
     private static bool IsAllowed(string module, string layer, Assembly own, Type dep)
     {
-        var asm = dep.Assembly.GetName().Name ?? "";
-        var sameAssembly = dep.Assembly == own;
-        var ns = dep.Namespace;
-        var domain = $"Ecommerce.{module}.Domain";
-        var application = $"Ecommerce.{module}.Application";
-        var infrastructure = $"Ecommerce.{module}.Infrastructure";
+        string asm = dep.Assembly.GetName().Name ?? "";
+        bool sameAssembly = dep.Assembly == own;
+        string? ns = dep.Namespace;
+        string domain = $"Ecommerce.{module}.Domain";
+        string application = $"Ecommerce.{module}.Application";
+        string infrastructure = $"Ecommerce.{module}.Infrastructure";
 
         switch (layer)
         {
@@ -101,7 +101,7 @@ internal static class TypeDependencies
 
     public static IReadOnlyCollection<Type> Of(Type type)
     {
-        var found = new HashSet<Type>();
+        HashSet<Type> found = new HashSet<Type>();
 
         void Add(Type? t)
         {
@@ -117,7 +117,7 @@ internal static class TypeDependencies
             if (t.IsGenericType)
             {
                 found.Add(t.GetGenericTypeDefinition());
-                foreach (var arg in t.GetGenericArguments())
+                foreach (Type arg in t.GetGenericArguments())
                 {
                     Add(arg);
                 }
@@ -128,39 +128,39 @@ internal static class TypeDependencies
 
         void AddParameters(MethodBase m)
         {
-            foreach (var p in m.GetParameters())
+            foreach (ParameterInfo p in m.GetParameters())
             {
                 Add(p.ParameterType);
             }
         }
 
         Add(type.BaseType);
-        foreach (var i in type.GetInterfaces())
+        foreach (Type i in type.GetInterfaces())
         {
             Add(i);
         }
-        foreach (var f in type.GetFields(All))
+        foreach (FieldInfo f in type.GetFields(All))
         {
             Add(f.FieldType);
         }
-        foreach (var p in type.GetProperties(All))
+        foreach (PropertyInfo p in type.GetProperties(All))
         {
             Add(p.PropertyType);
-            foreach (var ip in p.GetIndexParameters())
+            foreach (ParameterInfo ip in p.GetIndexParameters())
             {
                 Add(ip.ParameterType);
             }
         }
-        foreach (var m in type.GetMethods(All))
+        foreach (MethodInfo m in type.GetMethods(All))
         {
             Add(m.ReturnType);
             AddParameters(m);
         }
-        foreach (var c in type.GetConstructors(All))
+        foreach (ConstructorInfo c in type.GetConstructors(All))
         {
             AddParameters(c);
         }
-        foreach (var e in type.GetEvents(All))
+        foreach (EventInfo e in type.GetEvents(All))
         {
             Add(e.EventHandlerType);
         }
@@ -185,18 +185,18 @@ internal static partial class SourceRules
     /// <summary>layer is Domain, Application or Api. knownModules are all module names in the solution.</summary>
     public static List<string> Violations(string module, string layer, string file, IReadOnlyList<string> lines, IReadOnlyCollection<string> knownModules)
     {
-        var violations = new List<string>();
-        for (var i = 0; i < lines.Count; i++)
+        List<string> violations = new List<string>();
+        for (int i = 0; i < lines.Count; i++)
         {
-            var line = lines[i];
-            var where = $"{file}:{i + 1}";
+            string line = lines[i];
+            string where = $"{file}:{i + 1}";
 
-            var frameworkNames = layer switch
+            string[] frameworkNames = layer switch
             {
                 "Api" => ["Microsoft.EntityFrameworkCore", "Npgsql"],
                 _ => ForbiddenFrameworkNames,
             };
-            foreach (var name in frameworkNames)
+            foreach (string name in frameworkNames)
             {
                 if (line.Contains(name, StringComparison.Ordinal))
                 {
@@ -206,7 +206,7 @@ internal static partial class SourceRules
 
             foreach (Match match in EcommerceName().Matches(line))
             {
-                var problem = CheckEcommerceName(module, layer, match.Value, knownModules);
+                string? problem = CheckEcommerceName(module, layer, match.Value, knownModules);
                 if (problem is not null)
                 {
                     violations.Add($"{where} {problem}");
@@ -218,9 +218,9 @@ internal static partial class SourceRules
 
     private static string? CheckEcommerceName(string module, string layer, string name, IReadOnlyCollection<string> knownModules)
     {
-        var segments = name.Split('.');
-        var second = segments[1];
-        var third = segments.Length > 2 ? segments[2] : null;
+        string[] segments = name.Split('.');
+        string second = segments[1];
+        string? third = segments.Length > 2 ? segments[2] : null;
 
         if (second == "SharedKernel")
         {
@@ -237,7 +237,7 @@ internal static partial class SourceRules
                 // Domain uses no Contracts at all, own or another module's (architecture 6.2).
                 return layer == "Domain" ? $"names {name}: the Domain layer may not use any .Contracts" : null;
             }
-            var allowed = layer switch
+            string[] allowed = layer switch
             {
                 "Domain" => new[] { "Domain" },
                 "Application" => ["Domain", "Application", "Contracts"],

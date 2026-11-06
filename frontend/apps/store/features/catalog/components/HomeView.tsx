@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { ErrorState } from '@/components/ErrorState';
 import { LoadingState } from '@/components/LoadingState';
+import { AccountBar } from '@/features/auth/components/AccountBar';
 import { userMessage } from '@/lib/api-client';
 
 import { useCategoriesQuery } from '../hooks/useCategoriesQuery';
@@ -26,6 +27,8 @@ export function HomeView() {
       <Text accessibilityRole="header" style={styles.title}>
         Home
       </Text>
+
+      <AccountBar />
 
       <SearchBar onSubmit={search} />
 

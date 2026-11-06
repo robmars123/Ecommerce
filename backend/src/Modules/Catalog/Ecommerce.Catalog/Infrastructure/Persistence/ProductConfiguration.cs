@@ -23,6 +23,10 @@ internal sealed class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.Property(p => p.CreatedAt).HasColumnName("created_at");
         builder.Property(p => p.UpdatedAt).HasColumnName("updated_at");
 
+        // Optimistic concurrency for admin edits (D12). The uint maps to the Postgres xmin system column, which changes on
+        // every committed write to the row, so it needs no DDL. Domain stays free of Npgsql.
+        builder.Property(p => p.Version).IsRowVersion();
+
         builder.Property<NpgsqlTsVector>(SearchVector)
             .HasColumnName("search_vector")
             .HasComputedColumnSql(

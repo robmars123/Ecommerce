@@ -1,10 +1,12 @@
 using Ecommerce.Catalog.Application;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Ecommerce.Catalog.Api;
 
 [ApiController]
+[AllowAnonymous]
 [Route("api/v1/products")]
 internal sealed class ProductsController(CatalogBrowseService catalog) : ControllerBase
 {
@@ -17,12 +19,12 @@ internal sealed class ProductsController(CatalogBrowseService catalog) : Control
         [FromQuery] int? pageSize,
         CancellationToken ct)
     {
-        var parsed = ProductSearchCriteria.Create(search, category, sort, page, pageSize);
+        CriteriaResult parsed = ProductSearchCriteria.Create(search, category, sort, page, pageSize);
         if (!parsed.IsValid)
         {
-            foreach (var (field, messages) in parsed.Errors!)
+            foreach ((string? field, string[]? messages) in parsed.Errors!)
             {
-                foreach (var message in messages)
+                foreach (string message in messages)
                 {
                     ModelState.AddModelError(field, message);
                 }
@@ -30,14 +32,14 @@ internal sealed class ProductsController(CatalogBrowseService catalog) : Control
             return ValidationProblem(ModelState);
         }
 
-        var result = await catalog.SearchAsync(parsed.Criteria!, ct);
+        ProductListPage result = await catalog.SearchAsync(parsed.Criteria!, ct);
         return Ok(result.ToResponse());
     }
 
     [HttpGet("{slug}")]
     public async Task<ActionResult<ProductDetailResponse>> Get(string slug, CancellationToken ct)
     {
-        var product = await catalog.GetBySlugAsync(slug, ct);
+        ProductDetail? product = await catalog.GetBySlugAsync(slug, ct);
         return product is null
             ? Problem(statusCode: StatusCodes.Status404NotFound, title: "Product not found")
             : Ok(product.ToResponse());

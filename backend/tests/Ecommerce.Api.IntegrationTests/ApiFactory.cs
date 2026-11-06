@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -17,7 +18,9 @@ public sealed class ApiFactory(
     {
         builder.UseEnvironment("Testing");
         builder.UseSetting("ConnectionStrings:Postgres", connectionString);
-        foreach (var (key, value) in settings ?? new Dictionary<string, string>())
+        // A fresh random signing key per factory, so no key is ever committed. A test's own setting wins (see below).
+        builder.UseSetting("Identity:Jwt:SigningKey", Convert.ToBase64String(RandomNumberGenerator.GetBytes(32)));
+        foreach ((string? key, string? value) in settings ?? new Dictionary<string, string>())
         {
             builder.UseSetting(key, value);
         }

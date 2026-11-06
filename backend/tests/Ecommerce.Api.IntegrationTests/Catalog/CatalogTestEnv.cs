@@ -54,18 +54,18 @@ internal sealed class CatalogTestEnv : IAsyncDisposable
         Action<IServiceCollection>? configureServices = null,
         IReadOnlyDictionary<string, string>? settings = null)
     {
-        var ct = TestContext.Current.CancellationToken;
-        var cs = await postgres.CreateDatabaseAsync(ct);
-        var factory = new ApiFactory(cs, configureServices, settings);
-        var scope = factory.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<EcommerceDbContext>();
+        CancellationToken ct = TestContext.Current.CancellationToken;
+        string cs = await postgres.CreateDatabaseAsync(ct);
+        ApiFactory factory = new ApiFactory(cs, configureServices, settings);
+        IServiceScope scope = factory.Services.CreateScope();
+        EcommerceDbContext db = scope.ServiceProvider.GetRequiredService<EcommerceDbContext>();
         await db.Database.MigrateAsync(ct);
         return new CatalogTestEnv(factory, factory.CreateClient(), scope, db, cs);
     }
 
     public Category AddCategory(string slug, string name, string? parentSlug = null)
     {
-        var category = Category.Create(Guid.CreateVersion7(Epoch), slug, name, parentSlug is null ? null : _categories[parentSlug].Id);
+        Category category = Category.Create(Guid.CreateVersion7(Epoch), slug, name, parentSlug is null ? null : _categories[parentSlug].Id);
         _categories[slug] = category;
         Db.Add(category);
         return category;
@@ -86,19 +86,19 @@ internal sealed class CatalogTestEnv : IAsyncDisposable
             AddCategory(category, category);
         }
 
-        var at = createdAt ?? Epoch;
-        var product = Product.Create(Guid.CreateVersion7(at), slug, name, description, _categories[category].Id, at);
-        var toDeactivate = new List<ProductVariant>();
-        foreach (var v in variants ?? [new VariantSpec(slug.ToUpperInvariant() + "-1")])
+        DateTimeOffset at = createdAt ?? Epoch;
+        Product product = Product.Create(Guid.CreateVersion7(at), slug, name, description, _categories[category].Id, at);
+        List<ProductVariant> toDeactivate = new List<ProductVariant>();
+        foreach (VariantSpec v in variants ?? [new VariantSpec(slug.ToUpperInvariant() + "-1")])
         {
-            var added = product.AddVariant(
+            ProductVariant added = product.AddVariant(
                 Guid.CreateVersion7(at), v.Sku, v.Name ?? v.Sku, null, null, v.Price, v.Currency, v.CompareAt, 100, at);
             if (!v.Active)
             {
                 toDeactivate.Add(added);
             }
         }
-        foreach (var i in images ?? [])
+        foreach (ImageSpec i in images ?? [])
         {
             product.AddImage(Guid.CreateVersion7(at), i.Key, i.Alt, i.SortOrder, at);
         }
@@ -115,11 +115,11 @@ internal sealed class CatalogTestEnv : IAsyncDisposable
 
     public async Task<(HttpStatusCode Status, JsonDocument Body)> GetAsync(string url)
     {
-        var ct = TestContext.Current.CancellationToken;
-        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        CancellationToken ct = TestContext.Current.CancellationToken;
+        using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, url);
         request.Headers.Add("X-Correlation-ID", "catalog-test-1");
-        var response = await Client.SendAsync(request, ct);
-        var text = await response.Content.ReadAsStringAsync(ct);
+        HttpResponseMessage response = await Client.SendAsync(request, ct);
+        string text = await response.Content.ReadAsStringAsync(ct);
         return (response.StatusCode, JsonDocument.Parse(text.Length == 0 ? "{}" : text));
     }
 

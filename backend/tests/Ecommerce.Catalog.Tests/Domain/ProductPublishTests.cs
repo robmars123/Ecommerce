@@ -13,7 +13,7 @@ public class ProductPublishTests
     [Fact]
     public void Publish_without_any_variant_throws_and_stays_inactive()
     {
-        var p = NewProduct();
+        Product p = NewProduct();
         Assert.Throws<DomainException>(() => p.Publish(T0.AddHours(1)));
         Assert.False(p.IsActive);
         Assert.Equal(T0, p.UpdatedAt);
@@ -22,7 +22,7 @@ public class ProductPublishTests
     [Fact]
     public void Publish_with_only_deactivated_variants_throws()
     {
-        var p = NewProduct();
+        Product p = NewProduct();
         p.AddVariant(Guid.NewGuid(), "A-1", "One", null, null, 5m, "USD", null, 0, T0).Deactivate();
         Assert.Throws<DomainException>(() => p.Publish(T0.AddHours(1)));
         Assert.False(p.IsActive);
@@ -31,7 +31,7 @@ public class ProductPublishTests
     [Fact]
     public void Publish_with_an_active_variant_sets_active_and_updated_at_then_Unpublish_clears()
     {
-        var p = NewProduct();
+        Product p = NewProduct();
         p.AddVariant(Guid.NewGuid(), "A-1", "One", null, null, 5m, "USD", null, 0, T0);
 
         p.Publish(T0.AddHours(2));

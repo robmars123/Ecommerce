@@ -1,4 +1,5 @@
 using Ecommerce.Persistence.Health;
+using Ecommerce.SharedKernel.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,6 +19,8 @@ public static class PersistenceServiceCollectionExtensions
 
         services.AddDbContext<EcommerceDbContext>((sp, o) =>
             o.UseNpgsql(sp.GetRequiredService<IOptions<DatabaseOptions>>().Value.ConnectionString));
+
+        services.AddScoped<IUnitOfWork, EfUnitOfWork>();
 
         return services;
     }

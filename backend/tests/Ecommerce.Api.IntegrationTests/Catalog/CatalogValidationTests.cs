@@ -19,9 +19,9 @@ public class CatalogValidationTests(PostgresFixture postgres)
     [InlineData("sort=relevance&search=%20%20", "sort")]
     public async Task Invalid_query_returns_400_problem_json_naming_the_field(string query, string field)
     {
-        await using var env = await CatalogTestEnv.StartAsync(postgres);
+        await using CatalogTestEnv env = await CatalogTestEnv.StartAsync(postgres);
 
-        var (status, body) = await env.GetAsync($"/api/v1/products?{query}");
+        (HttpStatusCode status, JsonDocument? body) = await env.GetAsync($"/api/v1/products?{query}");
 
         Assert.Equal(HttpStatusCode.BadRequest, status);
         AssertProblem(body.RootElement, field);
@@ -30,9 +30,9 @@ public class CatalogValidationTests(PostgresFixture postgres)
     [Fact]
     public async Task Search_longer_than_100_characters_returns_400()
     {
-        await using var env = await CatalogTestEnv.StartAsync(postgres);
+        await using CatalogTestEnv env = await CatalogTestEnv.StartAsync(postgres);
 
-        var (status, body) = await env.GetAsync($"/api/v1/products?search={new string('a', 101)}");
+        (HttpStatusCode status, JsonDocument? body) = await env.GetAsync($"/api/v1/products?search={new string('a', 101)}");
 
         Assert.Equal(HttpStatusCode.BadRequest, status);
         AssertProblem(body.RootElement, "search");
@@ -41,9 +41,9 @@ public class CatalogValidationTests(PostgresFixture postgres)
     [Fact]
     public async Task Problem_response_content_type_is_problem_json()
     {
-        await using var env = await CatalogTestEnv.StartAsync(postgres);
+        await using CatalogTestEnv env = await CatalogTestEnv.StartAsync(postgres);
 
-        using var response = await env.Client.GetAsync("/api/v1/products?pageSize=101", TestContext.Current.CancellationToken);
+        using HttpResponseMessage response = await env.Client.GetAsync("/api/v1/products?pageSize=101", TestContext.Current.CancellationToken);
 
         Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
     }
@@ -51,11 +51,11 @@ public class CatalogValidationTests(PostgresFixture postgres)
     [Fact]
     public async Task Boundary_values_are_accepted()
     {
-        await using var env = await CatalogTestEnv.StartAsync(postgres);
+        await using CatalogTestEnv env = await CatalogTestEnv.StartAsync(postgres);
 
-        foreach (var q in new[] { "pageSize=1", "pageSize=100", "page=1", $"search={new string('a', 100)}" })
+        foreach (string? q in new[] { "pageSize=1", "pageSize=100", "page=1", $"search={new string('a', 100)}" })
         {
-            var (status, _) = await env.GetAsync($"/api/v1/products?{q}");
+            (HttpStatusCode status, JsonDocument _) = await env.GetAsync($"/api/v1/products?{q}");
             Assert.Equal(HttpStatusCode.OK, status);
         }
     }

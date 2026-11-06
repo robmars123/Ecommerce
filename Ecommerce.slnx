@@ -9,6 +9,10 @@
     <Project Path="backend/src/Modules/Catalog/Ecommerce.Catalog/Ecommerce.Catalog.csproj" />
     <Project Path="backend/src/Modules/Catalog/Ecommerce.Catalog.Contracts/Ecommerce.Catalog.Contracts.csproj" />
   </Folder>
+  <Folder Name="/src/Modules/Identity/">
+    <Project Path="backend/src/Modules/Identity/Ecommerce.Identity/Ecommerce.Identity.csproj" />
+    <Project Path="backend/src/Modules/Identity/Ecommerce.Identity.Contracts/Ecommerce.Identity.Contracts.csproj" />
+  </Folder>
   <Folder Name="/src/Modules/Inventory/">
     <Project Path="backend/src/Modules/Inventory/Ecommerce.Inventory/Ecommerce.Inventory.csproj" />
     <Project Path="backend/src/Modules/Inventory/Ecommerce.Inventory.Contracts/Ecommerce.Inventory.Contracts.csproj" />
@@ -17,6 +21,7 @@
     <Project Path="backend/tests/Ecommerce.Api.IntegrationTests/Ecommerce.Api.IntegrationTests.csproj" />
     <Project Path="backend/tests/Ecommerce.ArchitectureTests/Ecommerce.ArchitectureTests.csproj" />
     <Project Path="backend/tests/Ecommerce.Catalog.Tests/Ecommerce.Catalog.Tests.csproj" />
+    <Project Path="backend/tests/Ecommerce.Identity.Tests/Ecommerce.Identity.Tests.csproj" />
     <Project Path="backend/tests/Ecommerce.Inventory.Tests/Ecommerce.Inventory.Tests.csproj" />
   </Folder>
 </Solution>

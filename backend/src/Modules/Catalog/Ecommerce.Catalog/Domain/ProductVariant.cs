@@ -27,4 +27,17 @@ internal sealed class ProductVariant
         };
 
     public void Deactivate() => IsActive = false;
+
+    // Called only by Product (the aggregate root validates and sets UpdatedAt). SKU and currency are immutable.
+    internal void Update(string name, string? size, string? colour, decimal price, decimal? compareAtPrice, int weightGrams)
+    {
+        Name = name;
+        Size = size;
+        Colour = colour;
+        Price = price;
+        CompareAtPrice = compareAtPrice;
+        WeightGrams = weightGrams;
+    }
+
+    internal void SetActive(bool isActive) => IsActive = isActive;
 }

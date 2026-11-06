@@ -6,8 +6,8 @@ public sealed class CorrelationIdMiddleware(RequestDelegate next)
 {
     public async Task InvokeAsync(HttpContext context)
     {
-        var inbound = context.Request.Headers[CorrelationId.HeaderName].FirstOrDefault();
-        var id = CorrelationId.IsValid(inbound) ? inbound! : CorrelationId.NewId();
+        string? inbound = context.Request.Headers[CorrelationId.HeaderName].FirstOrDefault();
+        string id = CorrelationId.IsValid(inbound) ? inbound! : CorrelationId.NewId();
 
         context.Items[CorrelationId.ItemKey] = id;
         context.Response.OnStarting(() =>

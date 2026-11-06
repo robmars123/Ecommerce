@@ -1,3 +1,4 @@
+using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 
 namespace Ecommerce.ArchitectureTests;
@@ -35,7 +36,7 @@ public class RuleEvaluatorSelfTests
     [Fact]
     public void Layer_rules_reject_a_domain_type_with_an_ef_dependency()
     {
-        var assembly = typeof(RuleEvaluatorSelfTests).Assembly;
+        Assembly assembly = typeof(RuleEvaluatorSelfTests).Assembly;
 
         Assert.NotEmpty(LayerRules.Violations("Catalog", "Domain", assembly, "Synthetic", [typeof(DbContext)]));
         Assert.Empty(LayerRules.Violations("Catalog", "Domain", assembly, "Synthetic", [typeof(string), typeof(List<Guid>)]));

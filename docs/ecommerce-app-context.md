@@ -1,6 +1,6 @@
 # Ecommerce App Context
 
-**What the app does, for whom, and in what order.** Read with `docs/ecommerce-architecture.md`, which owns the stack, hard rules, data model, state machines, API, and slice order.
+**What the app does, for whom, and in what order.** Read with the architecture (index `docs/ecommerce-architecture.md`, sections in `docs/architecture/`), which owns the stack, hard rules, data model, state machines, API, and slice order.
 
 **Conflicts:** architecture wins on invariants, payments, and boundaries. This file wins on v1 product scope. If a conflict changes a user-facing workflow, the slice ends `BLOCKED` with the conflict in its report.
 
@@ -168,7 +168,7 @@ List with search by name or email. Detail: profile, orders, total spent (Paid mi
 | `/orders`, `/orders/[id]` | Customer | History; detail, timeline, tracking, return request |
 | `/login`, `/register`, `/reset-password` | Public | Auth, returning to checkout when applicable |
 | `/admin` | Admin, Support | Dashboard |
-| `/admin/products`, `/admin/products/[id]` | Admin | Catalog |
+| `/admin/products`, `/admin/products/new`, `/admin/products/[id]` | Admin | Catalog: list, create, and edit with a customer preview |
 | `/admin/inventory` | Admin | Stock and adjustments |
 | `/admin/orders`, `/admin/orders/[id]` | Admin, Support | Orders and fulfillment |
 | `/admin/returns` | Admin | Return requests |

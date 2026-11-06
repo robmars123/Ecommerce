@@ -10,7 +10,7 @@ public class ProductCreateTests
     [Fact]
     public void Create_is_inactive_with_created_and_updated_equal_to_now()
     {
-        var p = Product.Create(Guid.NewGuid(), "blue-shirt", "Blue Shirt", "d", Guid.NewGuid(), Now);
+        Product p = Product.Create(Guid.NewGuid(), "blue-shirt", "Blue Shirt", "d", Guid.NewGuid(), Now);
         Assert.False(p.IsActive);
         Assert.Equal(Now, p.CreatedAt);
         Assert.Equal(Now, p.UpdatedAt);
@@ -35,11 +35,11 @@ public class ProductCreateTests
     [Fact]
     public void AddImage_validates_key_and_alt_length_and_records_image()
     {
-        var p = Product.Create(Guid.NewGuid(), "a", "n", "d", Guid.NewGuid(), Now);
+        Product p = Product.Create(Guid.NewGuid(), "a", "n", "d", Guid.NewGuid(), Now);
         Assert.Throws<DomainException>(() => p.AddImage(Guid.NewGuid(), "", "alt", 0, Now));
         Assert.Throws<DomainException>(() => p.AddImage(Guid.NewGuid(), new string('k', 513), "alt", 0, Now));
         Assert.Throws<DomainException>(() => p.AddImage(Guid.NewGuid(), "k", new string('a', 301), 0, Now));
-        var img = p.AddImage(Guid.NewGuid(), "dev/a.jpg", "alt", 2, Now.AddMinutes(1));
+        ProductImage img = p.AddImage(Guid.NewGuid(), "dev/a.jpg", "alt", 2, Now.AddMinutes(1));
         Assert.Equal(p.Id, img.ProductId);
         Assert.Equal(2, img.SortOrder);
         Assert.Equal(Now.AddMinutes(1), p.UpdatedAt);

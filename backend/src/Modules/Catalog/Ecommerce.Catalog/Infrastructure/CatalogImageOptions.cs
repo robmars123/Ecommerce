@@ -10,6 +10,6 @@ internal sealed class CatalogImageOptions
 
     public static bool IsValid(CatalogImageOptions o) =>
         string.IsNullOrWhiteSpace(o.BaseUrl)
-        || (Uri.TryCreate(o.BaseUrl, UriKind.Absolute, out var uri)
+        || (Uri.TryCreate(o.BaseUrl, UriKind.Absolute, out Uri? uri)
             && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps));
 }

@@ -16,16 +16,18 @@ public sealed class PostgresFixture : IAsyncLifetime
 
     public async Task<string> CreateDatabaseAsync(CancellationToken ct)
     {
-        var name = $"t_{Guid.NewGuid():N}";
-        await using (var admin = new NpgsqlConnection(_container.GetConnectionString()))
+        string name = $"t_{Guid.NewGuid():N}";
+        await using (NpgsqlConnection admin = new NpgsqlConnection(_container.GetConnectionString()))
         {
             await admin.OpenAsync(ct);
-            await using var cmd = admin.CreateCommand();
+            await using NpgsqlCommand cmd = admin.CreateCommand();
             cmd.CommandText = $"CREATE DATABASE \"{name}\"";
             await cmd.ExecuteNonQueryAsync(ct);
         }
 
-        var builder = new NpgsqlConnectionStringBuilder(_container.GetConnectionString()) { Database = name };
+        NpgsqlConnectionStringBuilder builder = new NpgsqlConnectionStringBuilder(_container.GetConnectionString()) { Database = name, MaxPoolSize = 8, ConnectionIdleLifetime = 2, ConnectionPruningInterval = 1 };
+        // One shared container serves every test database; pooled idle connections (one pool per database) would exhaust
+        // its 100-connection limit, so each pool is small and its idle connections are pruned after 2 seconds.
         return builder.ConnectionString;
     }
 }

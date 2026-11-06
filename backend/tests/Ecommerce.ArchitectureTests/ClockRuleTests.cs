@@ -11,27 +11,30 @@ public class ClockRuleTests
     [Fact]
     public void No_source_outside_the_host_reads_the_system_clock()
     {
-        var roots = new[]
+        string[] roots = new[]
         {
             Path.Combine(SolutionLayout.SrcDir, "Ecommerce.SharedKernel"),
             Path.Combine(SolutionLayout.SrcDir, "Ecommerce.Persistence"),
             Path.Combine(SolutionLayout.SrcDir, "Modules"),
         };
-        var files = roots.SelectMany(SolutionLayout.SourceFiles).ToList();
+        List<string> files = roots.SelectMany(SolutionLayout.SourceFiles).ToList();
 
         Assert.NotEmpty(files);
-        var catalog = SolutionLayout.Impl("Catalog").Directory;
+        string catalog = SolutionLayout.Impl("Catalog").Directory;
         Assert.Contains(files, f => f.StartsWith(Path.Combine(catalog, "Domain"), StringComparison.Ordinal));
         Assert.Contains(files, f => f.StartsWith(Path.Combine(catalog, "Application"), StringComparison.Ordinal));
+        string identity = SolutionLayout.Impl("Identity").Directory;
+        Assert.Contains(files, f => f.StartsWith(Path.Combine(identity, "Domain"), StringComparison.Ordinal));
+        Assert.Contains(files, f => f.StartsWith(Path.Combine(identity, "Application"), StringComparison.Ordinal));
         Assert.Contains(files, f => f.Contains("Migrations", StringComparison.Ordinal));
 
-        var hits = new List<string>();
-        foreach (var file in files)
+        List<string> hits = new List<string>();
+        foreach (string? file in files)
         {
-            var lines = File.ReadAllLines(file);
-            for (var i = 0; i < lines.Length; i++)
+            string[] lines = File.ReadAllLines(file);
+            for (int i = 0; i < lines.Length; i++)
             {
-                foreach (var token in Banned)
+                foreach (string token in Banned)
                 {
                     if (lines[i].Contains(token, StringComparison.Ordinal))
                     {

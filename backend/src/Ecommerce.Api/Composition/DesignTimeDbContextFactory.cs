@@ -12,10 +12,10 @@ public sealed class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<Eco
 
     public EcommerceDbContext CreateDbContext(string[] args)
     {
-        var configuration = new ConfigurationBuilder()
+        IConfigurationRoot configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?> { ["ConnectionStrings:Postgres"] = LocalConnection })
             .Build();
-        var services = new ServiceCollection();
+        ServiceCollection services = new ServiceCollection();
         services.AddSingleton<IConfiguration>(configuration);
         services.AddEcommercePersistence();
         services.AddEcommerceModules(configuration);

@@ -22,7 +22,13 @@ export function SortPicker({ sort, hasSearch, onSelect }: SortPickerProps) {
   const active = sort ?? (hasSearch ? 'relevance' : 'newest');
 
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
+    <ScrollView
+      horizontal
+      testID="sort-scroller"
+      showsHorizontalScrollIndicator={false}
+      style={styles.scroller}
+      contentContainerStyle={styles.row}
+    >
       {options.map((option) => (
         <Pressable
           key={option}
@@ -39,6 +45,7 @@ export function SortPicker({ sort, hasSearch, onSelect }: SortPickerProps) {
 }
 
 const styles = StyleSheet.create({
+  scroller: { flexGrow: 0, flexShrink: 0 },
   row: { gap: 8, paddingVertical: 4 },
   chip: {
     minHeight: 44,

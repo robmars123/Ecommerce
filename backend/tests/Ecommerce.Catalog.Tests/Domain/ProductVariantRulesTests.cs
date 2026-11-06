@@ -18,8 +18,8 @@ public class ProductVariantRulesTests
     [Fact]
     public void AddVariant_accepts_valid_variant_with_null_compare_at()
     {
-        var p = NewProduct();
-        var v = Add(p);
+        Product p = NewProduct();
+        ProductVariant v = Add(p);
         Assert.Single(p.Variants);
         Assert.True(v.IsActive);
         Assert.Equal(p.Id, v.ProductId);
@@ -29,7 +29,7 @@ public class ProductVariantRulesTests
     [Fact]
     public void AddVariant_accepts_zero_price()
     {
-        var p = NewProduct();
+        Product p = NewProduct();
         Add(p, price: 0m);
         Assert.Single(p.Variants);
     }
@@ -47,7 +47,7 @@ public class ProductVariantRulesTests
     [Fact]
     public void AddVariant_accepts_compare_at_above_price()
     {
-        var p = NewProduct();
+        Product p = NewProduct();
         Add(p, price: 10m, compareAt: 12.50m);
         Assert.Equal(12.50m, p.Variants[0].CompareAtPrice);
     }
@@ -64,7 +64,7 @@ public class ProductVariantRulesTests
     [Fact]
     public void AddVariant_rejects_second_variant_with_a_different_currency()
     {
-        var p = NewProduct();
+        Product p = NewProduct();
         Add(p, sku: "A-1", currency: "USD");
         Assert.Throws<DomainException>(() => Add(p, sku: "A-2", currency: "EUR"));
         Assert.Single(p.Variants);
@@ -73,7 +73,7 @@ public class ProductVariantRulesTests
     [Fact]
     public void AddVariant_rejects_duplicate_sku_within_the_product()
     {
-        var p = NewProduct();
+        Product p = NewProduct();
         Add(p, sku: "A-1");
         Assert.Throws<DomainException>(() => Add(p, sku: "A-1"));
     }

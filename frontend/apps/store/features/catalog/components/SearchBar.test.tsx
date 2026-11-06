@@ -1,3 +1,4 @@
+import { StyleSheet } from 'react-native';
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 
 import { SearchBar } from './SearchBar';
@@ -77,5 +78,12 @@ describe('SearchBar', () => {
     await screen.rerender(<SearchBar value="" />);
 
     expect(screen.getByLabelText('Search products').props.value).toBe('');
+  });
+
+  it('lets the input shrink so the row never exceeds its parent', async () => {
+    await render(<SearchBar />);
+
+    const input = StyleSheet.flatten(screen.getByLabelText('Search products').props.style);
+    expect(input).toMatchObject({ flex: 1, minWidth: 0 });
   });
 });

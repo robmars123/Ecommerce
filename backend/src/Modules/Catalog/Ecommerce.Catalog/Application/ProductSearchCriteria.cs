@@ -8,15 +8,15 @@ internal sealed record ProductSearchCriteria(string? Search, string? CategorySlu
 
     public static CriteriaResult Create(string? search, string? category, string? sort, int? page, int? pageSize)
     {
-        var errors = new Dictionary<string, string[]>();
+        Dictionary<string, string[]> errors = new Dictionary<string, string[]>();
 
-        var trimmedSearch = string.IsNullOrWhiteSpace(search) ? null : search.Trim();
+        string? trimmedSearch = string.IsNullOrWhiteSpace(search) ? null : search.Trim();
         if (trimmedSearch is { Length: > MaxSearchLength })
         {
             errors["search"] = [$"search must be at most {MaxSearchLength} characters."];
         }
 
-        var trimmedCategory = string.IsNullOrWhiteSpace(category) ? null : category.Trim();
+        string? trimmedCategory = string.IsNullOrWhiteSpace(category) ? null : category.Trim();
 
         if (page is < 1)
         {
@@ -28,7 +28,7 @@ internal sealed record ProductSearchCriteria(string? Search, string? CategorySlu
             errors["pageSize"] = [$"pageSize must be between 1 and {MaxPageSize}."];
         }
 
-        var resolvedSort = trimmedSearch is null ? ProductSort.Newest : ProductSort.Relevance;
+        ProductSort resolvedSort = trimmedSearch is null ? ProductSort.Newest : ProductSort.Relevance;
         if (!string.IsNullOrWhiteSpace(sort))
         {
             if (!ProductSortNames.TryParse(sort.Trim(), out resolvedSort))

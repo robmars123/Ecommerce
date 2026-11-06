@@ -6,10 +6,12 @@
     <ProjectReference Include="..\..\..\Ecommerce.SharedKernel\Ecommerce.SharedKernel.csproj" />
     <ProjectReference Include="..\..\..\Ecommerce.Persistence\Ecommerce.Persistence.csproj" />
     <ProjectReference Include="..\Ecommerce.Catalog.Contracts\Ecommerce.Catalog.Contracts.csproj" />
+    <ProjectReference Include="..\..\Identity\Ecommerce.Identity.Contracts\Ecommerce.Identity.Contracts.csproj" />
     <ProjectReference Include="..\..\Inventory\Ecommerce.Inventory.Contracts\Ecommerce.Inventory.Contracts.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="FluentValidation" />
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="Ecommerce.Catalog.Tests" />

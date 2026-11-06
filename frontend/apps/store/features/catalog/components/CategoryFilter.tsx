@@ -10,7 +10,13 @@ type CategoryFilterProps = {
 
 export function CategoryFilter({ categories, selected, onSelect }: CategoryFilterProps) {
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
+    <ScrollView
+      horizontal
+      testID="category-scroller"
+      showsHorizontalScrollIndicator={false}
+      style={styles.scroller}
+      contentContainerStyle={styles.row}
+    >
       <Chip label="All" selected={selected === undefined} onPress={() => onSelect(undefined)} />
       {categories.map((c) => (
         <Chip key={c.slug} label={c.name} selected={selected === c.slug} onPress={() => onSelect(c.slug)} />
@@ -33,6 +39,7 @@ function Chip({ label, selected, onPress }: { label: string; selected: boolean; 
 }
 
 const styles = StyleSheet.create({
+  scroller: { flexGrow: 0, flexShrink: 0 },
   row: { gap: 8, paddingVertical: 4 },
   chip: {
     minHeight: 44,

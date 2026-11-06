@@ -1,3 +1,4 @@
+using Ecommerce.Catalog.Domain;
 using Ecommerce.Catalog.Infrastructure.DevSeed;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,21 +12,21 @@ public class CatalogDevSeedTests(PostgresFixture postgres)
     [Fact]
     public async Task Seeding_twice_is_idempotent_and_hidden_products_are_not_listed()
     {
-        var ct = TestContext.Current.CancellationToken;
-        await using var env = await CatalogTestEnv.StartAsync(postgres);
-        var clock = new FakeClock(CatalogTestEnv.Epoch);
-        var seeder = new CatalogDevSeeder();
+        CancellationToken ct = TestContext.Current.CancellationToken;
+        await using CatalogTestEnv env = await CatalogTestEnv.StartAsync(postgres);
+        FakeClock clock = new FakeClock(CatalogTestEnv.Epoch);
+        CatalogDevSeeder seeder = new CatalogDevSeeder();
 
         await seeder.SeedAsync(env.Db, clock, ct);
-        var first = await Counts(env);
+        (int Categories, int Products, int Variants, int Images) first = await Counts(env);
         await seeder.SeedAsync(env.Db, clock, ct);
-        var second = await Counts(env);
+        (int Categories, int Products, int Variants, int Images) second = await Counts(env);
 
         Assert.Equal(first, second);
         Assert.True(first.Products >= 24 && first.Categories == 6 && first.Variants > first.Products && first.Images >= first.Products, first.ToString());
 
-        var (_, page1) = await env.GetAsync("/api/v1/products?pageSize=100");
-        var slugs = CatalogTestEnv.ItemSlugs(page1);
+        (System.Net.HttpStatusCode _, System.Text.Json.JsonDocument? page1) = await env.GetAsync("/api/v1/products?pageSize=100");
+        string[] slugs = CatalogTestEnv.ItemSlugs(page1);
         Assert.Empty(slugs.Intersect(HiddenSlugs));
         Assert.Equal(first.Products - HiddenSlugs.Length, slugs.Length);
     }
@@ -33,24 +34,24 @@ public class CatalogDevSeedTests(PostgresFixture postgres)
     [Fact]
     public async Task Reseeding_never_republishes_or_touches_an_existing_product()
     {
-        var ct = TestContext.Current.CancellationToken;
-        await using var env = await CatalogTestEnv.StartAsync(postgres);
-        var clock = new FakeClock(CatalogTestEnv.Epoch);
-        var seeder = new CatalogDevSeeder();
+        CancellationToken ct = TestContext.Current.CancellationToken;
+        await using CatalogTestEnv env = await CatalogTestEnv.StartAsync(postgres);
+        FakeClock clock = new FakeClock(CatalogTestEnv.Epoch);
+        CatalogDevSeeder seeder = new CatalogDevSeeder();
         await seeder.SeedAsync(env.Db, clock, ct);
 
-        var product = await env.Db.Set<Ecommerce.Catalog.Domain.Product>().FirstAsync(p => p.IsActive, ct);
-        var slug = product.Slug;
+        Product product = await env.Db.Set<Ecommerce.Catalog.Domain.Product>().FirstAsync(p => p.IsActive, ct);
+        string slug = product.Slug;
         product.Unpublish(CatalogTestEnv.Epoch.AddHours(1));
         await env.Db.SaveChangesAsync(ct);
-        var updatedAtBefore = product.UpdatedAt;
+        DateTimeOffset updatedAtBefore = product.UpdatedAt;
         env.Db.ChangeTracker.Clear();
 
         clock.UtcNow = CatalogTestEnv.Epoch.AddDays(1);
         await seeder.SeedAsync(env.Db, clock, ct);
 
         env.Db.ChangeTracker.Clear();
-        var after = await env.Db.Set<Ecommerce.Catalog.Domain.Product>().AsNoTracking().SingleAsync(p => p.Slug == slug, ct);
+        Product after = await env.Db.Set<Ecommerce.Catalog.Domain.Product>().AsNoTracking().SingleAsync(p => p.Slug == slug, ct);
         Assert.False(after.IsActive);
         Assert.Equal(updatedAtBefore, after.UpdatedAt);
     }
@@ -58,15 +59,15 @@ public class CatalogDevSeedTests(PostgresFixture postgres)
     [Fact]
     public async Task Enabling_the_seeder_outside_Development_fails_startup_naming_the_setting()
     {
-        using var factory = new ApiFactory(
+        using ApiFactory factory = new ApiFactory(
             ApiFactory.Unreachable,
             settings: new Dictionary<string, string> { ["Catalog:DevSeed:Enabled"] = "true" });
 
-        var ex = Record.Exception(() => factory.CreateClient());
+        Exception? ex = Record.Exception(() => factory.CreateClient());
 
         Assert.NotNull(ex);
-        var messages = new List<string>();
-        for (var e = ex; e is not null; e = e.InnerException)
+        List<string> messages = new List<string>();
+        for (Exception? e = ex; e is not null; e = e.InnerException)
         {
             messages.Add(e.Message);
         }
@@ -76,7 +77,7 @@ public class CatalogDevSeedTests(PostgresFixture postgres)
 
     private static async Task<(int Categories, int Products, int Variants, int Images)> Counts(CatalogTestEnv env)
     {
-        var ct = TestContext.Current.CancellationToken;
+        CancellationToken ct = TestContext.Current.CancellationToken;
         env.Db.ChangeTracker.Clear();
         return (
             await env.Db.Set<Ecommerce.Catalog.Domain.Category>().CountAsync(ct),

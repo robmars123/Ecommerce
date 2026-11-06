@@ -5,6 +5,8 @@ COPY backend/src/Ecommerce.SharedKernel/Ecommerce.SharedKernel.csproj backend/sr
 COPY backend/src/Ecommerce.Persistence/Ecommerce.Persistence.csproj backend/src/Ecommerce.Persistence/
 COPY backend/src/Modules/Catalog/Ecommerce.Catalog.Contracts/Ecommerce.Catalog.Contracts.csproj backend/src/Modules/Catalog/Ecommerce.Catalog.Contracts/
 COPY backend/src/Modules/Catalog/Ecommerce.Catalog/Ecommerce.Catalog.csproj backend/src/Modules/Catalog/Ecommerce.Catalog/
+COPY backend/src/Modules/Identity/Ecommerce.Identity.Contracts/Ecommerce.Identity.Contracts.csproj backend/src/Modules/Identity/Ecommerce.Identity.Contracts/
+COPY backend/src/Modules/Identity/Ecommerce.Identity/Ecommerce.Identity.csproj backend/src/Modules/Identity/Ecommerce.Identity/
 COPY backend/src/Modules/Inventory/Ecommerce.Inventory.Contracts/Ecommerce.Inventory.Contracts.csproj backend/src/Modules/Inventory/Ecommerce.Inventory.Contracts/
 COPY backend/src/Modules/Inventory/Ecommerce.Inventory/Ecommerce.Inventory.csproj backend/src/Modules/Inventory/Ecommerce.Inventory/
 COPY backend/src/Ecommerce.Api/Ecommerce.Api.csproj backend/src/Ecommerce.Api/

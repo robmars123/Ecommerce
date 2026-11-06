@@ -25,7 +25,7 @@ internal sealed record BackendProject(ProjectNode Node, string CsprojPath)
 internal static class SolutionLayout
 {
     /// <summary>The modules the repository is expected to contain. Adding a module means adding it here.</summary>
-    public static readonly IReadOnlyList<string> ExpectedModules = ["Catalog", "Inventory"];
+    public static readonly IReadOnlyList<string> ExpectedModules = ["Catalog", "Identity", "Inventory"];
 
     public static string Root { get; } = FindRoot();
 
@@ -56,7 +56,7 @@ internal static class SolutionLayout
     /// <summary>relativeToSrc uses either slash. Returns null when the path fits no project class.</summary>
     public static ProjectNode? Classify(string relativeToSrc)
     {
-        var parts = relativeToSrc.Replace('\\', '/').Split('/');
+        string[] parts = relativeToSrc.Replace('\\', '/').Split('/');
         switch (parts)
         {
             case ["Ecommerce.Api", "Ecommerce.Api.csproj"]:
@@ -65,7 +65,7 @@ internal static class SolutionLayout
                 return new ProjectNode("Ecommerce.SharedKernel", ProjectKind.SharedKernel, null);
             case ["Ecommerce.Persistence", "Ecommerce.Persistence.csproj"]:
                 return new ProjectNode("Ecommerce.Persistence", ProjectKind.Persistence, null);
-            case ["Modules", var module, var folder, var file]:
+            case ["Modules", string module, string folder, string file]:
                 if (file != folder + ".csproj")
                 {
                     return null;
@@ -86,14 +86,14 @@ internal static class SolutionLayout
 
     public static bool IsBuildOutput(string path)
     {
-        var relative = Path.GetRelativePath(FindRoot(), path);
-        var segments = relative.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        string relative = Path.GetRelativePath(FindRoot(), path);
+        string[] segments = relative.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
         return segments.Contains("bin") || segments.Contains("obj");
     }
 
     private static string FindRoot()
     {
-        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        DirectoryInfo? dir = new DirectoryInfo(AppContext.BaseDirectory);
         while (dir is not null)
         {
             if (File.Exists(Path.Combine(dir.FullName, "Ecommerce.slnx")))

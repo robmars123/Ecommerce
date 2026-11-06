@@ -14,7 +14,7 @@ internal sealed class ConfiguredImageUrlResolver(IOptions<CatalogImageOptions> o
             return null;
         }
 
-        var segments = storageKey
+        IEnumerable<string> segments = storageKey
             .Split('/', StringSplitOptions.RemoveEmptyEntries)
             .Select(Uri.EscapeDataString);
         return $"{_baseUrl}/{string.Join('/', segments)}";

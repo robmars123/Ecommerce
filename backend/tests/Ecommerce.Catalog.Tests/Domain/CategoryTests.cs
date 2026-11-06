@@ -8,8 +8,8 @@ public class CategoryTests
     [Fact]
     public void Create_accepts_valid_category_with_and_without_parent()
     {
-        var parent = Category.Create(Guid.NewGuid(), "clothing", "Clothing", null);
-        var child = Category.Create(Guid.NewGuid(), "tops", "Tops", parent.Id);
+        Category parent = Category.Create(Guid.NewGuid(), "clothing", "Clothing", null);
+        Category child = Category.Create(Guid.NewGuid(), "tops", "Tops", parent.Id);
         Assert.Null(parent.ParentId);
         Assert.Equal(parent.Id, child.ParentId);
     }
@@ -17,7 +17,7 @@ public class CategoryTests
     [Fact]
     public void Create_rejects_invalid_slug_empty_name_and_self_parent()
     {
-        var id = Guid.NewGuid();
+        Guid id = Guid.NewGuid();
         Assert.Throws<DomainException>(() => Category.Create(id, "Bad Slug", "Name", null));
         Assert.Throws<DomainException>(() => Category.Create(id, "ok", "", null));
         Assert.Throws<DomainException>(() => Category.Create(id, "ok", new string('n', 101), null));

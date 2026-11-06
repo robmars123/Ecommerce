@@ -39,16 +39,16 @@ internal static class CatalogDevSeedData
 
     private static List<SeedProduct> Build()
     {
-        var products = new List<SeedProduct>();
-        var index = 0;
-        foreach (var (categorySlug, names) in ActiveNames)
+        List<SeedProduct> products = new List<SeedProduct>();
+        int index = 0;
+        foreach ((string? categorySlug, string[]? names) in ActiveNames)
         {
-            foreach (var name in names)
+            foreach (string name in names)
             {
-                var slug = Slugify(name);
-                var variantCount = index % 3 + 1;
-                var basePrice = 9.99m + index * 3.5m;
-                var variants = Enumerable.Range(0, variantCount)
+                string slug = Slugify(name);
+                int variantCount = index % 3 + 1;
+                decimal basePrice = 9.99m + index * 3.5m;
+                List<SeedVariant> variants = Enumerable.Range(0, variantCount)
                     .Select(v => new SeedVariant(
                         Sku: $"{slug.ToUpperInvariant()}-{VariantCodes[v]}",
                         Name: VariantNames[v],

@@ -5,8 +5,8 @@ Agents update this at the **start and end of every task**.
 
 | Agent | Status | Slice | Task | Fix round | Updated |
 |---|---|---|---|---|---|
-| Marco (developer) | 🟢 AVAILABLE | refactor | Fix round 1 done (Domain Contracts source-scan rule) | 1 | 2026-11-03 20:20 |
-| Rob (architect, on demand) | 🟢 AVAILABLE | refactor | Re-review after fix round 1: PASS — slice-plans/module-projects-rob-review.md | 1 | 2026-11-03 17:00 |
+| Marco (developer) | 🟢 AVAILABLE | - | no-var hygiene fix done, verify.sh passes | - | 2026-11-05 12:30 |
+| Rob (architect, on demand) | 🟢 AVAILABLE | no-var | Re-review round 3: PASS; thread in slice-plans/no-var-rob-review.md | — | 2026-11-05 12:50 |
 
 **Rules**
 
@@ -16,5 +16,5 @@ Agents update this at the **start and end of every task**.
 
 ## Last reports
 
-- Marco: slice-plans/module-projects-marco-report.md (previous: slice-plans/slice-1a-marco-report.md)
-- Rob: slice-plans/module-projects-rob-review.md (previous: slice-plans/module-projects-plan.md)
+- Marco: slice-plans/archive/module-projects-marco-report.md (previous: slice-plans/archive/slice-1a-marco-report.md)
+- Rob: slice-plans/no-var-rob-review.md (previous: slice-plans/local-docker-rob-review.md)

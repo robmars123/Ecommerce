@@ -32,3 +32,24 @@ describe('queryKeys', () => {
     expect(queryKeys.products.detail('x').slice(0, all.length)).toEqual(all);
   });
 });
+
+describe('queryKeys.admin', () => {
+  it('starts every admin product key with admin.products.all and ignores empty filters', () => {
+    const all = queryKeys.admin.products.all;
+    const a = queryKeys.admin.products.list({ page: 1, pageSize: 20, status: 'all', search: undefined });
+    const b = queryKeys.admin.products.list({ page: 1, pageSize: 20 });
+    expect(a).toEqual(b);
+    for (const key of [a, queryKeys.admin.products.detail('x'), queryKeys.admin.products.preview('x')]) {
+      expect(key.slice(0, all.length)).toEqual([...all]);
+    }
+  });
+
+  it('differs by status, id and between detail and preview', () => {
+    expect(queryKeys.admin.products.list({ page: 1, pageSize: 20, status: 'active' })).not.toEqual(
+      queryKeys.admin.products.list({ page: 1, pageSize: 20 }),
+    );
+    expect(queryKeys.admin.products.detail('a')).not.toEqual(queryKeys.admin.products.detail('b'));
+    expect(queryKeys.admin.products.detail('a')).not.toEqual(queryKeys.admin.products.preview('a'));
+    expect(queryKeys.auth.me).toEqual(['auth', 'me']);
+  });
+});

@@ -18,7 +18,7 @@ public sealed class EcommerceDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        foreach (var module in _modules)
+        foreach (IModuleDbModel module in _modules)
         {
             module.Configure(modelBuilder);
         }

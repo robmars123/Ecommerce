@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Text.RegularExpressions;
 
 namespace Ecommerce.ArchitectureTests;
@@ -19,20 +20,20 @@ public partial class LayerRuleTests
     [Fact]
     public void Layer_source_files_never_name_a_forbidden_namespace()
     {
-        var modules = SolutionLayout.ExpectedModules;
-        var violations = new List<string>();
+        IReadOnlyList<string> modules = SolutionLayout.ExpectedModules;
+        List<string> violations = new List<string>();
 
-        foreach (var impl in SolutionLayout.Modules(ProjectKind.ModuleImpl))
+        foreach (BackendProject impl in SolutionLayout.Modules(ProjectKind.ModuleImpl))
         {
-            var module = impl.Node.Module!;
-            foreach (var layer in new[] { "Domain", "Application", "Api" })
+            string module = impl.Node.Module!;
+            foreach (string? layer in new[] { "Domain", "Application", "Api" })
             {
-                var files = SolutionLayout.SourceFiles(Path.Combine(impl.Directory, layer)).ToList();
-                if (module == "Catalog")
+                List<string> files = SolutionLayout.SourceFiles(Path.Combine(impl.Directory, layer)).ToList();
+                if (module is "Catalog" or "Identity")
                 {
-                    Assert.True(files.Count > 0, $"No {layer} source files found for Catalog; the scan is vacuous.");
+                    Assert.True(files.Count > 0, $"No {layer} source files found for {module}; the scan is vacuous.");
                 }
-                foreach (var file in files)
+                foreach (string? file in files)
                 {
                     violations.AddRange(SourceRules.Violations(
                         module, layer, Path.GetRelativePath(SolutionLayout.Root, file), File.ReadAllLines(file), modules));
@@ -46,27 +47,27 @@ public partial class LayerRuleTests
     [Fact]
     public void Module_sources_declare_no_global_usings_and_namespaces_match_folders()
     {
-        var problems = new List<string>();
-        var scanned = 0;
+        List<string> problems = new List<string>();
+        int scanned = 0;
 
-        foreach (var project in SolutionLayout.Projects.Where(p => p.Node.Kind is ProjectKind.ModuleImpl or ProjectKind.ModuleContracts))
+        foreach (BackendProject? project in SolutionLayout.Projects.Where(p => p.Node.Kind is ProjectKind.ModuleImpl or ProjectKind.ModuleContracts))
         {
-            foreach (var file in SolutionLayout.SourceFiles(project.Directory))
+            foreach (string file in SolutionLayout.SourceFiles(project.Directory))
             {
                 scanned++;
-                var relative = Path.GetRelativePath(SolutionLayout.Root, file);
-                var folders = Path.GetRelativePath(project.Directory, Path.GetDirectoryName(file)!)
+                string relative = Path.GetRelativePath(SolutionLayout.Root, file);
+                IEnumerable<string> folders = Path.GetRelativePath(project.Directory, Path.GetDirectoryName(file)!)
                     .Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
                     .Where(s => s != ".");
-                var expected = string.Join('.', new[] { project.Name }.Concat(folders));
+                string expected = string.Join('.', new[] { project.Name }.Concat(folders));
 
-                var text = File.ReadAllText(file);
+                string text = File.ReadAllText(file);
                 if (GlobalUsing().IsMatch(text))
                 {
                     problems.Add($"{relative}: declares a global using");
                 }
 
-                var namespaces = NamespaceDeclaration().Matches(text).Select(m => m.Groups[1].Value).ToList();
+                List<string> namespaces = NamespaceDeclaration().Matches(text).Select(m => m.Groups[1].Value).ToList();
                 if (namespaces.Count == 0 || namespaces.Any(n => n != expected))
                 {
                     problems.Add($"{relative}: namespace [{string.Join(", ", namespaces)}] does not match folder, expected {expected}");
@@ -80,18 +81,18 @@ public partial class LayerRuleTests
 
     private static void AssertLayerTypes(string layer)
     {
-        var violations = new List<string>();
-        foreach (var impl in SolutionLayout.Modules(ProjectKind.ModuleImpl))
+        List<string> violations = new List<string>();
+        foreach (BackendProject impl in SolutionLayout.Modules(ProjectKind.ModuleImpl))
         {
-            var module = impl.Node.Module!;
-            var assembly = impl.Assembly;
-            var prefix = $"Ecommerce.{module}.{layer}";
-            var types = assembly.GetTypes().Where(t => LayerRules.InNamespace(t.Namespace, prefix)).ToList();
-            if (module == "Catalog")
+            string module = impl.Node.Module!;
+            Assembly assembly = impl.Assembly;
+            string prefix = $"Ecommerce.{module}.{layer}";
+            List<Type> types = assembly.GetTypes().Where(t => LayerRules.InNamespace(t.Namespace, prefix)).ToList();
+            if (module is "Catalog" or "Identity")
             {
-                Assert.True(types.Count > 0, $"No Catalog {layer} types found; the check is vacuous.");
+                Assert.True(types.Count > 0, $"No {module} {layer} types found; the check is vacuous.");
             }
-            foreach (var type in types)
+            foreach (Type? type in types)
             {
                 violations.AddRange(LayerRules.Violations(module, layer, assembly, type.FullName ?? type.Name, TypeDependencies.Of(type)));
             }

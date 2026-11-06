@@ -1,5 +1,5 @@
-import { ScreenStub } from '@/components/ScreenStub';
+import { AdminProductListView } from '@/features/admin-catalog/components/AdminProductListView';
 
 export default function AdminProductListScreen() {
-  return <ScreenStub title="Admin · Products" />;
+  return <AdminProductListView />;
 }

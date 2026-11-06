@@ -9,12 +9,12 @@ public class MigrationTests(PostgresFixture postgres)
     [Fact]
     public async Task Migrations_apply_cleanly_to_an_empty_postgres_17_database()
     {
-        var ct = TestContext.Current.CancellationToken;
-        var cs = await postgres.CreateDatabaseAsync(ct);
-        await using var factory = new ApiFactory(cs);
+        CancellationToken ct = TestContext.Current.CancellationToken;
+        string cs = await postgres.CreateDatabaseAsync(ct);
+        await using ApiFactory factory = new ApiFactory(cs);
 
-        using var scope = factory.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<EcommerceDbContext>();
+        using IServiceScope scope = factory.Services.CreateScope();
+        EcommerceDbContext db = scope.ServiceProvider.GetRequiredService<EcommerceDbContext>();
         await db.Database.MigrateAsync(ct);
 
         Assert.Empty(await db.Database.GetPendingMigrationsAsync(ct));
@@ -22,7 +22,7 @@ public class MigrationTests(PostgresFixture postgres)
 
         Assert.Contains(await db.Database.GetAppliedMigrationsAsync(ct), m => m.EndsWith("_AddCatalog", StringComparison.Ordinal));
 
-        var version = await db.Database.SqlQueryRaw<string>("SHOW server_version").ToListAsync(ct);
+        List<string> version = await db.Database.SqlQueryRaw<string>("SHOW server_version").ToListAsync(ct);
         Assert.StartsWith("17.", Assert.Single(version));
     }
 }

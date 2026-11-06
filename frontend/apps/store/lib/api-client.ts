@@ -1,10 +1,21 @@
 import { getApiBaseUrl } from './config';
 import { newCorrelationId } from './correlation-id';
 
-export type ApiErrorKind = 'network' | 'timeout' | 'not-found' | 'validation' | 'client' | 'server' | 'config';
+export type ApiErrorKind =
+  | 'network'
+  | 'timeout'
+  | 'not-found'
+  | 'validation'
+  | 'unauthorized'
+  | 'forbidden'
+  | 'conflict'
+  | 'client'
+  | 'server'
+  | 'config';
 
 export const REQUEST_TIMEOUT_MS = 15_000;
 
+/** Holds no headers, no request and no token: an error can be logged or rendered safely. */
 export class ApiError extends Error {
   kind: ApiErrorKind;
   status?: number;
@@ -31,7 +42,32 @@ export class ApiError extends Error {
 type ApiGetOptions = {
   params?: Record<string, string | number | undefined>;
   signal?: AbortSignal;
+  /** 'bearer' (default) sends the access token when there is one; 'none' never does. */
+  auth?: 'bearer' | 'none';
 };
+
+type ApiSendOptions = {
+  body?: unknown;
+  signal?: AbortSignal;
+  auth?: 'bearer' | 'none';
+  /** Only 'cookie' changes the request: it sends X-Auth-Transport: cookie and includes credentials. */
+  refreshTransport?: 'cookie' | 'body';
+};
+
+/**
+ * The session registers these (the lib never imports features). refresh() is single-flight on the session side and
+ * resolves true when a new access token is available.
+ */
+type AuthHandlers = {
+  getAccessToken: () => string | undefined;
+  refresh: () => Promise<boolean>;
+};
+
+let authHandlers: AuthHandlers | undefined;
+
+export function setAuthHandlers(handlers: AuthHandlers | undefined): void {
+  authHandlers = handlers;
+}
 
 function buildUrl(base: string, path: string, params?: ApiGetOptions['params']): string {
   const query = Object.entries(params ?? {})
@@ -42,7 +78,10 @@ function buildUrl(base: string, path: string, params?: ApiGetOptions['params']):
 }
 
 function kindForStatus(status: number): ApiErrorKind {
+  if (status === 401) return 'unauthorized';
+  if (status === 403) return 'forbidden';
   if (status === 404) return 'not-found';
+  if (status === 409) return 'conflict';
   if (status === 400 || status === 422) return 'validation';
   if (status >= 500) return 'server';
   return 'client';
@@ -53,7 +92,8 @@ type ParsedBody = { parsed: true; value: unknown } | { parsed: false };
 async function readJson(response: Response): Promise<ParsedBody> {
   try {
     const text = await response.text();
-    return { parsed: true, value: JSON.parse(text) };
+    // 202 and 204 carry no body: an empty body is an empty object.
+    return { parsed: true, value: text.length === 0 ? {} : JSON.parse(text) };
   } catch {
     return { parsed: false };
   }
@@ -71,10 +111,25 @@ function toFieldErrors(value: unknown): Record<string, string[]> | undefined {
   return entries.length > 0 ? Object.fromEntries(entries) : undefined;
 }
 
-export async function apiGet<T>(path: string, options: ApiGetOptions = {}): Promise<T> {
+type RequestSpec = {
+  method: 'GET' | 'POST' | 'PUT';
+  path: string;
+  params?: ApiGetOptions['params'];
+  body?: unknown;
+  signal?: AbortSignal;
+  auth: 'bearer' | 'none';
+  refreshTransport?: 'cookie' | 'body';
+};
+
+/** One HTTP attempt. Returns the parsed body or throws an ApiError. */
+async function attempt<T>(spec: RequestSpec, token: string | undefined): Promise<T> {
   const base = getApiBaseUrl();
   if (!base) {
     throw new ApiError('config', 'EXPO_PUBLIC_API_BASE_URL is not set.');
+  }
+  // Already cancelled: do not start a request at all.
+  if (spec.signal?.aborted) {
+    throw spec.signal.reason ?? new Error('Aborted');
   }
 
   const controller = new AbortController();
@@ -84,27 +139,44 @@ export async function apiGet<T>(path: string, options: ApiGetOptions = {}): Prom
     controller.abort();
   }, REQUEST_TIMEOUT_MS);
   const forwardAbort = () => controller.abort();
-  options.signal?.addEventListener('abort', forwardAbort);
+  spec.signal?.addEventListener('abort', forwardAbort);
 
   try {
+    const headers: Record<string, string> = { Accept: 'application/json', 'X-Correlation-ID': newCorrelationId() };
+    if (spec.body !== undefined) {
+      headers['Content-Type'] = 'application/json';
+    }
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+    if (spec.refreshTransport === 'cookie') {
+      headers['X-Auth-Transport'] = 'cookie';
+    }
+
     let response: Response;
     try {
-      response = await fetch(buildUrl(base, path, options.params), {
-        method: 'GET',
-        headers: { Accept: 'application/json', 'X-Correlation-ID': newCorrelationId() },
+      response = await fetch(buildUrl(base, spec.path, spec.params), {
+        method: spec.method,
+        headers,
+        body: spec.body === undefined ? undefined : JSON.stringify(spec.body),
+        credentials: spec.refreshTransport === 'cookie' ? 'include' : undefined,
         signal: controller.signal,
       });
     } catch (error) {
       if (timedOut) {
         throw new ApiError('timeout', 'The request timed out.');
       }
-      if (options.signal?.aborted) {
+      if (spec.signal?.aborted) {
         throw error;
       }
       throw new ApiError('network', 'The request could not be completed.');
     }
 
     const result = await readJson(response);
+    // The timer can fire while the body is still being read.
+    if (timedOut) {
+      throw new ApiError('timeout', 'The request timed out.');
+    }
     const body = asRecord(result.parsed ? result.value : undefined);
     const correlationId =
       (typeof body.correlationId === 'string' ? body.correlationId : undefined) ??
@@ -126,8 +198,48 @@ export async function apiGet<T>(path: string, options: ApiGetOptions = {}): Prom
     return result.value as T;
   } finally {
     clearTimeout(timer);
-    options.signal?.removeEventListener('abort', forwardAbort);
+    spec.signal?.removeEventListener('abort', forwardAbort);
   }
+}
+
+/**
+ * A request that carried a token and got 401 refreshes once and retries once. A second 401, or a failed refresh,
+ * is "unauthorized". The refresh is single-flight in the session, so parallel 401s share one refresh.
+ */
+async function execute<T>(spec: RequestSpec): Promise<T> {
+  const token = spec.auth === 'bearer' ? authHandlers?.getAccessToken() : undefined;
+  try {
+    return await attempt<T>(spec, token);
+  } catch (error) {
+    if (!(error instanceof ApiError) || error.kind !== 'unauthorized' || !token || !authHandlers) {
+      throw error;
+    }
+    if (!(await authHandlers.refresh())) {
+      throw error;
+    }
+    return attempt<T>(spec, authHandlers.getAccessToken());
+  }
+}
+
+export function apiGet<T>(path: string, options: ApiGetOptions = {}): Promise<T> {
+  return execute<T>({
+    method: 'GET',
+    path,
+    params: options.params,
+    signal: options.signal,
+    auth: options.auth ?? 'bearer',
+  });
+}
+
+export function apiSend<T>(method: 'POST' | 'PUT', path: string, options: ApiSendOptions = {}): Promise<T> {
+  return execute<T>({
+    method,
+    path,
+    body: options.body,
+    signal: options.signal,
+    auth: options.auth ?? 'bearer',
+    refreshTransport: options.refreshTransport,
+  });
 }
 
 const MESSAGES: Record<ApiErrorKind, string> = {
@@ -135,6 +247,9 @@ const MESSAGES: Record<ApiErrorKind, string> = {
   timeout: 'The store is taking too long to respond. Please try again.',
   'not-found': "We couldn't find that.",
   validation: 'Something about that request was not right. Please change it and try again.',
+  unauthorized: 'Please log in to continue.',
+  forbidden: "You don't have access to that.",
+  conflict: 'That changed while you were editing. Reload and try again.',
   client: 'That request could not be completed. Please try again.',
   server: 'Something went wrong on our side. Please try again.',
   config: "The app isn't configured to reach the store.",

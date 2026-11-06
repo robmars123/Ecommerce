@@ -1,3 +1,4 @@
+import { StyleSheet } from 'react-native';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 
 import { CategoryFilter } from './CategoryFilter';
@@ -27,5 +28,12 @@ describe('CategoryFilter', () => {
   it('meets the 44pt minimum touch target', async () => {
     await render(<CategoryFilter categories={categories} onSelect={jest.fn()} />);
     expect(screen.getByRole('button', { name: 'Tops' })).toHaveStyle({ minHeight: 44 });
+  });
+
+  it('does not stretch or shrink the horizontal scroller in a column parent', async () => {
+    await render(<CategoryFilter categories={categories} onSelect={jest.fn()} />);
+
+    const style = StyleSheet.flatten(screen.getByTestId('category-scroller').props.style);
+    expect(style).toMatchObject({ flexGrow: 0, flexShrink: 0 });
   });
 });

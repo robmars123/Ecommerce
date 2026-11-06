@@ -20,10 +20,10 @@ internal sealed class CatalogDevSeedHostedService(
     {
         try
         {
-            using var scope = scopes.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<EcommerceDbContext>();
+            using IServiceScope scope = scopes.CreateScope();
+            EcommerceDbContext db = scope.ServiceProvider.GetRequiredService<EcommerceDbContext>();
 
-            var pending = await db.Database.GetPendingMigrationsAsync(cancellationToken);
+            IEnumerable<string> pending = await db.Database.GetPendingMigrationsAsync(cancellationToken);
             if (pending.Any())
             {
                 logger.LogWarning("Catalog dev seed skipped: migrations are pending. Run dotnet-ef database update.");

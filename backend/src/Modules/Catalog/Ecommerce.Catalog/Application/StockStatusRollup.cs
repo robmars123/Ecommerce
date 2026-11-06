@@ -10,7 +10,7 @@ internal static class StockStatusRollup
     /// </summary>
     public static StockStatus Rollup(IEnumerable<StockStatus> variantStatuses)
     {
-        var known = variantStatuses.Where(s => s != StockStatus.Unknown).ToList();
+        List<StockStatus> known = variantStatuses.Where(s => s != StockStatus.Unknown).ToList();
         if (known.Contains(StockStatus.InStock)) return StockStatus.InStock;
         if (known.Contains(StockStatus.Low)) return StockStatus.Low;
         if (known.Contains(StockStatus.Out)) return StockStatus.Out;

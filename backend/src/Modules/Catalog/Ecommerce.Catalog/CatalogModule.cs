@@ -1,8 +1,11 @@
+using Ecommerce.Catalog.Api.Admin;
 using Ecommerce.Catalog.Application;
+using Ecommerce.Catalog.Application.Admin;
 using Ecommerce.Catalog.Infrastructure;
 using Ecommerce.Catalog.Infrastructure.DevSeed;
 using Ecommerce.Catalog.Infrastructure.Persistence;
 using Ecommerce.Persistence;
+using FluentValidation;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -25,6 +28,16 @@ public static class CatalogModule
         services.AddScoped<ICatalogReadStore, CatalogReadStore>();
         services.AddScoped<CatalogBrowseService>();
         services.AddScoped<CatalogDevSeeder>();
+
+        // Admin catalog (Slice 1b).
+        services.AddScoped<IProductWriteStore, ProductWriteStore>();
+        services.AddScoped<ICategoryWriteStore, CategoryWriteStore>();
+        services.AddScoped<IAdminCatalogReadStore, AdminCatalogReadStore>();
+        services.AddScoped<AdminProductService>();
+        services.AddScoped<AdminCategoryService>();
+        services.AddScoped<IValidator<CreateProductRequest>, CreateProductRequestValidator>();
+        services.AddScoped<IValidator<UpdateProductRequest>, UpdateProductRequestValidator>();
+        services.AddScoped<IValidator<CreateCategoryRequest>, CreateCategoryRequestValidator>();
         return services;
     }
 

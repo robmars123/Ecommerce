@@ -1,3 +1,4 @@
+import { StyleSheet } from 'react-native';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 
 import { SortPicker } from './SortPicker';
@@ -23,5 +24,12 @@ describe('SortPicker', () => {
     expect(screen.getByRole('button', { name: 'Price: low to high' })).toBeSelected();
     await fireEvent.press(screen.getByRole('button', { name: 'Price: high to low' }));
     expect(onSelect).toHaveBeenCalledWith('price-desc');
+  });
+
+  it('does not stretch or shrink the horizontal scroller in a column parent', async () => {
+    await render(<SortPicker hasSearch={false} onSelect={jest.fn()} />);
+
+    const style = StyleSheet.flatten(screen.getByTestId('sort-scroller').props.style);
+    expect(style).toMatchObject({ flexGrow: 0, flexShrink: 0 });
   });
 });

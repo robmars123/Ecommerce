@@ -1,5 +1,10 @@
-import { ScreenStub } from '@/components/ScreenStub';
+import { FormScreen } from '@/components/FormScreen';
+import { LoginForm } from '@/features/auth/components/LoginForm';
 
 export default function LoginScreen() {
-  return <ScreenStub title="Log in" />;
+  return (
+    <FormScreen title="Log in">
+      <LoginForm />
+    </FormScreen>
+  );
 }
