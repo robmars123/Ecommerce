@@ -4,6 +4,7 @@ using Ecommerce.Api.Observability;
 using Ecommerce.Api.Composition;
 using Ecommerce.Api.Time;
 using Ecommerce.Catalog;
+using Ecommerce.Inventory;
 using Ecommerce.SharedKernel.Time;
 using Ecommerce.Persistence;
 using Microsoft.AspNetCore.Cors;
@@ -42,7 +43,7 @@ builder.Services.AddOptions<CorsOptions>()
         // Configured origins only; never "*" with credentials (architecture 10.1). Empty list = no cross-origin access.
         string[] origins = config.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
         string[] methods = [HttpMethods.Get, HttpMethods.Post, HttpMethods.Put];
-        string[] headers = [CorrelationId.HeaderName, "Content-Type", "Authorization", RefreshTokenHeader];
+        string[] headers = [CorrelationId.HeaderName, "Content-Type", "Authorization", RefreshTokenHeader, "Idempotency-Key"];
 
         // Default policy (health and anything not listed below): no credentials.
         o.AddDefaultPolicy(policy => policy
@@ -75,6 +76,7 @@ if (builder.Configuration.GetValue<bool>(CatalogModule.DevSeedEnabledKey))
             "Dev seeding is allowed only in Development.");
     }
     builder.Services.AddCatalogDevSeed();
+    builder.Services.AddInventoryDevSeed();
 }
 
 builder.Services.AddHealthChecks().AddPostgresReadinessCheck();

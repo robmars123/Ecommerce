@@ -1,5 +1,5 @@
-import { nextListParams, parseListParams, PRODUCT_PAGE_SIZE } from './list-params';
-import type { ProductListParams } from './types';
+import { nextListParams, parseListParams, PRODUCT_PAGE_SIZE, showingRange } from './list-params';
+import type { ProductListPage, ProductListParams } from './types';
 
 const base: ProductListParams = { page: 1, pageSize: PRODUCT_PAGE_SIZE };
 
@@ -82,5 +82,24 @@ describe('nextListParams', () => {
   it('does not reset the page when the same value is set again', () => {
     expect(nextListParams(current, { search: 'shirt' }).page).toBe(4);
     expect(nextListParams(current, { sort: 'price-asc' }).page).toBe(4);
+  });
+});
+
+describe('showingRange', () => {
+  function page(pageNumber: number, count: number): ProductListPage {
+    const items = Array.from({ length: count }, () => ({}) as ProductListPage['items'][number]);
+    return { items, page: pageNumber, pageSize: 8, totalCount: 12, totalPages: 2 };
+  }
+
+  it('covers a full first page', () => {
+    expect(showingRange(page(1, 8))).toEqual({ first: 1, last: 8 });
+  });
+
+  it('covers a short last page', () => {
+    expect(showingRange(page(2, 4))).toEqual({ first: 9, last: 12 });
+  });
+
+  it('covers a single item', () => {
+    expect(showingRange(page(1, 1))).toEqual({ first: 1, last: 1 });
   });
 });

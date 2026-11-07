@@ -22,5 +22,10 @@ public sealed class EcommerceDbContext : DbContext
         {
             module.Configure(modelBuilder);
         }
+
+        // Platform table shared by modules (D5): owned by Persistence, written through SharedKernel IAuditLog.
+        modelBuilder.ApplyConfiguration(new Audit.AuditLogEntryConfiguration());
+        modelBuilder.ApplyConfiguration(new Idempotency.IdempotencyKeyEntryConfiguration());
+        modelBuilder.ApplyConfiguration(new Outbox.OutboxEventEntryConfiguration());
     }
 }

@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 type PaginationProps = {
   page: number;
@@ -6,6 +6,8 @@ type PaginationProps = {
   onPrevious: () => void;
   onNext: () => void;
 };
+
+const BUTTON = 'min-h-touch min-w-touch items-center justify-center rounded-control border border-border bg-surface px-lg';
 
 export function Pagination({ page, totalPages, onPrevious, onNext }: PaginationProps) {
   if (totalPages <= 1) {
@@ -15,41 +17,26 @@ export function Pagination({ page, totalPages, onPrevious, onNext }: PaginationP
   const atEnd = page >= totalPages;
 
   return (
-    <View style={styles.row}>
+    <View className="flex-row items-center justify-between py-md">
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ disabled: atStart }}
         disabled={atStart}
         onPress={onPrevious}
-        style={[styles.button, atStart && styles.disabled]}
+        className={`${BUTTON} ${atStart ? 'opacity-40' : ''}`}
       >
-        <Text style={styles.text}>Previous</Text>
+        <Text className="text-body text-foreground">Previous</Text>
       </Pressable>
-      <Text style={styles.text}>{`Page ${page} of ${totalPages}`}</Text>
+      <Text className="text-body text-foreground">{`Page ${page} of ${totalPages}`}</Text>
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ disabled: atEnd }}
         disabled={atEnd}
         onPress={onNext}
-        style={[styles.button, atEnd && styles.disabled]}
+        className={`${BUTTON} ${atEnd ? 'opacity-40' : ''}`}
       >
-        <Text style={styles.text}>Next</Text>
+        <Text className="text-body text-foreground">Next</Text>
       </Pressable>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12 },
-  button: {
-    minHeight: 44,
-    minWidth: 44,
-    paddingHorizontal: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: 8,
-  },
-  disabled: { opacity: 0.4 },
-  text: { fontSize: 16 },
-});

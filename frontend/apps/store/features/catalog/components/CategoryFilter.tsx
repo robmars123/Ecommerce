@@ -1,5 +1,7 @@
 import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 
+import { touch } from '@/lib/design-tokens';
+
 import type { Category } from '../types';
 
 type CategoryFilterProps = {
@@ -15,7 +17,7 @@ export function CategoryFilter({ categories, selected, onSelect }: CategoryFilte
       testID="category-scroller"
       showsHorizontalScrollIndicator={false}
       style={styles.scroller}
-      contentContainerStyle={styles.row}
+      contentContainerClassName="gap-sm py-xs"
     >
       <Chip label="All" selected={selected === undefined} onPress={() => onSelect(undefined)} />
       {categories.map((c) => (
@@ -31,26 +33,16 @@ function Chip({ label, selected, onPress }: { label: string; selected: boolean; 
       accessibilityRole="button"
       accessibilityState={{ selected }}
       onPress={onPress}
-      style={[styles.chip, selected && styles.chipSelected]}
+      className={`min-w-touch items-center justify-center rounded-pill border px-lg ${selected ? 'border-selected bg-selected' : 'border-border bg-surface'}`}
+      style={styles.touch}
     >
-      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{label}</Text>
+      <Text className={`text-body ${selected ? 'font-semibold text-selected-foreground' : 'text-foreground'}`}>{label}</Text>
     </Pressable>
   );
 }
 
+// className does not resolve under Jest, so the asserted properties stay styles (arch §5.5 fallback).
 const styles = StyleSheet.create({
   scroller: { flexGrow: 0, flexShrink: 0 },
-  row: { gap: 8, paddingVertical: 4 },
-  chip: {
-    minHeight: 44,
-    minWidth: 44,
-    paddingHorizontal: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: 22,
-  },
-  chipSelected: { backgroundColor: '#111827' },
-  chipText: { fontSize: 16 },
-  chipTextSelected: { color: '#ffffff', fontWeight: '600' },
+  touch: { minHeight: touch },
 });

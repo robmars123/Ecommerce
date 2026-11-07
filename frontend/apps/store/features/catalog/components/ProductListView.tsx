@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { FlatList, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { FlatList, Text, useWindowDimensions, View } from 'react-native';
 
 import { EmptyState } from '@/components/EmptyState';
 import { ErrorState } from '@/components/ErrorState';
@@ -8,7 +8,7 @@ import { userMessage } from '@/lib/api-client';
 
 import { useCategoriesQuery } from '../hooks/useCategoriesQuery';
 import { useProductsQuery } from '../hooks/useProductsQuery';
-import { nextListParams, parseListParams, PRODUCT_PAGE_SIZE } from '../list-params';
+import { nextListParams, parseListParams, PRODUCT_PAGE_SIZE, showingRange } from '../list-params';
 import type { ProductListParams } from '../types';
 import { CategoryFilter } from './CategoryFilter';
 import { Pagination } from './Pagination';
@@ -55,9 +55,9 @@ export function ProductListView() {
   const data = products.data;
 
   return (
-    <View style={styles.container}>
+    <View className="w-full max-w-content flex-1 gap-sm self-center p-lg">
       <Stack.Screen options={{ title: 'Products' }} />
-      <Text accessibilityRole="header" style={styles.title}>
+      <Text accessibilityRole="header" className="text-heading font-semibold text-foreground">
         Products
       </Text>
 
@@ -69,23 +69,31 @@ export function ProductListView() {
           onSelect={(category) => change({ category })}
         />
       ) : null}
-      <SortPicker sort={params.sort} hasSearch={!!params.search} onSelect={(sort) => change({ sort })} />
+      <View className="flex-row items-center gap-sm">
+        <Text className="text-small text-muted">Sort</Text>
+        <View className="min-w-0 flex-1">
+          <SortPicker sort={params.sort} hasSearch={!!params.search} onSelect={(sort) => change({ sort })} />
+        </View>
+      </View>
 
       {data ? (
         data.items.length > 0 ? (
           <>
-            <Text accessibilityLiveRegion="polite" style={styles.count}>
-              {data.totalCount === 1 ? '1 product' : `${data.totalCount} products`}
-            </Text>
+            <View accessibilityLiveRegion="polite" className="flex-row gap-xs">
+              <Text className="text-small text-muted">{`Showing ${showingRange(data).first}–${showingRange(data).last} of`}</Text>
+              <Text className="text-small text-muted">
+                {data.totalCount === 1 ? '1 product' : `${data.totalCount} products`}
+              </Text>
+            </View>
             <FlatList
               key={`columns-${columns}`}
               data={data.items}
               keyExtractor={(item) => item.id}
               numColumns={columns}
-              columnWrapperStyle={columns > 1 ? styles.columnWrapper : undefined}
-              contentContainerStyle={styles.list}
+              columnWrapperClassName={columns > 1 ? 'gap-lg' : undefined}
+              contentContainerClassName="gap-lg pb-lg"
               renderItem={({ item }) => (
-                <View style={styles.cell}>
+                <View className="flex-1">
                   <ProductCard item={item} />
                 </View>
               )}
@@ -118,12 +126,3 @@ export function ProductListView() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, gap: 8 },
-  title: { fontSize: 24, fontWeight: '600' },
-  count: { fontSize: 14, opacity: 0.7 },
-  list: { gap: 16, paddingBottom: 16 },
-  columnWrapper: { gap: 16 },
-  cell: { flex: 1 },
-});

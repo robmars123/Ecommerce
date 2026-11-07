@@ -53,3 +53,19 @@ describe('queryKeys.admin', () => {
     expect(queryKeys.auth.me).toEqual(['auth', 'me']);
   });
 });
+
+describe('queryKeys.orders', () => {
+  it('differs by page and by id, and every orders key starts with orders.all', () => {
+    const all = queryKeys.orders.all;
+    expect(queryKeys.orders.list(1)).not.toEqual(queryKeys.orders.list(2));
+    expect(queryKeys.orders.detail('a')).not.toEqual(queryKeys.orders.detail('b'));
+    expect(queryKeys.orders.list(1).slice(0, all.length)).toEqual(all);
+    expect(queryKeys.orders.detail('a').slice(0, all.length)).toEqual(all);
+  });
+});
+
+describe('queryKeys.shippingMethods', () => {
+  it('is one fixed key', () => {
+    expect(queryKeys.shippingMethods).toEqual(['shipping-methods']);
+  });
+});

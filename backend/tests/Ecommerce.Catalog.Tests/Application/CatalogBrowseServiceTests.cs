@@ -47,7 +47,7 @@ public class CatalogBrowseServiceTests
     }
 
     [Fact]
-    public async Task Search_maps_missing_ids_to_unknown_and_rolls_up_per_product()
+    public async Task Search_maps_missing_ids_to_Out_and_rolls_up_per_product()
     {
         (Guid inStock, Guid low, Guid out1, Guid out2, Guid missing) = (Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid());
         ProductPageRows page = new ProductPageRows(
@@ -61,7 +61,7 @@ public class CatalogBrowseServiceTests
         ProductListPage result = await service.SearchAsync(Criteria(), TestContext.Current.CancellationToken);
 
         Assert.Equal(
-            [StockStatus.InStock, StockStatus.Low, StockStatus.Out, StockStatus.Unknown],
+            [StockStatus.InStock, StockStatus.Low, StockStatus.Out, StockStatus.Out],
             result.Items.Select(i => i.StockStatus).ToArray());
     }
 
@@ -132,7 +132,7 @@ public class CatalogBrowseServiceTests
         ProductDetail? result = await service.GetBySlugAsync("blue-shirt", TestContext.Current.CancellationToken);
 
         Assert.NotNull(result);
-        Assert.Equal([StockStatus.Out, StockStatus.Unknown], result.Variants.Select(v => v.StockStatus).ToArray());
+        Assert.Equal([StockStatus.Out, StockStatus.Out], result.Variants.Select(v => v.StockStatus).ToArray());
         Assert.Equal(15m, result.Variants[1].CompareAtPrice);
         Assert.Equal(new string?[] { "resolved:k/1.jpg", "resolved:k/2.jpg" }, result.Images.Select(i => i.Url).ToArray());
         Assert.Single(inventory.Calls);
@@ -167,6 +167,9 @@ public class CatalogBrowseServiceTests
             Dictionary<Guid, StockStatus> result = statuses.Where(kv => variantIds.Contains(kv.Key)).ToDictionary(kv => kv.Key, kv => kv.Value);
             return Task.FromResult<IReadOnlyDictionary<Guid, StockStatus>>(result);
         }
+
+        public Task<IReadOnlyDictionary<Guid, StockAvailability>> GetAvailabilityAsync(
+            IReadOnlyCollection<Guid> variantIds, CancellationToken ct) => throw new NotSupportedException();
     }
 
     private sealed class FakeImages : IImageUrlResolver

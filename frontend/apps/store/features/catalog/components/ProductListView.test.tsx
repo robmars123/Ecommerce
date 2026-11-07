@@ -173,3 +173,14 @@ describe('ProductListView', () => {
     expect(screen.getAllByRole('header', { name: 'Products' }).length).toBeGreaterThanOrEqual(1);
   });
 });
+
+describe('ProductListView count line', () => {
+  it('shows the visible range and the unchanged total, with one Products header', async () => {
+    mockApi(() => jsonResponse(200, makePage([makeItem(), makeItem({ id: 'p-2', slug: 'red-shirt', name: 'Red Shirt' })])));
+    await render('/products');
+
+    expect(await screen.findByText('Showing 1–2 of')).toBeOnTheScreen();
+    expect(screen.getByText('2 products')).toBeOnTheScreen();
+    expect(screen.getAllByRole('header', { name: 'Products' })).toHaveLength(1);
+  });
+});

@@ -8,6 +8,7 @@ import type { UserRole } from '@/features/auth/types';
 import { makeAdminPage, makeAdminProduct } from '@/tests/admin-fixtures';
 import { jsonResponse } from '@/tests/fetch-mock';
 import { categories, makeDetail, makePage } from '@/tests/fixtures';
+import { makeOrderDetail, makeOrderPage } from '@/tests/order-fixtures';
 import { signInAs } from '@/tests/session';
 
 jest.mock('expo-secure-store');
@@ -17,14 +18,14 @@ const APP_DIR = path.join(process.cwd(), 'app');
 // file (relative to app/, "/" separators) -> url to render -> screen title -> built (real screen) or still a stub -> who is signed in.
 // Built screens fetch from the API, so their test mocks fetch and asserts the stub note is gone. /admin pages need an Admin session.
 const ROUTES: ReadonlyArray<readonly [file: string, url: string, title: string, built: boolean, session: UserRole | null]> = [
-  ['index.tsx', '/', 'Home', true, null],
+  ['index.tsx', '/products', 'Products', true, null],
   ['products/index.tsx', '/products', 'Products', true, null],
   ['products/[slug].tsx', '/products/blue-shirt', 'Blue Shirt', true, null],
-  ['cart.tsx', '/cart', 'Cart', false, null],
-  ['checkout.tsx', '/checkout', 'Checkout', false, null],
-  ['orders/index.tsx', '/orders', 'Orders', false, null],
-  ['orders/[id].tsx', '/orders/42', 'Order', false, null],
-  ['login.tsx', '/login', 'Log in', true, null],
+  ['cart.tsx', '/cart', 'Cart', true, null],
+  ['checkout.tsx', '/checkout', 'Checkout', true, 'Customer'],
+  ['orders/index.tsx', '/orders', 'Orders', true, 'Customer'],
+  ['orders/[id].tsx', '/orders/42', 'Order', true, 'Customer'],
+  ['login.tsx', '/login', 'Sign in', true, null],
   ['register.tsx', '/register', 'Register', true, null],
   ['reset-password.tsx', '/reset-password', 'Reset password', true, null],
   ['admin/index.tsx', '/admin', 'Admin dashboard', false, 'Admin'],
@@ -45,6 +46,8 @@ function mockCatalogApi() {
     if (pathname === '/api/v1/categories') return jsonResponse(200, { items: categories });
     if (pathname === '/api/v1/products/blue-shirt') return jsonResponse(200, makeDetail());
     if (pathname === '/api/v1/products') return jsonResponse(200, makePage([]));
+    if (pathname === '/api/v1/orders') return jsonResponse(200, makeOrderPage([]));
+    if (pathname === '/api/v1/orders/42') return jsonResponse(200, makeOrderDetail());
     if (pathname === '/api/v1/admin/products') return jsonResponse(200, makeAdminPage([]));
     if (pathname.startsWith('/api/v1/admin/products/')) return jsonResponse(200, makeAdminProduct());
     return new Response('not mocked', { status: 599 });
@@ -113,12 +116,12 @@ describe('not-found', () => {
     expect(screen.getByText('This screen does not exist.')).toBeOnTheScreen();
   });
 
-  it('"Go home" recovers to the home screen', async () => {
+  it('"Go home" recovers to the home screen (Shop)', async () => {
     await renderRouter('./app', { initialUrl: '/does-not-exist' });
 
     await fireEvent.press(screen.getByRole('link', { name: 'Go home' }));
 
-    expect(screen).toHavePathname('/');
-    expect(screen.getAllByRole('header', { name: 'Home' }).length).toBeGreaterThanOrEqual(1);
+    expect(screen).toHavePathname('/products');
+    expect(screen.getAllByRole('header', { name: 'Products' }).length).toBeGreaterThanOrEqual(1);
   });
 });

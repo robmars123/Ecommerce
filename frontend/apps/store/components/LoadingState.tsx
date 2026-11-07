@@ -1,13 +1,11 @@
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
+
+import { colors } from '@/lib/design-tokens';
 
 export function LoadingState() {
   return (
-    <View style={styles.container}>
-      <ActivityIndicator accessibilityLabel="Loading" size="large" />
+    <View className="items-center p-xl">
+      <ActivityIndicator accessibilityLabel="Loading" size="large" color={colors.primary} />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { padding: 24, alignItems: 'center' },
-});

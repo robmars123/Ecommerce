@@ -9,6 +9,12 @@ COPY backend/src/Modules/Identity/Ecommerce.Identity.Contracts/Ecommerce.Identit
 COPY backend/src/Modules/Identity/Ecommerce.Identity/Ecommerce.Identity.csproj backend/src/Modules/Identity/Ecommerce.Identity/
 COPY backend/src/Modules/Inventory/Ecommerce.Inventory.Contracts/Ecommerce.Inventory.Contracts.csproj backend/src/Modules/Inventory/Ecommerce.Inventory.Contracts/
 COPY backend/src/Modules/Inventory/Ecommerce.Inventory/Ecommerce.Inventory.csproj backend/src/Modules/Inventory/Ecommerce.Inventory/
+COPY backend/src/Modules/Cart/Ecommerce.Cart.Contracts/Ecommerce.Cart.Contracts.csproj backend/src/Modules/Cart/Ecommerce.Cart.Contracts/
+COPY backend/src/Modules/Cart/Ecommerce.Cart/Ecommerce.Cart.csproj backend/src/Modules/Cart/Ecommerce.Cart/
+COPY backend/src/Modules/Orders/Ecommerce.Orders.Contracts/Ecommerce.Orders.Contracts.csproj backend/src/Modules/Orders/Ecommerce.Orders.Contracts/
+COPY backend/src/Modules/Orders/Ecommerce.Orders/Ecommerce.Orders.csproj backend/src/Modules/Orders/Ecommerce.Orders/
+COPY backend/src/Modules/Payments/Ecommerce.Payments.Contracts/Ecommerce.Payments.Contracts.csproj backend/src/Modules/Payments/Ecommerce.Payments.Contracts/
+COPY backend/src/Modules/Payments/Ecommerce.Payments/Ecommerce.Payments.csproj backend/src/Modules/Payments/Ecommerce.Payments/
 COPY backend/src/Ecommerce.Api/Ecommerce.Api.csproj backend/src/Ecommerce.Api/
 RUN dotnet restore backend/src/Ecommerce.Api/Ecommerce.Api.csproj
 COPY backend/src/ backend/src/

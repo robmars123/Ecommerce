@@ -32,10 +32,10 @@ backend/
       Catalog/
         Ecommerce.Catalog/            # CatalogModule.cs (the only public type) +
                                       #   Domain/ Application/ Infrastructure/ (EF configs, read store, dev seed) Api/ (controllers)
-        Ecommerce.Catalog.Contracts/  # public: IProductReader, ProductPublished, … (when first consumed)
+        Ecommerce.Catalog.Contracts/  # public: IProductReader (Slice 2: variant lookup + admin variant page), ProductPublished, …
       Inventory/
-        Ecommerce.Inventory/          # InventoryModule.cs + Infrastructure/ (UnknownInventoryReader until Slice 2)
-        Ecommerce.Inventory.Contracts/ # public: IInventoryReader, StockStatus (later IInventoryReserver)
+        Ecommerce.Inventory/          # InventoryModule.cs + Domain/ Application/ Infrastructure/ (stock reader, row locks, expiry worker) Api/ (admin)
+        Ecommerce.Inventory.Contracts/ # public: IInventoryReader, StockStatus, IInventoryReserver (reserve in Slice 2, commit in Slice 4)
       Identity/
         Ecommerce.Identity/           # IdentityModule.cs + Domain/ (User, refresh families/tokens, reset tokens) Application/
                                       #   Infrastructure/ (EF configs, repositories, JWT, password hashing) Api/ (auth controller)

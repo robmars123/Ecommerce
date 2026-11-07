@@ -51,6 +51,17 @@ describe('AccountBar', () => {
     expect(screen.queryByRole('link', { name: 'Admin' }) !== null).toBe(hasAdminLink);
   });
 
+  it('shows an Orders link when signed in and none when signed out', async () => {
+    await render();
+    await endSession();
+    expect(await screen.findByRole('link', { name: 'Log in' })).toBeOnTheScreen();
+    expect(screen.queryByRole('link', { name: 'Orders' })).toBeNull();
+
+    await signInAs('Customer');
+
+    expect(await screen.findByRole('link', { name: 'Orders' })).toBeOnTheScreen();
+  });
+
   it('Log out calls the API, ends the session and clears the cache', async () => {
     const spy = mockFetchRoutes({ '/api/v1/auth/logout': () => new Response(null, { status: 204 }) });
     const client = createTestQueryClient();

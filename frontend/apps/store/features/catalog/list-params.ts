@@ -1,4 +1,4 @@
-import type { ProductListParams, ProductSort } from './types';
+import type { ProductListPage, ProductListParams, ProductSort } from './types';
 
 export const PRODUCT_PAGE_SIZE = 20;
 export const MAX_SEARCH_LENGTH = 100;
@@ -70,4 +70,10 @@ export function nextListParams(current: ProductListParams, change: ListChange): 
     next.page = change.page;
   }
   return next;
+}
+
+/** "Showing first-last": the 1-based positions of this page's items among all results. */
+export function showingRange(page: ProductListPage): { first: number; last: number } {
+  const first = (page.page - 1) * page.pageSize + 1;
+  return { first, last: first + page.items.length - 1 };
 }

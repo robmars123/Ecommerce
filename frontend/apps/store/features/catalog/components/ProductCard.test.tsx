@@ -1,5 +1,5 @@
 import { Stack } from 'expo-router';
-import { fireEvent, renderRouter, screen } from 'expo-router/testing-library';
+import { fireEvent, renderRouter, screen, within } from 'expo-router/testing-library';
 import { Text } from 'react-native';
 
 import { makeItem } from '@/tests/fixtures';
@@ -48,6 +48,32 @@ describe('ProductCard', () => {
     await renderRouter(routes(), { initialUrl: '/' });
 
     await fireEvent.press(screen.getByRole('link', { name: 'Blue Shirt' }));
+
+    expect(screen).toHavePathname('/products/blue-shirt');
+    expect(screen.getByText('Detail screen')).toBeOnTheScreen();
+  });
+});
+
+describe('ProductCard content', () => {
+  it('keeps the category text as data (styling upper-cases it) and offers no add-to-cart or rating', async () => {
+    await renderRouter(routes(), { initialUrl: '/' });
+
+    expect(screen.getByText('Tops')).toBeOnTheScreen();
+    expect(screen.queryByText(/add to cart/i)).toBeNull();
+    expect(screen.queryByText(/rating|review|★/i)).toBeNull();
+  });
+});
+
+describe('ProductCard Select options', () => {
+  it('offers a Select options link to the same product page, as a sibling of the product link (never nested)', async () => {
+    await renderRouter(routes(), { initialUrl: '/' });
+
+    const select = screen.getByRole('link', { name: 'Select options for Blue Shirt' });
+    expect(select).toBeOnTheScreen();
+    expect(screen.getAllByRole('link')).toHaveLength(2);
+    expect(within(screen.getByRole('link', { name: 'Blue Shirt' })).queryByRole('link')).toBeNull();
+
+    await fireEvent.press(select);
 
     expect(screen).toHavePathname('/products/blue-shirt');
     expect(screen.getByText('Detail screen')).toBeOnTheScreen();

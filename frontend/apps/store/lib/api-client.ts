@@ -15,6 +15,9 @@ export type ApiErrorKind =
 
 export const REQUEST_TIMEOUT_MS = 15_000;
 
+/** One line of a 409 `checkout-lines-rejected` reply (arch 9 checkout contract). */
+export type RejectedLine = { variantId: string; reason: 'OutOfStock' | 'PriceChanged' | 'Unavailable'; available?: number };
+
 /** Holds no headers, no request and no token: an error can be logged or rendered safely. */
 export class ApiError extends Error {
   kind: ApiErrorKind;
@@ -22,11 +25,28 @@ export class ApiError extends Error {
   title?: string;
   correlationId?: string;
   fieldErrors?: Record<string, string[]>;
+  /** From a 409 stock reply: how many are available. */
+  available?: number;
+  /** The problem `type` the server sets as a machine-readable cause, such as `reservation-expired`. */
+  problemType?: string;
+  /** From a 409 `checkout-lines-rejected` reply: each line that cannot be ordered, and why. */
+  lines?: RejectedLine[];
+  /** From a 503 `payment-provider-unavailable` reply: the order that exists and is paid by repeating the request. */
+  orderId?: string;
 
   constructor(
     kind: ApiErrorKind,
     message: string,
-    details: { status?: number; title?: string; correlationId?: string; fieldErrors?: Record<string, string[]> } = {},
+    details: {
+      status?: number;
+      title?: string;
+      correlationId?: string;
+      fieldErrors?: Record<string, string[]>;
+      available?: number;
+      problemType?: string;
+      lines?: RejectedLine[];
+      orderId?: string;
+    } = {},
   ) {
     super(message);
     Object.setPrototypeOf(this, new.target.prototype);
@@ -36,6 +56,10 @@ export class ApiError extends Error {
     this.title = details.title;
     this.correlationId = details.correlationId;
     this.fieldErrors = details.fieldErrors;
+    this.available = details.available;
+    this.problemType = details.problemType;
+    this.lines = details.lines;
+    this.orderId = details.orderId;
   }
 }
 
@@ -52,6 +76,8 @@ type ApiSendOptions = {
   auth?: 'bearer' | 'none';
   /** Only 'cookie' changes the request: it sends X-Auth-Transport: cookie and includes credentials. */
   refreshTransport?: 'cookie' | 'body';
+  /** Extra request headers, such as Idempotency-Key. Never an Authorization header: the session owns that. */
+  headers?: Record<string, string>;
 };
 
 /**
@@ -111,14 +137,25 @@ function toFieldErrors(value: unknown): Record<string, string[]> | undefined {
   return entries.length > 0 ? Object.fromEntries(entries) : undefined;
 }
 
+function toRejectedLines(value: unknown): RejectedLine[] | undefined {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+  const lines = value.filter(
+    (line): line is RejectedLine => typeof line?.variantId === 'string' && typeof line?.reason === 'string',
+  );
+  return lines.length > 0 ? lines : undefined;
+}
+
 type RequestSpec = {
-  method: 'GET' | 'POST' | 'PUT';
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE';
   path: string;
   params?: ApiGetOptions['params'];
   body?: unknown;
   signal?: AbortSignal;
   auth: 'bearer' | 'none';
   refreshTransport?: 'cookie' | 'body';
+  headers?: Record<string, string>;
 };
 
 /** One HTTP attempt. Returns the parsed body or throws an ApiError. */
@@ -142,7 +179,8 @@ async function attempt<T>(spec: RequestSpec, token: string | undefined): Promise
   spec.signal?.addEventListener('abort', forwardAbort);
 
   try {
-    const headers: Record<string, string> = { Accept: 'application/json', 'X-Correlation-ID': newCorrelationId() };
+    const sentId = newCorrelationId();
+    const headers: Record<string, string> = { ...spec.headers, Accept: 'application/json', 'X-Correlation-ID': sentId };
     if (spec.body !== undefined) {
       headers['Content-Type'] = 'application/json';
     }
@@ -164,24 +202,24 @@ async function attempt<T>(spec: RequestSpec, token: string | undefined): Promise
       });
     } catch (error) {
       if (timedOut) {
-        throw new ApiError('timeout', 'The request timed out.');
+        throw new ApiError('timeout', 'The request timed out.', { correlationId: sentId });
       }
       if (spec.signal?.aborted) {
         throw error;
       }
-      throw new ApiError('network', 'The request could not be completed.');
+      throw new ApiError('network', 'The request could not be completed.', { correlationId: sentId });
     }
 
     const result = await readJson(response);
     // The timer can fire while the body is still being read.
     if (timedOut) {
-      throw new ApiError('timeout', 'The request timed out.');
+      throw new ApiError('timeout', 'The request timed out.', { correlationId: sentId });
     }
     const body = asRecord(result.parsed ? result.value : undefined);
     const correlationId =
       (typeof body.correlationId === 'string' ? body.correlationId : undefined) ??
       response.headers.get('X-Correlation-ID') ??
-      undefined;
+      sentId;
 
     if (!response.ok) {
       throw new ApiError(kindForStatus(response.status), `Request failed with status ${response.status}.`, {
@@ -189,6 +227,10 @@ async function attempt<T>(spec: RequestSpec, token: string | undefined): Promise
         title: typeof body.title === 'string' ? body.title : undefined,
         correlationId,
         fieldErrors: toFieldErrors(body.errors),
+        available: typeof body.available === 'number' ? body.available : undefined,
+        problemType: typeof body.type === 'string' ? body.type : undefined,
+        lines: toRejectedLines(body.lines),
+        orderId: typeof body.orderId === 'string' ? body.orderId : undefined,
       });
     }
 
@@ -231,7 +273,7 @@ export function apiGet<T>(path: string, options: ApiGetOptions = {}): Promise<T>
   });
 }
 
-export function apiSend<T>(method: 'POST' | 'PUT', path: string, options: ApiSendOptions = {}): Promise<T> {
+export function apiSend<T>(method: 'POST' | 'PUT' | 'DELETE', path: string, options: ApiSendOptions = {}): Promise<T> {
   return execute<T>({
     method,
     path,
@@ -239,6 +281,7 @@ export function apiSend<T>(method: 'POST' | 'PUT', path: string, options: ApiSen
     signal: options.signal,
     auth: options.auth ?? 'bearer',
     refreshTransport: options.refreshTransport,
+    headers: options.headers,
   });
 }
 

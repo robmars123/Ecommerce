@@ -1,0 +1,200 @@
+# Slice 3 baseline: git hash-object of every dirty/untracked file before Slice 3 (Rob, plan time).
+# Review: re-hash; a path that is new or whose hash differs is Slice 3 delta.
+ M 42a15fdb6a4c161830b4a3dce233d5c49c578717 AGENT_STATUS.md
+ M 984c38df0b1c0ac9e415ad1463f3018620849ba8 CLAUDE.md
+ M 3e46eb38942a9c4000e968bfb79922f8d152c5e5 Dockerfile
+ M 25f28bf02069b5f58607451b19ea841be3dbf561 Ecommerce.slnx
+ M e70be27dcc41a5f8c87d451a370e037445efb10b backend/src/Ecommerce.Api/Composition/ModuleComposition.cs
+ M 13cd3a4fc33e10c517387d3d1d25b952e2c66737 backend/src/Ecommerce.Api/Ecommerce.Api.csproj
+ M 640bed9a90b938ab4a6d16e432e8d3bd6cc55965 backend/src/Ecommerce.Api/Program.cs
+ M bc646a3d5abd06480db03ed357cd2a1ac91811c4 backend/src/Ecommerce.Api/appsettings.Development.json
+ M 97899d7b7dc430ecc63749bd350187d9a719147a backend/src/Ecommerce.Api/appsettings.json
+ M 5e9c711c8e83be3b9fb7f51768220e999ee52f86 backend/src/Ecommerce.Persistence/EcommerceDbContext.cs
+ M f0304945283ceed13cebb75c5b898a269835932b backend/src/Ecommerce.Persistence/Migrations/20261104044222_AddIdentity.Designer.cs
+ M 56643d93b0bc0c29560eb9901dbbea81c4f0c3ab backend/src/Ecommerce.Persistence/Migrations/EcommerceDbContextModelSnapshot.cs
+ M 26d3d1206a443fcf233c94f571ec169b240a1b00 backend/src/Ecommerce.Persistence/PersistenceServiceCollectionExtensions.cs
+ M f277e57fc2a309a6af5ad5525cb78d364e3bcb6f backend/src/Modules/Catalog/Ecommerce.Catalog/Application/Admin/AdminProductService.cs
+ M 1cb3c4f16bb564ff8712aa44e6ab8f1a707da4ad backend/src/Modules/Catalog/Ecommerce.Catalog/Application/CatalogBrowseService.cs
+ M 469b42bb73b1d1e6204d054685464c6b743641a8 backend/src/Modules/Catalog/Ecommerce.Catalog/Application/StockStatusRollup.cs
+ M e64b45b084d6e4c66b4f6bcc71ef3a0d7323bcd8 backend/src/Modules/Catalog/Ecommerce.Catalog/CatalogModule.cs
+ M 9bc329a119752582f9e359e8a663144c400dd020 backend/src/Modules/Identity/Ecommerce.Identity/Infrastructure/Bootstrap/AdminBootstrapHostedService.cs
+ M a2fdb7f528b5d7a297b3a7615d899fe0ba8e8a3e backend/src/Modules/Inventory/Ecommerce.Inventory/Ecommerce.Inventory.csproj
+ D deleted backend/src/Modules/Inventory/Ecommerce.Inventory/Infrastructure/UnknownInventoryReader.cs
+ M 579cc06eccb0b5fdc62b688f838d9c878232c256 backend/src/Modules/Inventory/Ecommerce.Inventory/InventoryModule.cs
+ M e87a59752ca0ef007f8142e29bb469192cfeb280 backend/tests/Ecommerce.Api.IntegrationTests/Catalog/CatalogSchemaTests.cs
+ M c94286f1c62f18223a32b1dce3ee5f9cd16e11fd backend/tests/Ecommerce.Api.IntegrationTests/Catalog/CatalogStockAndImageTests.cs
+ M 012bc3a725eb4e08cd87e16cd705698e972fc793 backend/tests/Ecommerce.ArchitectureTests/ModuleModelOwnershipTests.cs
+ M fc9467b3f000f12274d415b63a1a50cac492c3d5 backend/tests/Ecommerce.ArchitectureTests/SolutionLayout.cs
+ M fc8295c93930fe353333e325fe51e4f1107201f6 backend/tests/Ecommerce.Catalog.Tests/Application/AdminFakes.cs
+ M 55a3ffd980d8ef47d9e02bfe80f506db5023c6eb backend/tests/Ecommerce.Catalog.Tests/Application/CatalogBrowseServiceTests.cs
+ M 73cc8769932e2a47ab1b75d9b92a146695b861f5 backend/tests/Ecommerce.Catalog.Tests/Application/StockStatusRollupTests.cs
+ D deleted backend/tests/Ecommerce.Inventory.Tests/UnknownInventoryReaderTests.cs
+ M b8dc4953f2097fa8f5a0e403592a149a400d9428 docs/architecture/05-frontend.md
+ M 086fde3316eb412500211fcb275b3b4aad5ec611 docs/architecture/06-backend-modules.md
+ M 083e2e7aa0678d85f41f66cd398ca1c8acb7305d docs/architecture/09-api.md
+ M 97058264f605720c18f72ec9d2ce12a42ae3b697 docs/architecture/12-process-slice-plan.md
+ M 88ca93c4b3c9d935040ded224be9d586a19182f1 docs/architecture/13.2-decision-log.md
+ M 6d2cfb924e69c50ba2b967e51319a3ea79855f98 frontend/apps/store/app/_layout.tsx
+ M e8a6500be8b8c84548c49470015cd48eec116bda frontend/apps/store/app/index.tsx
+ M 6580b25c278ce84279d7816931821a67ac8be81c frontend/apps/store/app/login.tsx
+ M 691cbcb9510df372fc36f2bda76f453440a463b4 frontend/apps/store/app/orders/[id].tsx
+ M 7ca53a0c791ae3136f4bd8c7d3587f69ea9da098 frontend/apps/store/app/orders/index.tsx
+ M 33fa4c1987f8d8a28ac04736c32ea7aacd7b4f9d frontend/apps/store/app/register.tsx
+ M 68019e2b2eb446af425a31212cdf2d177560958e frontend/apps/store/components/ActionButton.tsx
+ M d45e4f662b1e217b4f5efd39b18b47988215e90a frontend/apps/store/components/EmptyState.tsx
+ M c1fdf0ed54fb41c59d2d044719b9c6654e15490b frontend/apps/store/components/ErrorState.tsx
+ M c75b0c8d9505bc55fcb26349e39756193274628d frontend/apps/store/components/FormScreen.tsx
+ M 4b219b6bd01c21a45fcdd46c3b43d8093db79fd1 frontend/apps/store/components/LoadingState.tsx
+ M 0aa90e27132c7312023a696f88288af40890afce frontend/apps/store/components/ScreenStub.tsx
+ M 1666cdac2afebc5f0ab273842d3b1452f0a29cd2 frontend/apps/store/components/ScreenTitle.tsx
+ M c464de2f18fec558b56ddf08ba54a2021b9b3275 frontend/apps/store/components/StubLink.tsx
+ M 441dbe1e15f44df792f022f10770c2cd7242407d frontend/apps/store/components/TextField.tsx
+ M 6b774279748ecf1f99a12d17650f481ae99f5f65 frontend/apps/store/features/admin-catalog/components/AdminProductCreateView.tsx
+ M 194c131a188c0265c0cfffefe086397a2c67e572 frontend/apps/store/features/admin-catalog/components/AdminProductDetailView.tsx
+ M 8e20ff41a67a2ce593b3d0e474182dc338ae014f frontend/apps/store/features/admin-catalog/components/AdminProductListView.tsx
+ M f3bfcaa1edd025783da60cf6fde944498f7abb57 frontend/apps/store/features/admin-catalog/components/CategoryCreateForm.tsx
+ M 9ce139d01f78f6a609bbd632bbd59e4438930d0d frontend/apps/store/features/admin-catalog/components/ImageKeysEditor.tsx
+ M b87ec3c9ac5c5bdedaad8dd0cacf04fd3a42e0d3 frontend/apps/store/features/admin-catalog/components/ProductForm.tsx
+ M 278342389a205542f0a566bdb91d6f79b23eece5 frontend/apps/store/features/admin-catalog/components/VariantRowsEditor.tsx
+ M 541782cc8ede8465401ea8935764e3aeba1bb6e4 frontend/apps/store/features/auth/components/AccountBar.test.tsx
+ M aea96034cc7e90212281469ca3e639ddc4b9b0d5 frontend/apps/store/features/auth/components/AccountBar.tsx
+ M 9e2b2a87c1fd0d013a4b70a23a2fc2e3bbbbdbf3 frontend/apps/store/features/auth/components/LoginForm.test.tsx
+ M 18816307bde555b483e3e23408f136927741d3f5 frontend/apps/store/features/auth/components/LoginForm.tsx
+ M 0f2b37425b64a24ae8a60576441fd0a97c2a6238 frontend/apps/store/features/auth/components/PasswordResetConfirmForm.tsx
+ M 2105551d6ff6801c5b4e52622977446686ebf98d frontend/apps/store/features/auth/components/PasswordResetRequestForm.tsx
+ M 231654beb94b9a6e92e55658c829d78b0e5cca51 frontend/apps/store/features/auth/components/RegisterForm.test.tsx
+ M ff73f45c02ef415d44a42c1ee5ea8f6b44423db9 frontend/apps/store/features/auth/components/RegisterForm.tsx
+ M 3b8c48d6cefe6b2ec4e60b11362a370268c7355d frontend/apps/store/features/catalog/components/CategoryFilter.tsx
+ D deleted frontend/apps/store/features/catalog/components/HomeView.test.tsx
+ D deleted frontend/apps/store/features/catalog/components/HomeView.tsx
+ M 21b50a9577e8b8ce6ac09208dd70cd6125fbf991 frontend/apps/store/features/catalog/components/Pagination.tsx
+ M 786d866d58a54cd607d183ae637ca3853d19ea28 frontend/apps/store/features/catalog/components/PriceText.tsx
+ M 86237b6b70c085fbee58d0b39c8486ba8c13de19 frontend/apps/store/features/catalog/components/ProductCard.test.tsx
+ M 02d9d65c8b27b092564aac02d65232cc1e7a9ffe frontend/apps/store/features/catalog/components/ProductCard.tsx
+ M f35b91a551ed303970a636b8102fc8c1f56442e6 frontend/apps/store/features/catalog/components/ProductDetailContent.tsx
+ M 682a82393d0356f68a834868dd976026ccf973a6 frontend/apps/store/features/catalog/components/ProductDetailView.test.tsx
+ M 477597900da1cc2e65065bbbc79d4110f0c0a1b7 frontend/apps/store/features/catalog/components/ProductDetailView.tsx
+ M 372958564e03af40ea9d2fa8ee0cd4efd824f9a4 frontend/apps/store/features/catalog/components/ProductImageView.tsx
+ M 5e9f74629a77405101fd54f4a5b711098ee35caa frontend/apps/store/features/catalog/components/ProductListView.test.tsx
+ M ba35038388d222819d92acf157c793619ecc6ef0 frontend/apps/store/features/catalog/components/ProductListView.tsx
+ M 8779635c15d7aef647584a84ee817d0eea782ef0 frontend/apps/store/features/catalog/components/SearchBar.tsx
+ M 6ebab5c57d884cedc496a77884310e2d1d7baa4b frontend/apps/store/features/catalog/components/SortPicker.tsx
+ M eada652febcc4fa5b658fd4aa667a008039f7b96 frontend/apps/store/features/catalog/components/StockBadge.tsx
+ M 47c127e227af9bedb9d51bb3ab5d8c87e51b5171 frontend/apps/store/features/catalog/components/VariantSelector.test.tsx
+ M c3e43195b6e1455317c2d2ea3bfcfda942701ec3 frontend/apps/store/features/catalog/components/VariantSelector.tsx
+ M 3bb2ee5a8e59b191fedf95cf301eb3c88a64df97 frontend/apps/store/features/catalog/list-params.test.ts
+ M 56a9471b8f419d908468034c55a1fbd5e37384c4 frontend/apps/store/features/catalog/list-params.ts
+ M 8876b16bbaade989895176286b3485bffd7aa7ce frontend/apps/store/lib/api-client.test.ts
+ M a33e3e3783f94507933586b9ed7c53ad517861a1 frontend/apps/store/lib/api-client.ts
+ M ebb0d29c041f07bbc7921c6bce6646012804983a frontend/apps/store/lib/query-client.test.ts
+ M a351cbf0947f94b10c48b553bd3ed39d1f82c6d4 frontend/apps/store/lib/query-client.ts
+ M 725434914427431445513d969926a1b6198f3bc7 frontend/apps/store/lib/query-keys.test.ts
+ M dde1291b81f80f266290a07b5573bf757c33628d frontend/apps/store/lib/query-keys.ts
+ M 709925c2dadb588acb8dd40ee0b792a8cffd0d61 frontend/apps/store/package-lock.json
+ M 11c9011d0ab7146ef9393faf7ebb655571f88f17 frontend/apps/store/package.json
+ M 3eee3e00e9cc6684005eedc0c78177a7a50ce251 frontend/apps/store/tests/app/admin.test.tsx
+ M a37179a75f69e6d67ab33b8136d791aca5ff5b43 frontend/apps/store/tests/routes.test.tsx
+ M 4487408c7bccefb1269f463665fef199041428a1 frontend/apps/store/tsconfig.json
+?? d5b814be0dc3fa78b7ba1c0ea44e8f7215a41849 backend/src/Ecommerce.Persistence/Audit/AuditLogEntry.cs
+?? a0680e84d91c12acdfb38547a7bd66b5cf9da417 backend/src/Ecommerce.Persistence/Migrations/20261106175917_AddOrdersAndAuditLog.Designer.cs
+?? 56af4dc0a11ffa5d91dbfb61e3c23a8a7d7f7615 backend/src/Ecommerce.Persistence/Migrations/20261106175917_AddOrdersAndAuditLog.cs
+?? b0a456cdab15273d6e400dffd8b5a5b889119332 backend/src/Ecommerce.Persistence/Migrations/20261106194038_AddInventory.Designer.cs
+?? 563dc20a343b15c5c7d4a84107cc4259508f5000 backend/src/Ecommerce.Persistence/Migrations/20261106194038_AddInventory.cs
+?? 17a43786fe037581e1c040346d9b772fda591759 backend/src/Ecommerce.SharedKernel/Audit/IAuditLog.cs
+?? b4a04ef3798aafb710e08f1e01a4b40b2c82a17e backend/src/Modules/Catalog/Ecommerce.Catalog.Contracts/IProductReader.cs
+?? 4aa19bda4469a2fee9f5226a94e6d35d87c04dfb backend/src/Modules/Catalog/Ecommerce.Catalog/Infrastructure/ProductReader.cs
+?? 3da77d8954d209898b41f4327ee70d299bf43f95 backend/src/Modules/Inventory/Ecommerce.Inventory.Contracts/IInventoryReserver.cs
+?? 1f79ef7abce16c9a4ed0ca96c60ec17f9f4223f8 backend/src/Modules/Inventory/Ecommerce.Inventory/Api/AdminInventoryController.cs
+?? 8865095368dab9da777463cedfe130de67c5a89f backend/src/Modules/Inventory/Ecommerce.Inventory/Api/AdminInventoryRequests.cs
+?? b54c017209e80a88cd6356cc434a0febc5c92e76 backend/src/Modules/Inventory/Ecommerce.Inventory/Api/AdminInventoryResponses.cs
+?? ed17a3d8973d55a3a2fa9c9f52c27ac21a05d8c0 backend/src/Modules/Inventory/Ecommerce.Inventory/Application/InventoryAdminService.cs
+?? fa91d1de250b71d82f9536f73816c760d0c479d9 backend/src/Modules/Inventory/Ecommerce.Inventory/Application/InventoryPorts.cs
+?? 600ccaf6ef074b810f1696334de60a7bc380e5fa backend/src/Modules/Inventory/Ecommerce.Inventory/Application/InventoryReserver.cs
+?? f2e32f6bd681485021a1cc7aae735a99d96c6800 backend/src/Modules/Inventory/Ecommerce.Inventory/Application/ReservationExpiryService.cs
+?? 34c4c4b4a770ec82d7fda6d74510021157d2c557 backend/src/Modules/Inventory/Ecommerce.Inventory/Application/StockLevel.cs
+?? 4bd994ef942c6029048ac9ec88f2f74c94d67749 backend/src/Modules/Inventory/Ecommerce.Inventory/Domain/InventoryReservation.cs
+?? 5497342274b69e5bdff91c18206142360ccd3fe9 backend/src/Modules/Inventory/Ecommerce.Inventory/Domain/InventoryStock.cs
+?? 953799647fc944e13e55135811a532a39ca5a3c4 backend/src/Modules/Inventory/Ecommerce.Inventory/Domain/ReservationStatus.cs
+?? a237df82fa6517b19798d3bbb14652f698ac5776 backend/src/Modules/Inventory/Ecommerce.Inventory/Infrastructure/DevSeed/InventoryDevSeedHostedService.cs
+?? c0475a46f43d2e54ebe05a40ef0ab4274019dd96 backend/src/Modules/Inventory/Ecommerce.Inventory/Infrastructure/InventoryOptions.cs
+?? 04bb644b233288d461350508e9fe4722c1ab900e backend/src/Modules/Inventory/Ecommerce.Inventory/Infrastructure/InventoryStockReader.cs
+?? df877d09cdeb72d00cbc1d2fc28f107dad71525d backend/src/Modules/Inventory/Ecommerce.Inventory/Infrastructure/InventoryStore.cs
+?? 0c0092bd2e5abe1eb7940722780dc7d8fda95755 backend/src/Modules/Inventory/Ecommerce.Inventory/Infrastructure/Persistence/InventoryDbModel.cs
+?? 421849288e5efea5db3f21b2d1f866317dd01cb5 backend/src/Modules/Inventory/Ecommerce.Inventory/Infrastructure/Persistence/InventoryReservationConfiguration.cs
+?? d32b2652769809c4c6f833b08efd952ec7767973 backend/src/Modules/Inventory/Ecommerce.Inventory/Infrastructure/Persistence/InventoryStockConfiguration.cs
+?? 0cf3eae94ead0f5b398a79fb13be2dbc89d2e9b6 backend/src/Modules/Inventory/Ecommerce.Inventory/Infrastructure/ReservationExpiryWorker.cs
+?? 82ddc7259ca31b42ab687e52ffe5ea9628ae9313 backend/src/Modules/Orders/Ecommerce.Orders.Contracts/Ecommerce.Orders.Contracts.csproj
+?? 57678cc5a445c711b999843734ad858d74fa2277 backend/src/Modules/Orders/Ecommerce.Orders/Api/AdminOrdersController.cs
+?? ba48c8a29324ca3b8860d157cdba50e3dcd4bd6f backend/src/Modules/Orders/Ecommerce.Orders/Api/OrderRequests.cs
+?? fa84c932fa7db34162f7bcb22fbe523decf2741e backend/src/Modules/Orders/Ecommerce.Orders/Api/OrderResponses.cs
+?? 878d91a6d9d6f0f96530dae0176200e0cfdef141 backend/src/Modules/Orders/Ecommerce.Orders/Api/OrdersController.cs
+?? 16cfe3c5e29ae0877e446f337df6ee74e2a9b792 backend/src/Modules/Orders/Ecommerce.Orders/Application/OrderFulfillmentService.cs
+?? 9483bd1624f9363a106296b7c17e7817ab1fa507 backend/src/Modules/Orders/Ecommerce.Orders/Application/OrderPorts.cs
+?? 9f415ab229889143c555a62a210cfce63f6847d2 backend/src/Modules/Orders/Ecommerce.Orders/Application/OrderQueryService.cs
+?? 412ebf244790bb9bfb0ff0ecbf5b82df32f7422e backend/src/Modules/Orders/Ecommerce.Orders/Application/OrderViews.cs
+?? 9dfd4fc526efcb1c59e07b9b7ec235db6245d8ab backend/src/Modules/Orders/Ecommerce.Orders/Application/ShippingCarriers.cs
+?? 8ad16460a0823c98fc414e4d61fc5f8b5f7fae69 backend/src/Modules/Orders/Ecommerce.Orders/Domain/Order.cs
+?? bdade63040f9a1a09f97cb8af27263cc6d9c6070 backend/src/Modules/Orders/Ecommerce.Orders/Domain/OrderItem.cs
+?? 65ed74d903972cb6366a6b46d98e743605101474 backend/src/Modules/Orders/Ecommerce.Orders/Domain/OrderStatus.cs
+?? 051f0b17b8712691f6b7c50b355cf25ee47d97a6 backend/src/Modules/Orders/Ecommerce.Orders/Domain/OrderStatusChange.cs
+?? a65c2af418932ca36fb57dffb5983ddbd39642dd backend/src/Modules/Orders/Ecommerce.Orders/Domain/OrderStatusMachine.cs
+?? ac4d24a54b8f7dbe0e966a56aaa4f9f2b968a85f backend/src/Modules/Orders/Ecommerce.Orders/Domain/Shipment.cs
+?? 59faa44522ed4ef96397fecde2d2437352fd4705 backend/src/Modules/Orders/Ecommerce.Orders/Domain/ShippingAddress.cs
+?? 821ef595993108c66d2110f310fa18ec52ca4594 backend/src/Modules/Orders/Ecommerce.Orders/Ecommerce.Orders.csproj
+?? 4438e9a3a10c72f43868d343f70327a3e601444c backend/src/Modules/Orders/Ecommerce.Orders/Infrastructure/OrderStores.cs
+?? b3821bb3bdabb29145f6cc4aaba795e6ec6ccd9c backend/src/Modules/Orders/Ecommerce.Orders/Infrastructure/Persistence/OrderConfiguration.cs
+?? 26bb6f4fe309546414656ee303007732993634f7 backend/src/Modules/Orders/Ecommerce.Orders/Infrastructure/Persistence/OrdersDbModel.cs
+?? 6d44bd7dd6064f28482c81d638edb9dc3c6675e6 backend/src/Modules/Orders/Ecommerce.Orders/Infrastructure/ShippingCarriersOptions.cs
+?? c9bac6864fd52c90f23e83b6aa82b303008f2d28 backend/src/Modules/Orders/Ecommerce.Orders/OrdersModule.cs
+?? 74a07f55d26ba414201cb4a7381d9b028ef3ad04 backend/tests/Ecommerce.Api.IntegrationTests/Inventory/AdminInventoryAdjustTests.cs
+?? e7de4c908c4623a97ad721ec022f8d14e71fdf8a backend/tests/Ecommerce.Api.IntegrationTests/Inventory/AdminInventoryListTests.cs
+?? 7708e7ed6a89c3835a712f47f64eb0f02264eadc backend/tests/Ecommerce.Api.IntegrationTests/Inventory/InventoryEnv.cs
+?? b0ffad8a2569d9e04609f98bd396e5a11d7338c7 backend/tests/Ecommerce.Api.IntegrationTests/Inventory/InventoryHostTests.cs
+?? 7e94664b127b2b601df9fcf5873f05b62b65917e backend/tests/Ecommerce.Api.IntegrationTests/Inventory/InventorySchemaTests.cs
+?? c03d27e24f5d59b63dda99a31f14a5414a1f8a07 backend/tests/Ecommerce.Api.IntegrationTests/Inventory/ReservationExpiryTests.cs
+?? 14e9bf356d4279654902c9e62a2cfec9eb5bf3b1 backend/tests/Ecommerce.Api.IntegrationTests/Inventory/ReserveConcurrencyTests.cs
+?? 3c7dc6d88b794e4a68023e2caea70d17d958fa7a backend/tests/Ecommerce.Api.IntegrationTests/Inventory/StockStatusTests.cs
+?? 60e19f3a12b5d741fb4b1dab66f51cdb2f878bfe backend/tests/Ecommerce.Api.IntegrationTests/Orders/OrderSeed.cs
+?? f3ebe7384309a74b19ec06d347eff9bf495e0682 backend/tests/Ecommerce.Api.IntegrationTests/Orders/OrdersFulfillmentApiTests.cs
+?? 7509236d0c50875fc433196a6dfd67d4953390b4 backend/tests/Ecommerce.Api.IntegrationTests/Orders/OrdersReadApiTests.cs
+?? b9898629e8ba04ff09b1afcdc7340ad85ee10eef backend/tests/Ecommerce.Api.IntegrationTests/Orders/OrdersSchemaTests.cs
+?? 86516818df2eeac2d45ad194c42a4772c5e2b90c backend/tests/Ecommerce.Inventory.Tests/Application/InventoryStockReaderTests.cs
+?? f6289fe60b5453d1bc4cb43d70f250c7531d4277 backend/tests/Ecommerce.Inventory.Tests/Application/ReservationExpiryServiceTests.cs
+?? d53d480dce7019f3e2158019acffd6d2fb71b571 backend/tests/Ecommerce.Inventory.Tests/Application/StockLevelTests.cs
+?? e9b2faf2ec0a332a07bd56bb4498256a742a7cca backend/tests/Ecommerce.Inventory.Tests/Domain/InventoryDomainTests.cs
+?? fa13c8a7ba27f03891150434b6819e9c5673a10c backend/tests/Ecommerce.Orders.Tests/Application/ShippingCarriersTests.cs
+?? cc62083ac95d1e8af0e20f9a93eae6559a608f35 backend/tests/Ecommerce.Orders.Tests/Domain/OrderStatusMachineTests.cs
+?? 7dbb8825dc3c9423a0a23e1b5527a417a1357b1c backend/tests/Ecommerce.Orders.Tests/Domain/OrderTests.cs
+?? c69113beebe4991d4ea2377f6c03b16904309e5f backend/tests/Ecommerce.Orders.Tests/Ecommerce.Orders.Tests.csproj
+?? 7d507e111460d6f28687de945db53f6de06b4c62 frontend/apps/store/babel.config.js
+?? 00e3667c294acb066410d6f2b4c8ebfa901a0826 frontend/apps/store/components/TopNav.test.tsx
+?? 7cd902ea6fa80f214f2c3759a2020d171fb36a71 frontend/apps/store/components/TopNav.tsx
+?? 47c6eab7c0b32abfac4de1317bd58432ec08bfb6 frontend/apps/store/features/auth/components/PasswordChecklist.tsx
+?? dd10876b31ecdc833e9228ac1db7f12b825e32cd frontend/apps/store/features/auth/password-rules.test.ts
+?? 65789e665007d5f9f43b121b38fe27a64fcf5795 frontend/apps/store/features/auth/password-rules.ts
+?? 21f9773c32a27d0639152dd2daa68c152427d5bf frontend/apps/store/features/orders/api.test.ts
+?? 40bb20fed37846b974a5a7122c589973ab284ecd frontend/apps/store/features/orders/api.ts
+?? 731a1a41b9e32077301987b66b55e9cae629750b frontend/apps/store/features/orders/components/OrderDetailView.test.tsx
+?? f93bc4025d6f4dfac2be852397a72fcbc2bee2e5 frontend/apps/store/features/orders/components/OrderDetailView.tsx
+?? abf90d795121599391810bd44f283a3798a7facb frontend/apps/store/features/orders/components/OrderListView.test.tsx
+?? ed2e3bf13ccf5ac46b4395e8b35c40349b0e35a8 frontend/apps/store/features/orders/components/OrderListView.tsx
+?? 9e4ec59c3d5debfe36d8007eb9339e9b4080c344 frontend/apps/store/features/orders/components/OrderTimeline.tsx
+?? f6f570272bb0db8da9897f72499664f9f717a034 frontend/apps/store/features/orders/components/RequireSignIn.tsx
+?? 05c44b90f208acf337d2399e89dfcd835ad618c3 frontend/apps/store/features/orders/components/TrackingLink.test.tsx
+?? 55c22ed3c9b47b7b6f84e28584fe44838776ee6d frontend/apps/store/features/orders/components/TrackingLink.tsx
+?? 4aa11abe3e226a7fc22f9e862c06e04be10f6c23 frontend/apps/store/features/orders/hooks/hooks.test.tsx
+?? ef1f65a1c334e6745c7fec017b09638e96976df6 frontend/apps/store/features/orders/hooks/useOrderQuery.ts
+?? 06f9a0382de37abe98f481bcbadf2a9f617c1a3d frontend/apps/store/features/orders/hooks/useOrdersQuery.ts
+?? 8e0184de8763efdbd13a4f40e6e33aef016cec39 frontend/apps/store/features/orders/status-labels.ts
+?? 433a4f5fe96eb5f3602afd7ef3cfc44c8c08b481 frontend/apps/store/features/orders/types.ts
+?? b5c61c956711f981a41e95f7fcf0038436cfbb22 frontend/apps/store/global.css
+?? 10c131a2a9ec3d26936cf78b5c529165bfeb1b14 frontend/apps/store/lib/design-tokens.d.ts
+?? da30ed10e43ea4575f35c46e2ba1792fa4252861 frontend/apps/store/lib/design-tokens.js
+?? abf695510ce064763149e3c81c15d14149efeb80 frontend/apps/store/lib/logger.test.ts
+?? 3dfb4d0dc057f48a3874c35728c1274282c78c49 frontend/apps/store/lib/logger.ts
+?? f3321ba3e9ccefd883c166a3aa4cfdbb0fa0867d frontend/apps/store/metro.config.js
+?? 410f941ee636574adf0d82de9807f7069f98a534 frontend/apps/store/nativewind-env.d.ts
+?? 01e6627e94edaa512382cc6f0f70e7ae27ab720a frontend/apps/store/tailwind.config.js
+?? f81190132ecd444af76dd2ae2acc34cb601a8391 frontend/apps/store/tests/index-route.test.tsx
+?? 9ed0aeea6480bb16344f7bdfacc722bef1ac42b6 frontend/apps/store/tests/order-fixtures.ts
+?? f053ebf7976e3726d11f3c03fade2170903889a5 frontend/apps/store/tests/style-stub.js

@@ -10,3 +10,12 @@ export function getApiBaseUrl(): string | undefined {
   }
   return raw.replace(/\/+$/, '');
 }
+
+/**
+ * Publishable key of the payment provider (EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY). Public by design, but still no fallback:
+ * a missing value is a visible configuration error in the payment step, never a guessed key. Static access, like above.
+ */
+export function getStripePublishableKey(): string | undefined {
+  const raw = process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim();
+  return raw ? raw : undefined;
+}

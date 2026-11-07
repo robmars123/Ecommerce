@@ -39,6 +39,13 @@ export const queryKeys = {
       preview: (id: string) => ['admin', 'products', 'preview', id] as const,
     },
   },
+  orders: {
+    all: ['orders'] as const,
+    list: (page: number) => ['orders', 'list', page] as const,
+    detail: (id: string) => ['orders', 'detail', id] as const,
+  },
+  cart: ['cart'] as const,
+  shippingMethods: ['shipping-methods'] as const,
   auth: {
     me: ['auth', 'me'] as const,
   },

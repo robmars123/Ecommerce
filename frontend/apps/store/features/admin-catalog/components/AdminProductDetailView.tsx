@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 
 import { ActionButton } from '@/components/ActionButton';
 import { ErrorState } from '@/components/ErrorState';
@@ -27,7 +27,7 @@ export function AdminProductDetailView({ id }: { id: string }) {
 
   if (!product) {
     return (
-      <View style={styles.container}>
+      <View className="gap-md p-lg">
         <ScreenTitle title="Admin · Product" />
         {query.isError ? (
           <ErrorState message={userMessage(query.error)} onRetry={() => void query.refetch()} />
@@ -46,12 +46,12 @@ export function AdminProductDetailView({ id }: { id: string }) {
       : undefined;
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView contentContainerClassName="gap-md p-lg">
       <ScreenTitle title="Admin · Product" />
-      <Text style={styles.name}>{product.name}</Text>
-      {!product.isActive ? <Text style={styles.banner}>{NOT_VISIBLE_COPY}</Text> : null}
+      <Text className="text-title font-semibold text-foreground">{product.name}</Text>
+      {!product.isActive ? <Text className="rounded-control border border-border p-sm text-body font-semibold text-foreground">{NOT_VISIBLE_COPY}</Text> : null}
 
-      <View style={styles.row}>
+      <View className="flex-row flex-wrap gap-sm">
         <ActionButton label="Edit" onPress={() => setTab('edit')} disabled={tab === 'edit'} />
         <ActionButton label="Preview" onPress={() => setTab('preview')} disabled={tab === 'preview'} />
         <ActionButton
@@ -61,7 +61,7 @@ export function AdminProductDetailView({ id }: { id: string }) {
         />
       </View>
       {publishMessage ? (
-        <Text accessibilityRole="alert" style={styles.error}>
+        <Text accessibilityRole="alert" className="text-body text-danger">
           {publishMessage}
         </Text>
       ) : null}
@@ -81,7 +81,7 @@ export function AdminProductDetailView({ id }: { id: string }) {
           }}
         />
       ) : preview.data ? (
-        <ProductDetailContent product={preview.data.product} />
+        <ProductDetailContent product={preview.data.product} hideAddToCart />
       ) : preview.isError ? (
         <ErrorState message={userMessage(preview.error)} onRetry={() => void preview.refetch()} />
       ) : (
@@ -90,11 +90,3 @@ export function AdminProductDetailView({ id }: { id: string }) {
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { padding: 16, gap: 12 },
-  name: { fontSize: 20, fontWeight: '600' },
-  banner: { fontSize: 16, fontWeight: '600', padding: 8, borderWidth: 1, borderRadius: 8 },
-  row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  error: { fontSize: 16, color: '#b91c1c' },
-});

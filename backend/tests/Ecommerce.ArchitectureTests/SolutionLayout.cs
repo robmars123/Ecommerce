@@ -25,7 +25,7 @@ internal sealed record BackendProject(ProjectNode Node, string CsprojPath)
 internal static class SolutionLayout
 {
     /// <summary>The modules the repository is expected to contain. Adding a module means adding it here.</summary>
-    public static readonly IReadOnlyList<string> ExpectedModules = ["Catalog", "Identity", "Inventory"];
+    public static readonly IReadOnlyList<string> ExpectedModules = ["Cart", "Catalog", "Identity", "Inventory", "Orders", "Payments"];
 
     public static string Root { get; } = FindRoot();
 

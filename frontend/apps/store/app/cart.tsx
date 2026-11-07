@@ -1,5 +1,5 @@
-import { ScreenStub } from '@/components/ScreenStub';
+import { CartView } from '@/features/cart/components/CartView';
 
 export default function CartScreen() {
-  return <ScreenStub title="Cart" />;
+  return <CartView />;
 }

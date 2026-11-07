@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { ScrollView, StyleSheet } from 'react-native';
+import { ScrollView } from 'react-native';
 
 import { ScreenTitle } from '@/components/ScreenTitle';
 
@@ -12,7 +12,7 @@ export function AdminProductCreateView() {
   const create = useCreateProductMutation();
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView contentContainerClassName="gap-md p-lg">
       <ScreenTitle title="Admin · New product" />
       <ProductForm
         mode="create"
@@ -28,7 +28,3 @@ export function AdminProductCreateView() {
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { padding: 16, gap: 12 },
-});

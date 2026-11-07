@@ -1,6 +1,6 @@
 import { Link, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { ActionButton } from '@/components/ActionButton';
 import { TextField } from '@/components/TextField';
@@ -27,7 +27,7 @@ export function PasswordResetConfirmForm({ token }: { token: string }) {
   }
 
   return (
-    <View style={styles.container}>
+    <View className="gap-md">
       <TextField
         label="New password"
         value={newPassword}
@@ -39,15 +39,15 @@ export function PasswordResetConfirmForm({ token }: { token: string }) {
       />
       {linkInvalid ? (
         <>
-          <Text accessibilityRole="alert" style={styles.error}>
+          <Text accessibilityRole="alert" className="text-body text-danger">
             {RESET_LINK_INVALID_COPY}
           </Text>
-          <Link href={{ pathname: '/reset-password' }} style={styles.link}>
-            Request a new link
+          <Link href={{ pathname: '/reset-password' }} asChild>
+            <Text className="min-h-touch py-md text-body text-foreground">Request a new link</Text>
           </Link>
         </>
       ) : error && !passwordError ? (
-        <Text accessibilityRole="alert" style={styles.error}>
+        <Text accessibilityRole="alert" className="text-body text-danger">
           {userMessage(error)}
         </Text>
       ) : null}
@@ -55,9 +55,3 @@ export function PasswordResetConfirmForm({ token }: { token: string }) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { gap: 12 },
-  error: { fontSize: 16, color: '#b91c1c' },
-  link: { minHeight: 44, paddingVertical: 12, fontSize: 16 },
-});

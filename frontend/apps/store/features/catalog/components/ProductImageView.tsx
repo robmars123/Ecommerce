@@ -21,14 +21,23 @@ export function ProductImageView({
   maxWidth,
 }: ProductImageViewProps) {
   const label = altText || fallbackLabel;
+  // Runtime values from the API or the caller: an allowed style exception (arch §5.5).
   const box = { aspectRatio, width: width ?? ('100%' as const), maxWidth };
 
   if (!url) {
-    return <View accessible accessibilityRole="image" accessibilityLabel={label} style={[styles.placeholder, box]} />;
+    return (
+      <View
+        accessible
+        accessibilityRole="image"
+        accessibilityLabel={label}
+        className="rounded-control bg-surface-raised"
+        style={box}
+      />
+    );
   }
 
   return (
-    <View style={box}>
+    <View className="overflow-hidden rounded-control" style={box}>
       <Image
         accessible
         accessibilityRole="image"
@@ -36,13 +45,8 @@ export function ProductImageView({
         source={{ uri: url }}
         contentFit="cover"
         transition={150}
-        style={styles.image}
+        style={StyleSheet.absoluteFill}
       />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  placeholder: { backgroundColor: '#e5e7eb', borderRadius: 8 },
-  image: { width: '100%', height: '100%', borderRadius: 8 },
-});

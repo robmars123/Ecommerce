@@ -1,5 +1,10 @@
-import { ScreenStub } from '@/components/ScreenStub';
+import { OrderListView } from '@/features/orders/components/OrderListView';
+import { RequireSignIn } from '@/features/orders/components/RequireSignIn';
 
 export default function OrderListScreen() {
-  return <ScreenStub title="Orders" />;
+  return (
+    <RequireSignIn returnTo="/orders">
+      <OrderListView />
+    </RequireSignIn>
+  );
 }

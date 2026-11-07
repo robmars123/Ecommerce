@@ -20,7 +20,7 @@ internal sealed class CatalogBrowseService(
         List<ProductListItem> items = rows.Items.Select(row => new ProductListItem(
             row.Id, row.Slug, row.Name, row.Category, row.Price, row.CompareAtPrice, row.Currency,
             row.PrimaryImageKey is null ? null : new ImageView(images.Resolve(row.PrimaryImageKey), row.PrimaryImageAlt ?? ""),
-            StockStatusRollup.Rollup(row.ActiveVariantIds.Select(id => statuses.GetValueOrDefault(id, StockStatus.Unknown)))))
+            StockStatusRollup.Rollup(row.ActiveVariantIds.Select(id => statuses.GetValueOrDefault(id, StockStatus.Out)))))
             .ToList();
 
         int totalPages = (int)Math.Ceiling(rows.TotalCount / (double)criteria.PageSize);
@@ -46,7 +46,7 @@ internal sealed class CatalogBrowseService(
             row.Images.Select(i => new ImageView(images.Resolve(i.StorageKey), i.AltText)).ToList(),
             row.Variants.Select(v => new VariantView(
                 v.Id, v.Sku, v.Name, v.Size, v.Colour, v.Price, v.CompareAtPrice, v.Currency,
-                statuses.GetValueOrDefault(v.Id, StockStatus.Unknown))).ToList());
+                statuses.GetValueOrDefault(v.Id, StockStatus.Out))).ToList());
     }
 
     public async Task<IReadOnlyList<CategoryRow>> GetCategoriesAsync(CancellationToken ct) =>

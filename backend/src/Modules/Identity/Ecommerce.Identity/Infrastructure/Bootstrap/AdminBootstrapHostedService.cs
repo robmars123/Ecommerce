@@ -1,6 +1,7 @@
 using Ecommerce.Identity.Application;
 using Ecommerce.Identity.Domain;
 using Ecommerce.Persistence;
+using Ecommerce.SharedKernel.Audit;
 using Ecommerce.SharedKernel.Persistence;
 using Ecommerce.SharedKernel.Time;
 using Microsoft.EntityFrameworkCore;
@@ -69,6 +70,9 @@ internal sealed class AdminBootstrapHostedService(
             User admin = User.CreateAdmin(
                 Guid.CreateVersion7(now), email, "Administrator", hashing.Hash(settings.AdminPassword), generator.NewSecurityStamp(), now);
             users.Add(admin);
+            // Rule 13: creating an Admin is audited. No email in the row; it commits with the user.
+            scope.ServiceProvider.GetRequiredService<IAuditLog>().Add(
+                new AuditEntry(null, "identity.admin-bootstrap", "User", admin.Id, null, "{\"role\":\"Admin\"}", null, now));
             await scope.ServiceProvider.GetRequiredService<IUnitOfWork>().SaveChangesAsync(cancellationToken);
             logger.LogInformation("Admin bootstrap created admin user {UserId}", admin.Id);
         }

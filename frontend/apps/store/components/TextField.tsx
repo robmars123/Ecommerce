@@ -1,4 +1,7 @@
-import { StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
+import { useState } from 'react';
+import { Text, TextInput, View, type TextInputProps } from 'react-native';
+
+import { colors } from '@/lib/design-tokens';
 
 type TextFieldProps = {
   label: string;
@@ -15,32 +18,27 @@ type TextFieldProps = {
 
 /** A labelled input with its error under it. The label is the accessible name. */
 export function TextField({ label, value, onChangeText, error, multiline, editable = true, ...inputProps }: TextFieldProps) {
+  const [focused, setFocused] = useState(false);
   return (
-    <View style={styles.container}>
-      <Text style={styles.label}>{label}</Text>
+    <View className="gap-xs">
+      <Text className="text-small font-semibold text-foreground">{label}</Text>
       <TextInput
         accessibilityLabel={label}
         value={value}
         onChangeText={onChangeText}
         editable={editable}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
         multiline={multiline}
-        style={[styles.input, multiline && styles.multiline, error ? styles.inputError : null]}
+        placeholderTextColor={colors.muted}
+        className={`min-h-touch rounded-control border bg-surface px-md text-body text-foreground ${error ? 'border-danger' : focused ? 'border-primary' : 'border-border'} ${multiline ? 'min-h-textarea py-sm align-top' : ''}`}
         {...inputProps}
       />
       {error ? (
-        <Text accessibilityRole="alert" style={styles.error}>
+        <Text accessibilityRole="alert" className="text-small text-danger">
           {error}
         </Text>
       ) : null}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { gap: 4 },
-  label: { fontSize: 14, fontWeight: '600' },
-  input: { minHeight: 44, borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, fontSize: 16 },
-  multiline: { minHeight: 96, paddingVertical: 8, textAlignVertical: 'top' },
-  inputError: { borderColor: '#b91c1c' },
-  error: { fontSize: 14, color: '#b91c1c' },
-});

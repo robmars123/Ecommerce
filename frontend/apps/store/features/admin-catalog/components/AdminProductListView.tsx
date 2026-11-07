@@ -1,5 +1,5 @@
 import { Link, useLocalSearchParams, useRouter } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { EmptyState } from '@/components/EmptyState';
 import { ErrorState } from '@/components/ErrorState';
@@ -60,14 +60,14 @@ export function AdminProductListView() {
   const data = products.data;
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView contentContainerClassName="gap-md p-lg">
       <ScreenTitle title="Admin · Products" />
-      <Link href="/admin/products/new" accessibilityRole="link" style={styles.link}>
-        Add product
+      <Link href="/admin/products/new" accessibilityRole="link" asChild>
+        <Text className="min-h-touch py-md text-body text-foreground">Add product</Text>
       </Link>
 
       <SearchBar value={params.search ?? ''} onSearch={(text) => change({ search: text || undefined })} />
-      <View style={styles.statuses}>
+      <View className="flex-row flex-wrap gap-sm">
         {STATUSES.map((s) => {
           const selected = (params.status ?? 'all') === s.value;
           return (
@@ -76,9 +76,9 @@ export function AdminProductListView() {
               accessibilityRole="button"
               accessibilityState={{ selected }}
               onPress={() => change({ status: s.value })}
-              style={[styles.chip, selected && styles.chipSelected]}
+              className={`min-h-touch min-w-touch justify-center rounded-control border px-md ${selected ? 'border-2 border-selected' : 'border-border'}`}
             >
-              <Text style={styles.chipText}>{s.label}</Text>
+              <Text className="text-body text-foreground">{s.label}</Text>
             </Pressable>
           );
         })}
@@ -95,15 +95,17 @@ export function AdminProductListView() {
         data.items.length === 0 ? (
           <EmptyState message="No products match." />
         ) : (
-          <View style={styles.list}>
+          <View className="gap-xs">
             {data.items.map((item) => (
               <Link
                 key={item.id}
                 href={{ pathname: '/admin/products/[id]', params: { id: item.id } }}
                 accessibilityRole="link"
-                style={styles.row}
+                asChild
               >
-                {`${item.name} · ${item.isActive ? 'Active' : 'Not published'} · ${item.activeVariantCount}/${item.variantCount} variants active${item.price ? ` · ${formatMoney(item.price)}` : ''}`}
+                <Text className="min-h-touch py-md text-body text-foreground">
+                  {`${item.name} · ${item.isActive ? 'Active' : 'Not published'} · ${item.activeVariantCount}/${item.variantCount} variants active${item.price ? ` · ${formatMoney(item.price)}` : ''}`}
+                </Text>
               </Link>
             ))}
           </View>
@@ -127,14 +129,3 @@ export function AdminProductListView() {
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { padding: 16, gap: 12 },
-  link: { minHeight: 44, paddingVertical: 12, fontSize: 16 },
-  statuses: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
-  chip: { minHeight: 44, minWidth: 44, paddingHorizontal: 12, justifyContent: 'center', borderWidth: 1, borderRadius: 8 },
-  chipSelected: { borderWidth: 2 },
-  chipText: { fontSize: 16 },
-  list: { gap: 4 },
-  row: { minHeight: 44, paddingVertical: 12, fontSize: 16 },
-});

@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import { Pressable, Switch, Text, View } from 'react-native';
 
 import { ActionButton } from '@/components/ActionButton';
 import { TextField } from '@/components/TextField';
@@ -19,12 +19,12 @@ export function VariantRowsEditor({ rows, onChange, isEdit, errorFor }: VariantR
   }
 
   return (
-    <View style={styles.container}>
-      <Text accessibilityRole="header" style={styles.heading}>
+    <View className="gap-md">
+      <Text accessibilityRole="header" className="text-title font-semibold text-foreground">
         Variants
       </Text>
       {errorFor('variants') ? (
-        <Text accessibilityRole="alert" style={styles.error}>
+        <Text accessibilityRole="alert" className="text-small text-danger">
           {errorFor('variants')}
         </Text>
       ) : null}
@@ -32,7 +32,7 @@ export function VariantRowsEditor({ rows, onChange, isEdit, errorFor }: VariantR
         const n = i + 1;
         const at = (field: string) => errorFor(`variants[${i}].${field}`);
         return (
-          <View key={row.key} style={styles.row}>
+          <View key={row.key} className="gap-sm rounded-control border border-border p-md">
             <TextField label={`Variant ${n} SKU`} value={row.sku} onChangeText={(sku) => update(i, { sku })} error={at('sku')} autoCapitalize="characters" />
             <TextField label={`Variant ${n} name`} value={row.name} onChangeText={(name) => update(i, { name })} error={at('name')} />
             <TextField label={`Variant ${n} size`} value={row.size} onChangeText={(size) => update(i, { size })} error={at('size')} />
@@ -59,8 +59,8 @@ export function VariantRowsEditor({ rows, onChange, isEdit, errorFor }: VariantR
               keyboardType="number-pad"
             />
             {isEdit ? (
-              <View style={styles.switchRow}>
-                <Text style={styles.label}>{`Variant ${n} active`}</Text>
+              <View className="min-h-touch flex-row items-center gap-md">
+                <Text className="text-body text-foreground">{`Variant ${n} active`}</Text>
                 <Switch
                   accessibilityLabel={`Variant ${n} active`}
                   value={row.isActive}
@@ -73,9 +73,9 @@ export function VariantRowsEditor({ rows, onChange, isEdit, errorFor }: VariantR
                 accessibilityRole="button"
                 accessibilityLabel={`Remove variant ${n}`}
                 onPress={() => onChange(rows.filter((_, index) => index !== i))}
-                style={styles.remove}
+                className="min-h-touch min-w-touch justify-center"
               >
-                <Text style={styles.label}>Remove</Text>
+                <Text className="text-body text-foreground">Remove</Text>
               </Pressable>
             ) : null}
           </View>
@@ -85,13 +85,3 @@ export function VariantRowsEditor({ rows, onChange, isEdit, errorFor }: VariantR
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { gap: 12 },
-  heading: { fontSize: 18, fontWeight: '600' },
-  row: { gap: 8, padding: 12, borderWidth: 1, borderRadius: 8 },
-  switchRow: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 44 },
-  label: { fontSize: 16 },
-  remove: { minHeight: 44, minWidth: 44, justifyContent: 'center' },
-  error: { fontSize: 14, color: '#b91c1c' },
-});

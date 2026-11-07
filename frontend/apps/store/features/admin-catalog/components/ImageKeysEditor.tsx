@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { ActionButton } from '@/components/ActionButton';
 import { TextField } from '@/components/TextField';
@@ -18,12 +18,12 @@ export function ImageKeysEditor({ rows, onChange, errorFor }: ImageKeysEditorPro
   }
 
   return (
-    <View style={styles.container}>
-      <Text accessibilityRole="header" style={styles.heading}>
+    <View className="gap-md">
+      <Text accessibilityRole="header" className="text-title font-semibold text-foreground">
         Images
       </Text>
       {rows.map((row, i) => (
-        <View key={row.key} style={styles.row}>
+        <View key={row.key} className="gap-sm rounded-control border border-border p-md">
           <TextField
             label={`Image ${i + 1} storage key`}
             value={row.storageKey}
@@ -41,9 +41,9 @@ export function ImageKeysEditor({ rows, onChange, errorFor }: ImageKeysEditorPro
             accessibilityRole="button"
             accessibilityLabel={`Remove image ${i + 1}`}
             onPress={() => onChange(rows.filter((_, index) => index !== i))}
-            style={styles.remove}
+            className="min-h-touch min-w-touch justify-center"
           >
-            <Text style={styles.label}>Remove</Text>
+            <Text className="text-body text-foreground">Remove</Text>
           </Pressable>
         </View>
       ))}
@@ -51,11 +51,3 @@ export function ImageKeysEditor({ rows, onChange, errorFor }: ImageKeysEditorPro
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { gap: 12 },
-  heading: { fontSize: 18, fontWeight: '600' },
-  row: { gap: 8, padding: 12, borderWidth: 1, borderRadius: 8 },
-  label: { fontSize: 16 },
-  remove: { minHeight: 44, minWidth: 44, justifyContent: 'center' },
-});

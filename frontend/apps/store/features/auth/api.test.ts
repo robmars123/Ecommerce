@@ -1,19 +1,13 @@
-import { Platform } from 'react-native';
-
 import { jsonResponse } from '@/tests/fetch-mock';
 import { makeTokens } from '@/tests/session';
 
 import { confirmPasswordReset, login, logout, refresh, register, requestPasswordReset } from './api';
-
-const platform = Platform as { OS: string };
-const ORIGINAL_OS = Platform.OS;
 
 beforeEach(() => {
   process.env.EXPO_PUBLIC_API_BASE_URL = 'http://api.test.invalid:5080';
 });
 
 afterEach(() => {
-  platform.OS = ORIGINAL_OS;
   jest.restoreAllMocks();
   delete process.env.EXPO_PUBLIC_API_BASE_URL;
 });
@@ -33,24 +27,12 @@ describe('auth api', () => {
   });
 
   it('native: native tokens travel in the body and no cookie header is sent', async () => {
-    platform.OS = 'ios';
     const spy = jest.spyOn(globalThis, 'fetch').mockImplementation(async () => jsonResponse(200, makeTokens('Customer')));
 
     await refresh('stored-refresh');
 
     expect(JSON.parse((spy.mock.calls[0][1] as RequestInit).body as string)).toEqual({ refreshToken: 'stored-refresh' });
     expect(headers(spy)['X-Auth-Transport']).toBeUndefined();
-  });
-
-  it('web: asks for the cookie transport and sends an empty body', async () => {
-    platform.OS = 'web';
-    const spy = jest.spyOn(globalThis, 'fetch').mockImplementation(async () => jsonResponse(200, makeTokens('Customer')));
-
-    await refresh(null);
-
-    expect(headers(spy)['X-Auth-Transport']).toBe('cookie');
-    expect((spy.mock.calls[0][1] as RequestInit).credentials).toBe('include');
-    expect(JSON.parse((spy.mock.calls[0][1] as RequestInit).body as string)).toEqual({});
   });
 
   it('logout, reset request and reset confirm hit their endpoints', async () => {

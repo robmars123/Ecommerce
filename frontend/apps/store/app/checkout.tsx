@@ -1,5 +1,10 @@
-import { ScreenStub } from '@/components/ScreenStub';
+import { CheckoutView } from '@/features/checkout/components/CheckoutView';
+import { RequireSignIn } from '@/features/orders/components/RequireSignIn';
 
 export default function CheckoutScreen() {
-  return <ScreenStub title="Checkout" />;
+  return (
+    <RequireSignIn returnTo="/checkout">
+      <CheckoutView />
+    </RequireSignIn>
+  );
 }

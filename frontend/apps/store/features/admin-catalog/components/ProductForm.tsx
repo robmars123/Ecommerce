@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { ActionButton } from '@/components/ActionButton';
 import { TextField } from '@/components/TextField';
@@ -38,21 +38,21 @@ export function ProductForm({ mode, initial, onSubmit, pending, error, onReload 
   }
 
   return (
-    <View style={styles.container}>
+    <View className="gap-md">
       {isStale ? (
-        <View style={styles.banner}>
-          <Text accessibilityRole="alert" style={styles.errorText}>
+        <View className="gap-sm rounded-control border border-border p-md">
+          <Text accessibilityRole="alert" className="text-body text-danger">
             {STALE_VERSION_COPY}
           </Text>
           {onReload ? <ActionButton label="Reload" onPress={onReload} /> : null}
         </View>
       ) : error && Object.keys(fieldErrors).length === 0 ? (
-        <Text accessibilityRole="alert" style={styles.errorText}>
+        <Text accessibilityRole="alert" className="text-body text-danger">
           {userMessage(error)}
         </Text>
       ) : null}
       {unplaced.map((message) => (
-        <Text key={message} accessibilityRole="alert" style={styles.errorText}>
+        <Text key={message} accessibilityRole="alert" className="text-body text-danger">
           {message}
         </Text>
       ))}
@@ -83,9 +83,3 @@ export function ProductForm({ mode, initial, onSubmit, pending, error, onReload 
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { gap: 12 },
-  banner: { gap: 8, padding: 12, borderWidth: 1, borderRadius: 8 },
-  errorText: { fontSize: 16, color: '#b91c1c' },
-});

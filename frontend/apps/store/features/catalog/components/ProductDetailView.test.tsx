@@ -103,13 +103,13 @@ describe('ProductDetailView', () => {
     expect(screen.getByRole('button', { name: 'Show image 2: Blue shirt, back' })).toBeSelected();
   });
 
-  it('has no add-to-cart control in this slice', async () => {
+  it('offers an add-to-cart control for the selected variant (replaces the Slice 1a "no add-to-cart" test: app context 4.3)', async () => {
     mockDetail(() => jsonResponse(200, detail));
     await render();
     await screen.findAllByRole('header', { name: 'Blue Shirt' });
 
-    expect(screen.queryByText(/add to cart/i)).toBeNull();
-    expect(screen.queryByRole('button', { name: /cart/i })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Add to cart' })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Increase quantity' })).toBeOnTheScreen();
   });
 
   it('a 404 shows Product not found with a link to browse, and no Retry', async () => {
@@ -136,5 +136,37 @@ describe('ProductDetailView', () => {
 
     expect(await screen.findAllByRole('header', { name: 'Blue Shirt' })).not.toHaveLength(0);
     expect(spy).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('ProductDetailView navigation and variant details', () => {
+  it('links back to the shop, also when the product is not found', async () => {
+    mockDetail(() => jsonResponse(200, detail));
+    await render();
+
+    await fireEvent.press(await screen.findByRole('link', { name: /Back to shop/ }));
+    expect(screen).toHavePathname('/products');
+  });
+
+  it('offers the way back on the not-found state', async () => {
+    mockDetail(() => problemResponse(404, { title: 'Product not found' }));
+    await render('nope');
+
+    expect(await screen.findByRole('link', { name: /Back to shop/ })).toBeOnTheScreen();
+  });
+
+  it('shows the selected option and its SKU, updating on selection, with no Save or rating text', async () => {
+    mockDetail(() => jsonResponse(200, detail));
+    await render();
+
+    expect(await screen.findByText('Size: Small')).toBeOnTheScreen();
+    expect(screen.getByText('BS-S')).toBeOnTheScreen();
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Medium' }));
+
+    expect(screen.getByText('Size: Medium')).toBeOnTheScreen();
+    expect(screen.getByText('BS-M')).toBeOnTheScreen();
+    expect(screen.queryByText('BS-S')).toBeNull();
+    expect(screen.queryByText(/save|rating|review/i)).toBeNull();
   });
 });

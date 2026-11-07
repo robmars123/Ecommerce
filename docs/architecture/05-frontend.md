@@ -10,6 +10,7 @@ frontend/apps/store/
   lib/
     api-client.ts # typed fetch client: auth, correlation ID — all platforms
     query-keys.ts # TanStack Query keys — single source for invalidation
+    logger.ts     # client error log: allowlisted fields + correlation ID, redacted, console only (§13.2)
     platform.ts   # ONLY per-platform code: payments SDK, push, secure storage, deep links
 ```
 
@@ -61,7 +62,7 @@ Owner decision (Nathaniel, 2026-11-03; §13.2). Tailwind does not run on React N
 - **Tokens:** one source, `lib/design-tokens.js` (CommonJS, typed by `lib/design-tokens.d.ts`), consumed by `tailwind.config.js` `theme.extend` and by the rare JS-prop cases above. Colours, spacing, radius, and font sizes live there; no hex/rgb in `components/`, `features/`, or `app/`.
 - **Touch targets:** the 44 minimum (44px on web, 44pt/dp on native; quality bar §6 "usable touch targets") is the token `touch: '44px'` (NativeWind maps `px` to RN density-independent units) in `minHeight`/`minWidth`, used as `min-h-touch min-w-touch` on every pressable. Do **not** use `min-h-11`: NativeWind's native `rem` is 14px, so `rem`-based spacing renders smaller on iOS/Android than on web. Tokens that must be exact on every platform are written in `px`.
 - **Platform differences** in styling use NativeWind's `ios:` / `android:` / `web:` variants, not `Platform.OS` in components (rule 17 keeps platform code in `lib/platform.ts`).
-- **Tests** assert behavior by role and label (§11.3), never class strings. The one allowed style assertion is the existing touch-target check (`toHaveStyle({ minHeight: 44 })` in `StubLink`, `CategoryFilter`, `ErrorState` tests): it is an accessibility invariant and must not be weakened or deleted by the migration. If NativeWind's Jest transform does not resolve `className` to a style object, those pressables take `minHeight`/`minWidth` from the token via `style` (an allowed exception above) so the tests stay as they are.
+- **Tests** assert behavior by role and label (§11.3), never class strings. The one allowed style assertion is the existing touch-target check (`toHaveStyle({ minHeight: 44 })` in `StubLink`, `CategoryFilter`, `ErrorState` tests): it is an accessibility invariant and must not be weakened or deleted by the migration. If NativeWind's Jest transform does not resolve `className` to a style object, those pressables take `minHeight`/`minWidth` from the token via `style` (an allowed exception above) so the tests stay as they are. The same fallback covers the other existing style-asserting tests (compare-at `line-through` in `PriceText`, scroller `flexGrow`/`flexShrink` in `CategoryFilter`/`SortPicker`, search input `flex`/`minWidth` in `SearchBar`): only the asserted property stays in `style`, everything else moves to `className`.
 
 **Adoption — a separate, small step, run only when Nathaniel asks (not scheduled into any slice).** Marco, with a Rob plan and review:
 1. `npx expo install nativewind react-native-reanimated` and `npm i -D tailwindcss@^3.4` (v3 LTS — NativeWind 4's `react-native-css-interop` requires `tailwindcss ~3`), then pin exact versions as for every other package; `npx expo install --check` must stay green.

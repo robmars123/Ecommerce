@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { Pressable, Text } from 'react-native';
 
 type ActionButtonProps = {
   label: string;
@@ -17,23 +17,9 @@ export function ActionButton({ label, onPress, disabled, pending }: ActionButton
       accessibilityState={{ disabled: isDisabled, busy: Boolean(pending) }}
       disabled={isDisabled}
       onPress={onPress}
-      style={[styles.button, isDisabled && styles.disabled]}
+      className={`min-h-touch min-w-touch items-center justify-center rounded-control border border-primary bg-primary px-lg ${isDisabled ? 'opacity-50' : ''}`}
     >
-      <Text style={styles.text}>{label}</Text>
+      <Text className="text-body font-semibold text-primary-foreground">{label}</Text>
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  button: {
-    minHeight: 44,
-    minWidth: 44,
-    paddingHorizontal: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: 8,
-  },
-  disabled: { opacity: 0.5 },
-  text: { fontSize: 16, fontWeight: '600' },
-});

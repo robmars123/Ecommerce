@@ -91,8 +91,11 @@ internal sealed class CountingInventory : IInventoryReader
     public Task<IReadOnlyDictionary<Guid, StockStatus>> GetStockStatusesAsync(IReadOnlyCollection<Guid> variantIds, CancellationToken ct)
     {
         Calls.Add(variantIds);
-        return Task.FromResult<IReadOnlyDictionary<Guid, StockStatus>>(variantIds.ToDictionary(id => id, _ => StockStatus.Unknown));
+        return Task.FromResult<IReadOnlyDictionary<Guid, StockStatus>>(variantIds.ToDictionary(id => id, _ => StockStatus.Out));
     }
+
+    public Task<IReadOnlyDictionary<Guid, StockAvailability>> GetAvailabilityAsync(IReadOnlyCollection<Guid> variantIds, CancellationToken ct) =>
+        throw new NotSupportedException();
 }
 
 internal sealed class NoImages : IImageUrlResolver

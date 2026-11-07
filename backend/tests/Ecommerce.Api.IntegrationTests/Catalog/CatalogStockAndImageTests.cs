@@ -22,10 +22,13 @@ public class CatalogStockAndImageTests(PostgresFixture postgres)
             Dictionary<Guid, StockStatus> result = Statuses.Where(kv => variantIds.Contains(kv.Key)).ToDictionary(kv => kv.Key, kv => kv.Value);
             return Task.FromResult<IReadOnlyDictionary<Guid, StockStatus>>(result);
         }
+
+        public Task<IReadOnlyDictionary<Guid, StockAvailability>> GetAvailabilityAsync(
+            IReadOnlyCollection<Guid> variantIds, CancellationToken ct) => throw new NotSupportedException();
     }
 
     [Fact]
-    public async Task With_the_default_registration_every_stock_status_is_Unknown()
+    public async Task With_the_default_registration_a_variant_with_no_stock_row_is_Out_and_Unknown_is_never_emitted()
     {
         await using CatalogTestEnv env = await CatalogTestEnv.StartAsync(postgres);
         env.AddProduct("p", "P", variants: [new VariantSpec("P-1"), new VariantSpec("P-2", 12m)]);
@@ -34,8 +37,8 @@ public class CatalogStockAndImageTests(PostgresFixture postgres)
         (HttpStatusCode _, System.Text.Json.JsonDocument? list) = await env.GetAsync("/api/v1/products");
         (HttpStatusCode _, System.Text.Json.JsonDocument? detail) = await env.GetAsync("/api/v1/products/p");
 
-        Assert.Equal("Unknown", list.RootElement.GetProperty("items")[0].GetProperty("stockStatus").GetString());
-        Assert.All(detail.RootElement.GetProperty("variants").EnumerateArray(), v => Assert.Equal("Unknown", v.GetProperty("stockStatus").GetString()));
+        Assert.Equal("Out", list.RootElement.GetProperty("items")[0].GetProperty("stockStatus").GetString());
+        Assert.All(detail.RootElement.GetProperty("variants").EnumerateArray(), v => Assert.Equal("Out", v.GetProperty("stockStatus").GetString()));
     }
 
     [Fact]

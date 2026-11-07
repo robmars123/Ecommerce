@@ -1,5 +1,5 @@
 import { Link, Stack } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { ErrorState } from '@/components/ErrorState';
 import { LoadingState } from '@/components/LoadingState';
@@ -8,25 +8,43 @@ import { ApiError, userMessage } from '@/lib/api-client';
 import { useProductQuery } from '../hooks/useProductQuery';
 import { ProductDetailContent } from './ProductDetailContent';
 
+const LINK = 'min-h-touch py-md text-body text-foreground';
+
+function BackToShop() {
+  return (
+    <View className="w-full max-w-content self-center px-lg pt-md">
+      <Link href="/products" asChild>
+        <Text className={LINK}>← Back to shop</Text>
+      </Link>
+    </View>
+  );
+}
+
 export function ProductDetailView({ slug }: { slug: string }) {
   const query = useProductQuery(slug);
 
   if (query.data) {
-    return <ProductDetailContent product={query.data} />;
+    return (
+      <View className="flex-1">
+        <BackToShop />
+        <ProductDetailContent product={query.data} />
+      </View>
+    );
   }
 
   return (
-    <View style={styles.container}>
+    <View className="w-full max-w-content gap-md self-center p-lg">
       <Stack.Screen options={{ title: 'Product' }} />
-      <Text accessibilityRole="header" style={styles.title}>
+      <BackToShop />
+      <Text accessibilityRole="header" className="text-heading font-semibold text-foreground">
         Product
       </Text>
       {query.isError ? (
         query.error instanceof ApiError && query.error.kind === 'not-found' ? (
-          <View style={styles.notFound}>
-            <Text style={styles.body}>Product not found</Text>
-            <Link href="/products" style={styles.link}>
-              Browse products
+          <View className="gap-sm">
+            <Text className="text-body text-foreground">Product not found</Text>
+            <Link href="/products" asChild>
+              <Text className={LINK}>Browse products</Text>
             </Link>
           </View>
         ) : (
@@ -38,11 +56,3 @@ export function ProductDetailView({ slug }: { slug: string }) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { padding: 16, gap: 12 },
-  title: { fontSize: 24, fontWeight: '600' },
-  body: { fontSize: 16 },
-  link: { minHeight: 44, paddingVertical: 12, fontSize: 16 },
-  notFound: { gap: 8 },
-});

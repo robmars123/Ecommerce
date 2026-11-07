@@ -204,3 +204,76 @@ describe('userMessage', () => {
     expect(userMessage('weird')).toBe('Something went wrong. Please try again.');
   });
 });
+
+describe('apiGet correlation id on failures without a response', () => {
+  function sentCorrelationId(spy: jest.SpyInstance): string {
+    const init = spy.mock.calls[0][1] as RequestInit;
+    return (init.headers as Record<string, string>)['X-Correlation-ID'];
+  }
+
+  it('attaches the sent X-Correlation-ID to a network error', async () => {
+    const spy = jest.spyOn(globalThis, 'fetch').mockRejectedValueOnce(new TypeError('Network request failed'));
+
+    const error = await catchError(apiGet('/x'));
+
+    expect(error.kind).toBe('network');
+    expect(error.correlationId).toBe(sentCorrelationId(spy));
+    expect(error.correlationId).toMatch(/^[0-9a-f]{32}$/);
+  });
+
+  it('attaches the sent X-Correlation-ID to a timeout error', async () => {
+    jest.useFakeTimers();
+    const spy = jest.spyOn(globalThis, 'fetch').mockImplementation(
+      (_url, init) =>
+        new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => reject(new Error('aborted')));
+        }),
+    );
+
+    const pending = catchError(apiGet('/x'));
+    await jest.advanceTimersByTimeAsync(15_000);
+    const error = await pending;
+
+    expect(error.kind).toBe('timeout');
+    expect(error.correlationId).toBe(sentCorrelationId(spy));
+  });
+
+  it('still prefers the id the server echoed', async () => {
+    mockFetchOnce(problemResponse(500, { correlationId: 'from-server' }));
+
+    expect((await catchError(apiGet('/x'))).correlationId).toBe('from-server');
+  });
+});
+
+describe('ApiError carries the checkout causes (Slice 4)', () => {
+  it('keeps the problem type, the rejected lines and the order id of a reply', async () => {
+    mockFetchOnce(
+      problemResponse(409, {
+        title: 'Some items cannot be ordered',
+        type: 'checkout-lines-rejected',
+        lines: [
+          { variantId: 'v-1', reason: 'OutOfStock', available: 0 },
+          { variantId: 'v-2', reason: 'PriceChanged' },
+          { notALine: true },
+        ],
+      }),
+    );
+
+    const conflict = await catchError(apiGet('/api/v1/cart'));
+
+    expect(conflict.kind).toBe('conflict');
+    expect(conflict.problemType).toBe('checkout-lines-rejected');
+    expect(conflict.lines).toEqual([
+      { variantId: 'v-1', reason: 'OutOfStock', available: 0 },
+      { variantId: 'v-2', reason: 'PriceChanged' },
+    ]);
+
+    mockFetchOnce(problemResponse(503, { type: 'payment-provider-unavailable', orderId: 'o-1' }));
+    const unavailable = await catchError(apiGet('/api/v1/cart'));
+
+    expect(unavailable.kind).toBe('server');
+    expect(unavailable.problemType).toBe('payment-provider-unavailable');
+    expect(unavailable.orderId).toBe('o-1');
+    expect(unavailable.lines).toBeUndefined();
+  });
+});

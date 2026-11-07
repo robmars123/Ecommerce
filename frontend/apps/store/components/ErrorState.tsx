@@ -1,35 +1,29 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
+
+import { touch } from '@/lib/design-tokens';
 
 type ErrorStateProps = {
   message: string;
   onRetry?: () => void;
 };
 
+// The touch target stays a token-sourced style: className does not resolve under Jest (arch §5.5 fallback).
 export function ErrorState({ message, onRetry }: ErrorStateProps) {
   return (
-    <View style={styles.container}>
-      <Text accessibilityRole="alert" style={styles.message}>
+    <View className="items-start gap-md p-lg">
+      <Text accessibilityRole="alert" className="text-body text-danger">
         {message}
       </Text>
       {onRetry ? (
-        <Pressable accessibilityRole="button" onPress={onRetry} style={styles.button}>
-          <Text style={styles.buttonText}>Try again</Text>
+        <Pressable
+          accessibilityRole="button"
+          onPress={onRetry}
+          className="justify-center rounded-control border border-border px-lg"
+          style={{ minHeight: touch, minWidth: touch }}
+        >
+          <Text className="text-body font-semibold text-foreground">Try again</Text>
         </Pressable>
       ) : null}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { padding: 16, gap: 12, alignItems: 'flex-start' },
-  message: { fontSize: 16 },
-  button: {
-    minHeight: 44,
-    minWidth: 44,
-    paddingHorizontal: 16,
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderRadius: 8,
-  },
-  buttonText: { fontSize: 16, fontWeight: '600' },
-});

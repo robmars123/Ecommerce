@@ -4,9 +4,18 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Ecommerce.SharedKernel\Ecommerce.SharedKernel.csproj" />
+    <ProjectReference Include="..\..\..\Ecommerce.Persistence\Ecommerce.Persistence.csproj" />
     <ProjectReference Include="..\Ecommerce.Inventory.Contracts\Ecommerce.Inventory.Contracts.csproj" />
+    <ProjectReference Include="..\..\Catalog\Ecommerce.Catalog.Contracts\Ecommerce.Catalog.Contracts.csproj" />
+    <ProjectReference Include="..\..\Identity\Ecommerce.Identity.Contracts\Ecommerce.Identity.Contracts.csproj" />
+    <ProjectReference Include="..\..\Orders\Ecommerce.Orders.Contracts\Ecommerce.Orders.Contracts.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="FluentValidation" />
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="Ecommerce.Inventory.Tests" />
+    <InternalsVisibleTo Include="Ecommerce.Api.IntegrationTests" />
   </ItemGroup>
 </Project>

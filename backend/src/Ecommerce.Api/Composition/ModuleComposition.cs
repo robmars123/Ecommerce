@@ -1,7 +1,10 @@
 using System.Reflection;
+using Ecommerce.Cart;
 using Ecommerce.Catalog;
 using Ecommerce.Identity;
 using Ecommerce.Inventory;
+using Ecommerce.Orders;
+using Ecommerce.Payments;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ApplicationParts;
 
@@ -10,12 +13,15 @@ namespace Ecommerce.Api.Composition;
 public static class ModuleComposition
 {
     public static readonly IReadOnlyList<Assembly> ModuleAssemblies =
-        [typeof(CatalogModule).Assembly,
+        [typeof(CartModule).Assembly,
+         typeof(CatalogModule).Assembly,
          typeof(IdentityModule).Assembly,
-         typeof(InventoryModule).Assembly];
+         typeof(InventoryModule).Assembly,
+         typeof(OrdersModule).Assembly,
+         typeof(PaymentsModule).Assembly];
 
     public static IServiceCollection AddEcommerceModules(this IServiceCollection services, IConfiguration configuration) =>
-        services.AddCatalogModule(configuration).AddIdentityModule(configuration).AddInventoryModule(configuration);
+        services.AddCartModule(configuration).AddCatalogModule(configuration).AddIdentityModule(configuration).AddInventoryModule(configuration).AddOrdersModule(configuration).AddPaymentsModule(configuration);
 
     public static IMvcBuilder AddModuleControllers(this IMvcBuilder mvc) =>
         mvc.ConfigureApplicationPartManager(m =>

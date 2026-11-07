@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { colors } from '@/lib/design-tokens';
+
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 
 export const SEARCH_DEBOUNCE_MS = 300;
@@ -45,7 +47,7 @@ export function SearchBar({ value = '', onSearch, onSubmit, debounceMs = SEARCH_
   }
 
   return (
-    <View style={styles.row}>
+    <View className="flex-row items-center gap-sm">
       <TextInput
         accessibilityLabel="Search products"
         placeholder="Search products"
@@ -56,20 +58,20 @@ export function SearchBar({ value = '', onSearch, onSubmit, debounceMs = SEARCH_
         autoCapitalize="none"
         autoCorrect={false}
         maxLength={100}
+        placeholderTextColor={colors.muted}
+        className="min-h-touch rounded-input border border-border bg-surface px-lg text-body text-foreground"
         style={styles.input}
       />
       {text ? (
-        <Pressable accessibilityRole="button" accessibilityLabel="Clear search" onPress={clear} style={styles.clear}>
-          <Text style={styles.clearText}>Clear</Text>
+        <Pressable accessibilityRole="button" accessibilityLabel="Clear search" onPress={clear} className="min-h-touch min-w-touch items-center justify-center">
+          <Text className="text-body text-foreground">Clear</Text>
         </Pressable>
       ) : null}
     </View>
   );
 }
 
+// className does not resolve under Jest, so the asserted flex properties stay a style (arch 5.5 fallback).
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  input: { flex: 1, minWidth: 0, minHeight: 44, borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, fontSize: 16 },
-  clear: { minHeight: 44, minWidth: 44, justifyContent: 'center', alignItems: 'center' },
-  clearText: { fontSize: 16 },
+  input: { flex: 1, minWidth: 0 },
 });

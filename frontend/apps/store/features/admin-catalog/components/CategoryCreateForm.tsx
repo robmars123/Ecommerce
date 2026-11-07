@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { ActionButton } from '@/components/ActionButton';
 import { TextField } from '@/components/TextField';
@@ -28,27 +28,20 @@ export function CategoryCreateForm() {
   }
 
   return (
-    <View style={styles.container}>
-      <Text accessibilityRole="header" style={styles.heading}>
+    <View className="gap-md">
+      <Text accessibilityRole="header" className="text-title font-semibold text-foreground">
         New category
       </Text>
       <TextField label="Category name" value={name} onChangeText={setName} error={fieldErrors.name?.[0]} />
       <TextField label="Category slug" value={slug} onChangeText={setSlug} error={fieldErrors.slug?.[0]} autoCapitalize="none" />
       <TextField label="Parent category slug" value={parentSlug} onChangeText={setParentSlug} error={fieldErrors.parentSlug?.[0]} autoCapitalize="none" />
       {create.error && Object.keys(fieldErrors).length === 0 ? (
-        <Text accessibilityRole="alert" style={styles.error}>
+        <Text accessibilityRole="alert" className="text-body text-danger">
           {userMessage(create.error)}
         </Text>
       ) : null}
-      {create.isSuccess ? <Text style={styles.notice}>Category created.</Text> : null}
+      {create.isSuccess ? <Text className="text-body text-foreground">Category created.</Text> : null}
       <ActionButton label="Add category" onPress={submit} pending={create.isPending} />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { gap: 12 },
-  heading: { fontSize: 18, fontWeight: '600' },
-  notice: { fontSize: 16 },
-  error: { fontSize: 16, color: '#b91c1c' },
-});

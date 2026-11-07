@@ -5,6 +5,10 @@
     <Project Path="backend/src/Ecommerce.SharedKernel/Ecommerce.SharedKernel.csproj" />
   </Folder>
   <Folder Name="/src/Modules/" />
+  <Folder Name="/src/Modules/Cart/">
+    <Project Path="backend/src/Modules/Cart/Ecommerce.Cart/Ecommerce.Cart.csproj" />
+    <Project Path="backend/src/Modules/Cart/Ecommerce.Cart.Contracts/Ecommerce.Cart.Contracts.csproj" />
+  </Folder>
   <Folder Name="/src/Modules/Catalog/">
     <Project Path="backend/src/Modules/Catalog/Ecommerce.Catalog/Ecommerce.Catalog.csproj" />
     <Project Path="backend/src/Modules/Catalog/Ecommerce.Catalog.Contracts/Ecommerce.Catalog.Contracts.csproj" />
@@ -17,11 +21,22 @@
     <Project Path="backend/src/Modules/Inventory/Ecommerce.Inventory/Ecommerce.Inventory.csproj" />
     <Project Path="backend/src/Modules/Inventory/Ecommerce.Inventory.Contracts/Ecommerce.Inventory.Contracts.csproj" />
   </Folder>
+  <Folder Name="/src/Modules/Orders/">
+    <Project Path="backend/src/Modules/Orders/Ecommerce.Orders/Ecommerce.Orders.csproj" />
+    <Project Path="backend/src/Modules/Orders/Ecommerce.Orders.Contracts/Ecommerce.Orders.Contracts.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Payments/">
+    <Project Path="backend/src/Modules/Payments/Ecommerce.Payments/Ecommerce.Payments.csproj" />
+    <Project Path="backend/src/Modules/Payments/Ecommerce.Payments.Contracts/Ecommerce.Payments.Contracts.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="backend/tests/Ecommerce.Api.IntegrationTests/Ecommerce.Api.IntegrationTests.csproj" />
     <Project Path="backend/tests/Ecommerce.ArchitectureTests/Ecommerce.ArchitectureTests.csproj" />
+    <Project Path="backend/tests/Ecommerce.Cart.Tests/Ecommerce.Cart.Tests.csproj" />
     <Project Path="backend/tests/Ecommerce.Catalog.Tests/Ecommerce.Catalog.Tests.csproj" />
     <Project Path="backend/tests/Ecommerce.Identity.Tests/Ecommerce.Identity.Tests.csproj" />
     <Project Path="backend/tests/Ecommerce.Inventory.Tests/Ecommerce.Inventory.Tests.csproj" />
+    <Project Path="backend/tests/Ecommerce.Orders.Tests/Ecommerce.Orders.Tests.csproj" />
+    <Project Path="backend/tests/Ecommerce.Payments.Tests/Ecommerce.Payments.Tests.csproj" />
   </Folder>
 </Solution>

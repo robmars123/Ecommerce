@@ -1,4 +1,5 @@
 using Ecommerce.Catalog.Api.Admin;
+using Ecommerce.Catalog.Contracts;
 using Ecommerce.Catalog.Application;
 using Ecommerce.Catalog.Application.Admin;
 using Ecommerce.Catalog.Infrastructure;
@@ -26,6 +27,7 @@ public static class CatalogModule
             .ValidateOnStart();
         services.AddSingleton<IImageUrlResolver, ConfiguredImageUrlResolver>();
         services.AddScoped<ICatalogReadStore, CatalogReadStore>();
+        services.AddScoped<IProductReader, ProductReader>();
         services.AddScoped<CatalogBrowseService>();
         services.AddScoped<CatalogDevSeeder>();
 

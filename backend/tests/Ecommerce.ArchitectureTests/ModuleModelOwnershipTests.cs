@@ -47,6 +47,7 @@ public class ModuleModelOwnershipTests
         Assert.True(totalEntities > 0, "No entities contributed by any module model; the check is vacuous.");
         Assert.True(models.Any(m => m.GetType().Assembly.GetName().Name == "Ecommerce.Catalog"), "Catalog contributes no IModuleDbModel.");
         Assert.True(models.Any(m => m.GetType().Assembly.GetName().Name == "Ecommerce.Identity"), "Identity contributes no IModuleDbModel.");
+        Assert.True(models.Any(m => m.GetType().Assembly.GetName().Name == "Ecommerce.Orders"), "Orders contributes no IModuleDbModel.");
         Assert.True(problems.Count == 0, string.Join(Environment.NewLine, problems));
     }
 }

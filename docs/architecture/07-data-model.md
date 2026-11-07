@@ -37,14 +37,14 @@ erDiagram
 | inventory_reservations | id, order_id, product_variant_id, quantity, status, expires_at, created_at. Unique partial (order_id, variant_id) WHERE status = 'Active' |
 | carts | id, user_id (unique — one cart per user), updated_at |
 | cart_items | id, cart_id, product_variant_id, quantity (CHECK > 0), display_unit_price, currency, added_at, updated_at. Unique (cart_id, variant_id). `display_unit_price` is the price last shown to the customer, refreshed on every add or set; it is used only to report `PriceChanged`, never for a total |
-| orders | id, order_number (unique, e.g. `ORD-2026-000123`), user_id, status, subtotal, discount_total (always 0 in v1 — no discounts feature), shipping_total, tax_total, grand_total, currency, shipping_method_code, shipping_method_name (snapshot), shipping_address_snapshot (jsonb), billing_address_snapshot (jsonb, nullable — not collected in v1; Stripe collects card billing details), idempotency_key (unique), stripe_payment_intent_id (unique, nullable — the **current** attempt's intent), version, created_at, updated_at |
+| orders | id, order_number (unique, e.g. `ORD-2026-000123`), user_id, status, subtotal, discount_total (always 0 in v1 — no discounts feature), shipping_total, tax_total, grand_total, currency, shipping_method_code, shipping_method_name (snapshot), shipping_address_snapshot (jsonb), billing_address_snapshot (jsonb, nullable — not collected in v1; Stripe collects card billing details), idempotency_key (unique), version (the current intent is the latest `payments` attempt — no copy on the order, Slice 4 §13.2), created_at, updated_at |
 | order_items | id, order_id, product_variant_id, sku_snapshot, name_snapshot, unit_price_snapshot, quantity, line_total |
 | order_status_history | id, order_id, from_status, to_status, changed_by, reason, created_at |
 | payments | id, order_id, attempt (int, unique (order_id, attempt)), provider, provider_payment_id (unique, nullable until the intent exists), amount, currency, status, created_at, updated_at. One row per payment attempt |
 | refunds | id, payment_id, amount, currency, status (`Pending` / `Succeeded` / `Failed`, CHECK), reason, actor_id (null for an automatic refund), idempotency_key (unique), provider_refund_id (unique, nullable until Stripe answers), created_at, completed_at |
 | shipments | id, order_id, carrier, tracking_number, shipped_at, delivered_at |
 | return_requests | id, order_id, items (jsonb: variant, quantity), reason, status, admin_note, created_at, decided_at |
-| idempotency_keys | key, scope (`checkout` / `retry-payment` / `refund` / `cart-merge` / `stripe-event`), PK (scope, key), user_id, request_hash, result_ref, created_at, expires_at |
+| idempotency_keys | key, scope (`checkout` / `retry-payment` / `refund` / `cart-merge` / `stripe-event`), PK (scope, key), user_id, request_hash, result_ref, response_json (jsonb, nullable — the stored reply a repeated key returns, e.g. `cart-merge`), created_at, expires_at |
 | outbox_events | sequence (bigint identity, PK), event_id (uuid, unique), event_type, aggregate_type, aggregate_id, aggregate_version, payload (jsonb), occurred_at. **Append-only**, retained for replay |
 | consumer_checkpoints | consumer (PK), last_sequence, updated_at |
 | processed_events | consumer, event_id, PK (consumer, event_id), status (`Done` / `DeadLetter`), attempts, next_attempt_at, last_error, processed_at |
@@ -78,7 +78,7 @@ stateDiagram-v2
 ```
 
 - **Order:** as above. A failed card does not cancel — the order stays `PendingPayment` and can be retried until the reservation expires. `Cancelled` is terminal; the customer checks out again (new key, new order). An admin **override** may force only a transition on this diagram, with a reason, and is audited. No transition rewrites totals or deletes history.
-- **Payment:** `Pending → Succeeded | Failed`; `Succeeded → PartiallyRefunded | Refunded`; `PartiallyRefunded → Refunded`. `Succeeded` is set only by a verified webhook; `Failed` by a verified `payment_failed` or `canceled` webhook. A retry creates a new payment record (next `attempt`) on the same order.
+- **Payment:** `Pending → Succeeded | Failed`; `Succeeded → PartiallyRefunded | Refunded`; `PartiallyRefunded → Refunded`. `Succeeded` is set only by a verified webhook; `Failed` by a verified `payment_failed` or `canceled` webhook. A verified success after `payment_failed` on the same intent (the customer retried in the payment sheet) moves `Failed → Succeeded`; a `canceled` intent never succeeds. A retry creates a new payment record (next `attempt`) on the same order.
 - **Refund:** `Pending → Succeeded | Failed`, both terminal; `Succeeded` only by a verified webhook. A **partial** refund (refunded total < captured) moves the payment to `PartiallyRefunded` and leaves the order status unchanged; a **full** refund moves the payment to `Refunded` and the order along the diagram (`Paid`/`Processing → Refunded`, or `Delivered → Returned` for an approved return). Rules: §8.5.
 - **Reservation:** `Active → Committed | Released | Expired`. All three are terminal — an expired reservation never commits.
 - **Return request:** `Requested → Approved | Declined`; `Approved → Refunded`. Approval moves no money; the refund does, and it is audited.
@@ -97,6 +97,7 @@ v1 keeps these in configuration (`appsettings`, overridable by env vars), not in
 | `Store:Currency` | ISO 4217, e.g. `USD` | The one store currency. Every variant price and shipping rate must use it; checkout rejects a cart line in another currency (400) |
 | `Shipping:Countries` | ISO 3166-1 alpha-2 list | Ship-to countries. Any other country → 400 at checkout |
 | `Shipping:Methods` | list of `{ code, name, amount, estimatedDays }` | Flat rate per order (not per item or weight) in `Store:Currency`. Codes unique, `^[a-z0-9-]+$`; amount ≥ 0 |
+| `Checkout:ReservationTtlMinutes` | int 1 – 120, default **15** | Reservation TTL set at checkout (§8.2 invariant 5); retry never extends it |
 | `Tax:RatePercent` | decimal 0 – 100, committed default **0** | One flat rate on goods: `tax_total = round((subtotal − discount_total) × rate / 100, 2, half away from zero)`, rounded once at order level, never per line. Shipping is not taxed. The real rate is an owner/business value — a config placeholder, never invented by an agent |
 | `Shipping:Carriers` | list of `{ code, name, trackingUrlTemplate }` | The admin ship action picks a code; unknown → 400. `trackingUrl` = template with `{trackingNumber}` URL-encoded in, built server-side |
 

@@ -1,5 +1,7 @@
 import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 
+import { touch } from '@/lib/design-tokens';
+
 import type { ProductSort } from '../types';
 
 const LABELS: Record<ProductSort, string> = {
@@ -27,7 +29,7 @@ export function SortPicker({ sort, hasSearch, onSelect }: SortPickerProps) {
       testID="sort-scroller"
       showsHorizontalScrollIndicator={false}
       style={styles.scroller}
-      contentContainerStyle={styles.row}
+      contentContainerClassName="gap-sm py-xs"
     >
       {options.map((option) => (
         <Pressable
@@ -35,28 +37,20 @@ export function SortPicker({ sort, hasSearch, onSelect }: SortPickerProps) {
           accessibilityRole="button"
           accessibilityState={{ selected: option === active }}
           onPress={() => onSelect(option)}
-          style={[styles.chip, option === active && styles.chipSelected]}
+          className={`min-w-touch items-center justify-center rounded-pill border px-lg ${option === active ? 'border-selected bg-selected' : 'border-border bg-surface'}`}
+          style={styles.touch}
         >
-          <Text style={[styles.chipText, option === active && styles.chipTextSelected]}>{LABELS[option]}</Text>
+          <Text className={`text-body ${option === active ? 'font-semibold text-selected-foreground' : 'text-foreground'}`}>
+            {LABELS[option]}
+          </Text>
         </Pressable>
       ))}
     </ScrollView>
   );
 }
 
+// className does not resolve under Jest, so the asserted properties stay styles (arch §5.5 fallback).
 const styles = StyleSheet.create({
   scroller: { flexGrow: 0, flexShrink: 0 },
-  row: { gap: 8, paddingVertical: 4 },
-  chip: {
-    minHeight: 44,
-    minWidth: 44,
-    paddingHorizontal: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: 22,
-  },
-  chipSelected: { backgroundColor: '#111827' },
-  chipText: { fontSize: 16 },
-  chipTextSelected: { color: '#ffffff', fontWeight: '600' },
+  touch: { minHeight: touch },
 });

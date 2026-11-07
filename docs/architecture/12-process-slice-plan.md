@@ -39,12 +39,12 @@ Session workflow, prompts, and deny rules: `CLAUDE.md`. Gates: `docs/quality-bar
 **Features 1–6 gate (app context §3):** a slice's Rob review BLOCKS if any feature or test named in its Done-when row is missing. Features 1–2 (browse, detail) are Slice 1a, plus the real stock indicator in Slice 2.
 
 **Carry-ins from Slice 1b** (`slice-plans/slice-1b-plan.md`):
-- **Slice 2:** the admin bootstrap writes `audit_log`; decide whether publish requires a stock row (§8.7); add the "Out of Stock" admin filter.
-- **Slice 3:** `IUserReader` / `ICurrentUser` contracts arrive with Cart.
+- **Slice 2:** the admin bootstrap writes `audit_log` (done in Slice 2); publish does **not** require a stock row (§13.2); the "Out of Stock" admin filter moves with the `/admin/inventory` screen, which no row schedules yet (Nathaniel).
+- **Slice 3:** `IUserReader` / `ICurrentUser` contracts: not added — Cart reads the caller from the `sub` claim like Orders, and no module needs another user's data yet (Slice 3 plan D-row).
 - **Slice 6:** password-reset delivery moves to the outbox (`PasswordResetRequested`, with the consumer minting the token). A real email provider must never be wired directly into the 1b `IPasswordResetLinkSender` seam.
 - **Slice 7:** rate limits on register and reset too; retention cleanup for consumed and expired refresh and reset tokens; measure login p95 under load.
 - **Domain decision:** the web origin and API must be the same site for the `SameSite=Strict` refresh cookie (§13.2).
 
-**Slice 1 split (Rob, 2026-11-03, owner-requested):** 1a → 1b → 2; 1b must PASS before Slice 2. Browse is entirely public (§9), so it has no auth dependency; auth (rotation, reuse detection, lockout) deserves its own review. **Deferred within v1:** Home "best sellers" and detail "related products" (app context §4.1.1, §4.2.4) need Paid order data — scheduled by Rob in the Slice 5 plan. Plan: `slice-plans/archive/slice-1a-plan.md`.
+**Slice 1 split (Rob, 2026-11-03, owner-requested):** 1a → 1b → 2; 1b must PASS before Slice 2. Browse is entirely public (§9), so it has no auth dependency; auth (rotation, reuse detection, lockout) deserves its own review. **Deferred within v1:** "best sellers" (on the product list, the first screen since Slice 5) and detail "related products" (app context §4.1.1, §4.2.4) need Paid order data — scheduled for Slice 6b, from the projected read model (§13.2). Plan: `slice-plans/archive/slice-1a-plan.md`.
 
 

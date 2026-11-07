@@ -1,5 +1,5 @@
 import { Stack } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import type { ReactNode } from 'react';
 
 type ScreenStubProps = {
@@ -10,21 +10,14 @@ type ScreenStubProps = {
 
 export function ScreenStub({ title, detail, children }: ScreenStubProps) {
   return (
-    <View style={styles.container}>
+    <View className="flex-1 gap-sm p-lg">
       <Stack.Screen options={{ title }} />
-      <Text accessibilityRole="header" style={styles.title}>
+      <Text accessibilityRole="header" className="text-heading font-semibold text-foreground">
         {title}
       </Text>
-      {detail ? <Text style={styles.detail}>{detail}</Text> : null}
-      <Text style={styles.note}>Not built yet.</Text>
+      {detail ? <Text className="text-body text-foreground">{detail}</Text> : null}
+      <Text className="text-body text-muted">Not built yet.</Text>
       {children}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, gap: 8 },
-  title: { fontSize: 24, fontWeight: '600' },
-  detail: { fontSize: 16 },
-  note: { fontSize: 16, opacity: 0.7 },
-});

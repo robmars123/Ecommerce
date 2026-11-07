@@ -7,12 +7,12 @@ import type { ComponentType, ReactElement, ReactNode } from 'react';
 import { shouldRetry } from '@/lib/query-client';
 
 /**
- * A fresh client per test. gcTime Infinity keeps no timers alive. Retries are off unless the test is about the
+ * A fresh client per test. gcTime Infinity (queries and mutations) keeps no timers alive. Retries are off unless the test is about the
  * real retry policy, in which case pass `useRealRetryPolicy`.
  */
 export function createTestQueryClient(options: { useRealRetryPolicy?: boolean } = {}) {
   return new QueryClient({
-    defaultOptions: { queries: { retry: options.useRealRetryPolicy ? shouldRetry : false, gcTime: Infinity } },
+    defaultOptions: { queries: { retry: options.useRealRetryPolicy ? shouldRetry : false, gcTime: Infinity }, mutations: { gcTime: Infinity } },
   });
 }
 

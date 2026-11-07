@@ -49,7 +49,7 @@ describe('admin area gate (F7b)', () => {
     await signInAs('Customer');
     await renderRouter('./app', { initialUrl: '/admin/products' });
 
-    await waitFor(() => expect(screen).toHavePathname('/'));
+    await waitFor(() => expect(screen).toHavePathname('/products'));
     expect(adminCalls(spy)).toHaveLength(0);
   });
 

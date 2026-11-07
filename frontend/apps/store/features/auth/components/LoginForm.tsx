@@ -1,10 +1,12 @@
 import { Link, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { ActionButton } from '@/components/ActionButton';
 import { TextField } from '@/components/TextField';
 import { ApiError, userMessage } from '@/lib/api-client';
+
+import { GuestCartNotice } from '@/features/cart/components/GuestCartNotice';
 
 import { useLoginMutation } from '../hooks/useLoginMutation';
 import { safeReturnTo } from '../return-to';
@@ -29,9 +31,18 @@ export function LoginForm() {
     );
   }
 
+  function cancel() {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/');
+    }
+  }
+
   return (
-    <View style={styles.container}>
-      {notice === 'password-changed' ? <Text style={styles.notice}>{PASSWORD_CHANGED_COPY}</Text> : null}
+    <View className="gap-md">
+      <GuestCartNotice />
+      {notice === 'password-changed' ? <Text className="text-body text-foreground">{PASSWORD_CHANGED_COPY}</Text> : null}
       <TextField
         label="Email"
         value={email}
@@ -51,24 +62,20 @@ export function LoginForm() {
         autoComplete="current-password"
       />
       {error && !fieldErrors ? (
-        <Text accessibilityRole="alert" style={styles.error}>
+        <Text accessibilityRole="alert" className="text-body text-danger">
           {error instanceof ApiError && error.kind === 'unauthorized' ? LOGIN_FAILED_COPY : userMessage(error)}
         </Text>
       ) : null}
-      <ActionButton label="Log in" onPress={submit} pending={login.isPending} />
-      <Link href="/reset-password" style={styles.link}>
-        Forgot your password?
+      <ActionButton label="Sign in" onPress={submit} pending={login.isPending} />
+      <Pressable accessibilityRole="button" accessibilityLabel="Cancel" onPress={cancel} className="min-h-touch items-center justify-center">
+        <Text className="text-body font-semibold text-foreground">Cancel</Text>
+      </Pressable>
+      <Link href="/reset-password" asChild>
+        <Text className="min-h-touch py-md text-body text-foreground">Forgot your password?</Text>
       </Link>
-      <Link href="/register" style={styles.link}>
-        Create an account
+      <Link href="/register" asChild>
+        <Text className="min-h-touch py-md text-body text-foreground">Create an account</Text>
       </Link>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { gap: 12 },
-  notice: { fontSize: 16 },
-  error: { fontSize: 16, color: '#b91c1c' },
-  link: { minHeight: 44, paddingVertical: 12, fontSize: 16 },
-});

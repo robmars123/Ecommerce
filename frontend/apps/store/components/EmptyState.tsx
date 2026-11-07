@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 type EmptyStateProps = {
   message: string;
@@ -7,27 +7,17 @@ type EmptyStateProps = {
 
 export function EmptyState({ message, action }: EmptyStateProps) {
   return (
-    <View style={styles.container}>
-      <Text style={styles.message}>{message}</Text>
+    <View className="items-start gap-md p-lg">
+      <Text className="text-body text-foreground">{message}</Text>
       {action ? (
-        <Pressable accessibilityRole="button" onPress={action.onPress} style={styles.button}>
-          <Text style={styles.buttonText}>{action.label}</Text>
+        <Pressable
+          accessibilityRole="button"
+          onPress={action.onPress}
+          className="min-h-touch min-w-touch justify-center rounded-control border border-border px-lg"
+        >
+          <Text className="text-body font-semibold text-foreground">{action.label}</Text>
         </Pressable>
       ) : null}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { padding: 16, gap: 12, alignItems: 'flex-start' },
-  message: { fontSize: 16 },
-  button: {
-    minHeight: 44,
-    minWidth: 44,
-    paddingHorizontal: 16,
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderRadius: 8,
-  },
-  buttonText: { fontSize: 16, fontWeight: '600' },
-});

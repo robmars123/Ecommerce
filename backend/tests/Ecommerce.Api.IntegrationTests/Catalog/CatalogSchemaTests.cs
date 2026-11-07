@@ -70,7 +70,7 @@ public class CatalogSchemaTests(PostgresFixture postgres)
 
         List<IEntityType> tables = db.Model.GetEntityTypes().Where(e => e.GetTableName() is not null).ToList();
         Assert.Equal(
-            new[] { "categories", "password_reset_tokens", "product_images", "product_variants", "products", "refresh_token_families", "refresh_tokens", "users" },
+            new[] { "audit_log", "cart_items", "carts", "categories", "idempotency_keys", "inventory_reservations", "inventory_stock", "order_items", "order_status_history", "orders", "outbox_events", "password_reset_tokens", "payments", "product_images", "product_variants", "products", "refresh_token_families", "refresh_tokens", "refunds", "shipments", "users" },
             tables.Select(t => t.GetTableName()!).Order().ToArray());
 
         foreach (IEntityType? entity in tables)

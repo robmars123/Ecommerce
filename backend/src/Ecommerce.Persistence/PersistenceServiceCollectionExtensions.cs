@@ -1,4 +1,7 @@
 using Ecommerce.Persistence.Health;
+using Ecommerce.Persistence.Audit;
+using Ecommerce.SharedKernel.Audit;
+using Ecommerce.SharedKernel.Outbox;
 using Ecommerce.SharedKernel.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -21,6 +24,9 @@ public static class PersistenceServiceCollectionExtensions
             o.UseNpgsql(sp.GetRequiredService<IOptions<DatabaseOptions>>().Value.ConnectionString));
 
         services.AddScoped<IUnitOfWork, EfUnitOfWork>();
+        services.AddScoped<IAuditLog, EfAuditLog>();
+        services.AddScoped<IIdempotencyStore, Idempotency.EfIdempotencyStore>();
+        services.AddScoped<IOutbox, Outbox.EfOutbox>();
 
         return services;
     }

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { ActionButton } from '@/components/ActionButton';
 import { TextField } from '@/components/TextField';
@@ -16,7 +16,7 @@ export function PasswordResetRequestForm() {
   const fieldErrors = request.error instanceof ApiError ? request.error.fieldErrors : undefined;
 
   return (
-    <View style={styles.container}>
+    <View className="gap-md">
       <TextField
         label="Email"
         value={email}
@@ -26,9 +26,9 @@ export function PasswordResetRequestForm() {
         autoCapitalize="none"
         autoComplete="email"
       />
-      {request.isSuccess ? <Text style={styles.notice}>{RESET_REQUESTED_COPY}</Text> : null}
+      {request.isSuccess ? <Text className="text-body text-foreground">{RESET_REQUESTED_COPY}</Text> : null}
       {request.error && !fieldErrors ? (
-        <Text accessibilityRole="alert" style={styles.error}>
+        <Text accessibilityRole="alert" className="text-body text-danger">
           {userMessage(request.error)}
         </Text>
       ) : null}
@@ -36,9 +36,3 @@ export function PasswordResetRequestForm() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { gap: 12 },
-  notice: { fontSize: 16 },
-  error: { fontSize: 16, color: '#b91c1c' },
-});

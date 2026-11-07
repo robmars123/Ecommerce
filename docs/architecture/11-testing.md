@@ -53,7 +53,7 @@ Runner: Jest (`jest-expo` preset) + React Native Testing Library + `expo-router/
 - **Components with behavior** (props that change output, state, handlers, conditional rendering, navigation): a co-located test of the behavior and its accessible role/label. Purely static markup needs no test.
 - **Routes:** every route in app context §5 renders under the real root layout at its URL (`tests/routes.test.tsx`). Screen-level behavior belongs in `features/` and is tested there; screens stay thin.
 - **Network:** mock `fetch` with `jest.fn()` / `jest.spyOn(globalThis, 'fetch')`. No MSW or other mocking package in v1.
-- **Platform splits:** when `lib/platform.native.ts` / `lib/platform.web.ts` land, the Jest config switches to per-platform projects (`jest-expo/ios`, `jest-expo/android`, `jest-expo/web`) in the same slice, so each split is tested on its platform.
+- **Platform splits:** when `lib/platform.native.ts` / `lib/platform.web.ts` land, the Jest config switches to per-platform projects (`jest-expo/ios`, `jest-expo/android`, `jest-expo/web`) in the same slice, so each split is tested on its platform. The web project runs only `*.test.web.*` files (jest-expo/web has no `fetch`, and expo-constants fails under expo-router there); ios and android run the whole suite (Slice 4, Rob).
 - **Not in v1:** device E2E (Detox/Maestro) and browser E2E (Playwright). EAS release candidates are smoke-tested by hand on Expo Go and the web export.
 
 | # | Slice | Scenario | Must prove |

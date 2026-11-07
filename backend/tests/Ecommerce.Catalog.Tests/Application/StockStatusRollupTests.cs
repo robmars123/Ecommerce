@@ -12,9 +12,9 @@ public class StockStatusRollupTests
 
     public static TheoryData<StockStatus[], StockStatus> Cases => new()
     {
-        { [], U },
-        { [U], U },
-        { [U, U], U },
+        { [], O },
+        { [U], O },
+        { [U, U], O },
         { [I], I },
         { [L], L },
         { [O], O },
@@ -29,6 +29,6 @@ public class StockStatusRollupTests
 
     [Theory]
     [MemberData(nameof(Cases))]
-    public void Rolls_up_known_statuses_ignoring_unknown(StockStatus[] input, StockStatus expected) =>
+    public void Rolls_up_to_the_best_status_and_Out_when_nothing_is_in_stock_or_low(StockStatus[] input, StockStatus expected) =>
         Assert.Equal(expected, StockStatusRollup.Rollup(input));
 }

@@ -1,5 +1,4 @@
 import * as SecureStore from 'expo-secure-store';
-import { Platform } from 'react-native';
 
 import { jsonResponse, problemResponse } from '@/tests/fetch-mock';
 
@@ -18,8 +17,6 @@ import type { TokenResponse } from './types';
 jest.mock('expo-secure-store');
 
 const store = SecureStore as jest.Mocked<typeof SecureStore>;
-const platform = Platform as { OS: string };
-const ORIGINAL_OS = Platform.OS;
 
 function tokens(overrides: Partial<TokenResponse> = {}): TokenResponse {
   return {
@@ -34,14 +31,12 @@ function tokens(overrides: Partial<TokenResponse> = {}): TokenResponse {
 
 beforeEach(() => {
   process.env.EXPO_PUBLIC_API_BASE_URL = 'http://api.test.invalid:5080';
-  platform.OS = 'ios';
   resetSession();
   jest.clearAllMocks();
   store.getItemAsync.mockResolvedValue(null);
 });
 
 afterEach(() => {
-  platform.OS = ORIGINAL_OS;
   jest.restoreAllMocks();
   delete process.env.EXPO_PUBLIC_API_BASE_URL;
 });
@@ -65,17 +60,6 @@ describe('session', () => {
     expect(text).not.toContain('access-1');
     expect(text).not.toContain('refresh-1');
     expect(getAccessToken()).toBe('access-1');
-  });
-
-  it('on web sign-in never touches SecureStore', async () => {
-    platform.OS = 'web';
-
-    await startSession(tokens({ refreshToken: null }));
-    await endSession();
-
-    expect(store.setItemAsync).not.toHaveBeenCalled();
-    expect(store.getItemAsync).not.toHaveBeenCalled();
-    expect(store.deleteItemAsync).not.toHaveBeenCalled();
   });
 
   it('concurrent refreshes share one request (single-flight) and save the rotated token', async () => {
@@ -127,19 +111,6 @@ describe('session', () => {
 
     expect(getSessionSnapshot().status).toBe('signed-out');
     expect(spy).not.toHaveBeenCalled();
-  });
-
-  it('restore on web makes exactly one cookie refresh', async () => {
-    platform.OS = 'web';
-    const spy = jest
-      .spyOn(globalThis, 'fetch')
-      .mockImplementation(async () => jsonResponse(200, tokens({ refreshToken: null })));
-
-    await restoreSession();
-
-    expect(spy).toHaveBeenCalledTimes(1);
-    expect((spy.mock.calls[0][1] as RequestInit).credentials).toBe('include');
-    expect(getSessionSnapshot().status).toBe('signed-in');
   });
 
   it('restore with a network error ends up signed out but keeps the stored token', async () => {

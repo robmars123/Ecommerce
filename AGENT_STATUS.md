@@ -5,8 +5,8 @@ Agents update this at the **start and end of every task**.
 
 | Agent | Status | Slice | Task | Fix round | Updated |
 |---|---|---|---|---|---|
-| Marco (developer) | 🟢 AVAILABLE | - | no-var hygiene fix done, verify.sh passes | - | 2026-11-05 12:30 |
-| Rob (architect, on demand) | 🟢 AVAILABLE | no-var | Re-review round 3: PASS; thread in slice-plans/no-var-rob-review.md | — | 2026-11-05 12:50 |
+| Marco (developer) | 🟢 AVAILABLE | 4 | Fix round 1 done; full verify.sh PASS | 1 | 2026-11-07 10:00 |
+| Rob (architect, on demand) | 🟢 AVAILABLE | 4 | Review round 2: BLOCKED on owner §8 waiver line only (slice-plans/slice-4-rob-review.md) | 2 | 2026-11-07 03:55 |
 
 **Rules**
 
@@ -16,5 +16,5 @@ Agents update this at the **start and end of every task**.
 
 ## Last reports
 
-- Marco: slice-plans/archive/module-projects-marco-report.md (previous: slice-plans/archive/slice-1a-marco-report.md)
-- Rob: slice-plans/no-var-rob-review.md (previous: slice-plans/local-docker-rob-review.md)
+- Marco: slice-plans/slice-4-marco-report.md (previous: slice-plans/archive/slice-3-marco-report.md)
+- Rob: slice-plans/slice-4-rob-review.md (previous: slice-plans/slice-4-plan.md)

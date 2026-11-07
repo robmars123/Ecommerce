@@ -1,5 +1,6 @@
-import { HomeView } from '@/features/catalog/components/HomeView';
+import { Redirect } from 'expo-router';
 
-export default function HomeScreen() {
-  return <HomeView />;
+/** The store opens on Shop (the product list). */
+export default function IndexScreen() {
+  return <Redirect href="/products" />;
 }

@@ -11,10 +11,14 @@ type PriceTextProps = {
 
 export function PriceText({ price, compareAtPrice }: PriceTextProps) {
   return (
-    <View style={styles.row}>
-      <Text style={styles.price}>{formatMoney(price)}</Text>
+    <View className="flex-row items-baseline gap-sm">
+      <Text className="text-title font-bold text-foreground">{formatMoney(price)}</Text>
       {compareAtPrice ? (
-        <Text accessibilityLabel={`Was ${formatMoney(compareAtPrice)}`} style={styles.compareAt}>
+        <Text
+          accessibilityLabel={`Was ${formatMoney(compareAtPrice)}`}
+          className="text-small text-muted"
+          style={styles.compareAt}
+        >
           {formatMoney(compareAtPrice)}
         </Text>
       ) : null}
@@ -22,8 +26,7 @@ export function PriceText({ price, compareAtPrice }: PriceTextProps) {
   );
 }
 
+// className does not resolve under Jest, so the asserted line-through stays a style (arch §5.5 fallback).
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
-  price: { fontSize: 16, fontWeight: '600' },
-  compareAt: { fontSize: 14, textDecorationLine: 'line-through', opacity: 0.7 },
+  compareAt: { textDecorationLine: 'line-through' },
 });
