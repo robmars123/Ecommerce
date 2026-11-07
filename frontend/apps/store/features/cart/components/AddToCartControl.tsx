@@ -3,55 +3,26 @@ import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { ActionButton } from '@/components/ActionButton';
-import { useSession } from '@/features/auth/hooks/useSession';
 import type { ProductDetail, ProductVariant } from '@/features/catalog/types';
 
 import { cartErrorMessage } from '../cart-messages';
-import { useGuestCartStore } from '../guest-cart-store';
-import { useCartMutations } from '../hooks/useCartMutations';
+import { useAddToCart } from '../hooks/useAddToCart';
 
 export const MAX_ADD_QUANTITY = 10;
 
-/**
- * Add the selected variant to the cart. Signed in: the server decides and its answer wins (a stock conflict or a limit is
- * shown as the server says it). Signed out: the line goes to the device cart as a display snapshot (estimate only).
- */
+/** Add the selected variant to the cart through the shared add path (useAddToCart), with quantity and feedback. */
 export function AddToCartControl({ product, variant }: { product: ProductDetail; variant: ProductVariant }) {
-  const session = useSession();
-  const { add } = useCartMutations();
-  const addToGuest = useGuestCartStore((s) => s.add);
+  const { addLine, isPending, restoring } = useAddToCart();
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
   const [error, setError] = useState<unknown>(null);
 
   const out = variant.stockStatus === 'Out';
-  const signedIn = session.status === 'signed-in';
 
   function submit() {
     setAdded(false);
     setError(null);
-    if (signedIn) {
-      add.mutate(
-        { variantId: variant.id, quantity },
-        { onSuccess: () => setAdded(true), onError: setError },
-      );
-      return;
-    }
-    const image = product.images[0];
-    addToGuest(
-      {
-        variantId: variant.id,
-        productSlug: product.slug,
-        snapshot: {
-          productName: product.name,
-          variantName: variant.name,
-          price: variant.price,
-          image: image?.url ? { url: image.url, altText: image.altText } : null,
-        },
-      },
-      quantity,
-    );
-    setAdded(true);
+    addLine(product, variant, quantity, { onSuccess: () => setAdded(true), onError: setError });
   }
 
   return (
@@ -79,7 +50,7 @@ export function AddToCartControl({ product, variant }: { product: ProductDetail;
           <Text className="text-body font-semibold text-foreground">+</Text>
         </Pressable>
       </View>
-      <ActionButton label="Add to cart" onPress={submit} disabled={out || session.status === 'restoring'} pending={add.isPending} />
+      <ActionButton label="Add to cart" onPress={submit} disabled={out || restoring} pending={isPending} />
       {out ? <Text className="text-small text-muted">This item is out of stock.</Text> : null}
       {error ? (
         <Text accessibilityRole="alert" className="text-body text-danger">

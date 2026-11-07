@@ -3,6 +3,7 @@ import { Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AccountBar } from '@/features/auth/components/AccountBar';
+import { useSession } from '@/features/auth/hooks/useSession';
 
 type NavLinkProps = { href: Href; label: string; selected?: boolean; outlined?: boolean };
 
@@ -29,6 +30,8 @@ function NavLink({ href, label, selected = false, outlined = false }: NavLinkPro
 export function TopNav() {
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
+  // Orders belong to a signed-in customer; hidden while the session restores so a guest never sees it flash.
+  const session = useSession();
 
   return (
     // The safe-area inset is a runtime value: an allowed style exception (arch §5.5).
@@ -41,7 +44,9 @@ export function TopNav() {
             </Pressable>
           </Link>
           <NavLink href="/products" label="Shop" selected={pathname.startsWith('/products')} />
-          <NavLink href="/orders" label="Orders" selected={pathname.startsWith('/orders')} />
+          {session.status === 'signed-in' ? (
+            <NavLink href="/orders" label="Orders" selected={pathname.startsWith('/orders')} />
+          ) : null}
         </View>
         <View className="flex-row flex-wrap items-center gap-md">
           <AccountBar />

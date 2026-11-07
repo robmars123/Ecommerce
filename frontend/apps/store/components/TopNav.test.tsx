@@ -5,6 +5,7 @@ import { Text } from 'react-native';
 
 import { endSession, resetSession } from '@/features/auth/session';
 import { createTestQueryClient } from '@/tests/render-with-query';
+import { signInAs } from '@/tests/session';
 
 import { TopNav } from './TopNav';
 
@@ -44,9 +45,12 @@ describe('TopNav', () => {
     ['Orders', '/orders'],
     ['Cart', '/cart'],
   ])('%s is a link to %s', async (name, pathname) => {
+    // Orders shows only for a signed-in customer, so every row is checked in that state.
+    await signInAs('Customer');
     await renderRouter(routes(), { initialUrl: '/login' });
 
-    await fireEvent.press(screen.getByRole('link', { name }));
+    // Signed in, AccountBar also lists an Orders link, so take the first match.
+    await fireEvent.press(screen.getAllByRole('link', { name })[0]);
 
     expect(screen).toHavePathname(pathname);
   });
@@ -65,5 +69,26 @@ describe('TopNav', () => {
     await endSession();
 
     expect(await screen.findAllByRole('link', { name: 'Log in' })).toHaveLength(1);
+  });
+
+  it('hides Orders from a guest', async () => {
+    await renderRouter(routes(), { initialUrl: '/' });
+    await endSession();
+
+    expect(await screen.findAllByRole('link', { name: 'Log in' })).toHaveLength(1);
+    expect(screen.queryByRole('link', { name: 'Orders' })).toBeNull();
+  });
+
+  it('shows Orders to a signed-in customer', async () => {
+    await signInAs('Customer');
+    await renderRouter(routes(), { initialUrl: '/' });
+
+    expect(screen.getAllByRole('link', { name: 'Orders' }).length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('hides Orders while the session is still restoring', async () => {
+    await renderRouter(routes(), { initialUrl: '/' });
+
+    expect(screen.queryByRole('link', { name: 'Orders' })).toBeNull();
   });
 });
