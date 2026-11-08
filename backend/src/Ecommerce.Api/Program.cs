@@ -55,6 +55,13 @@ builder.Services.AddOptions<CorsOptions>()
 
         // Auth and admin endpoints: the web refresh cookie rides on these, so credentials are allowed (D6). Applied only
         // to those routes, and only for the configured origins, so an unlisted origin never gets an ACAO header.
+        // The cart is the one public-policy route that deletes (remove a line), so only /api/v1/cart also allows DELETE.
+        o.AddPolicy(CartCorsPolicy, policy => policy
+            .WithOrigins(origins)
+            .WithMethods([.. methods, HttpMethods.Delete])
+            .WithHeaders(headers)
+            .WithExposedHeaders(CorrelationId.HeaderName));
+
         o.AddPolicy(CredentialedCorsPolicy, policy => policy
             .WithOrigins(origins)
             .WithMethods(methods)
@@ -113,6 +120,10 @@ app.MapControllers().Add(endpoint =>
     {
         endpoint.Metadata.Add(new EnableCorsAttribute(CredentialedCorsPolicy));
     }
+    else if (endpoint is RouteEndpointBuilder { RoutePattern.RawText: { } cartRoute } && cartRoute.StartsWith("api/v1/cart", StringComparison.OrdinalIgnoreCase))
+    {
+        endpoint.Metadata.Add(new EnableCorsAttribute(CartCorsPolicy));
+    }
 });
 
 // Unknown routes: the authenticated-user fallback policy would otherwise turn a 404 into a 401 and leak nothing useful.
@@ -128,5 +139,6 @@ app.Run();
 public partial class Program
 {
     private const string CredentialedCorsPolicy = "credentialed";
+    private const string CartCorsPolicy = "cart";
     private const string RefreshTokenHeader = "X-Auth-Transport";
 }
