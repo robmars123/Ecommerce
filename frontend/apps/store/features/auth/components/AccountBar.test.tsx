@@ -51,7 +51,7 @@ describe('AccountBar', () => {
     expect(screen.queryByRole('link', { name: 'Admin' }) !== null).toBe(hasAdminLink);
   });
 
-  it('shows an Orders link when signed in and none when signed out', async () => {
+  it('has no Orders link, signed in or out (the top bar owns it)', async () => {
     await render();
     await endSession();
     expect(await screen.findByRole('link', { name: 'Log in' })).toBeOnTheScreen();
@@ -59,7 +59,8 @@ describe('AccountBar', () => {
 
     await signInAs('Customer');
 
-    expect(await screen.findByRole('link', { name: 'Orders' })).toBeOnTheScreen();
+    expect(await screen.findByText('Customer User')).toBeOnTheScreen();
+    expect(screen.queryByRole('link', { name: 'Orders' })).toBeNull();
   });
 
   it('Log out calls the API, ends the session and clears the cache', async () => {

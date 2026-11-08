@@ -1,5 +1,5 @@
-import { ScreenStub } from '@/components/ScreenStub';
+import { AdminReturnsView } from '@/features/admin-orders/components/AdminReturnsView';
 
 export default function AdminReturnListScreen() {
-  return <ScreenStub title="Admin · Returns" />;
+  return <AdminReturnsView />;
 }

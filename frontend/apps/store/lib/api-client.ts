@@ -302,3 +302,8 @@ const MESSAGES: Record<ApiErrorKind, string> = {
 export function userMessage(error: unknown): string {
   return error instanceof ApiError ? MESSAGES[error.kind] : 'Something went wrong. Please try again.';
 }
+
+/** The current access token for a connection that cannot use `apiGet` (the live status socket). Undefined when signed out. */
+export function getCurrentAccessToken(): string | undefined {
+  return authHandlers?.getAccessToken();
+}

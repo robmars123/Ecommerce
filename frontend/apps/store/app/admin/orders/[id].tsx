@@ -1,7 +1,8 @@
 import { useLocalSearchParams } from 'expo-router';
-import { ScreenStub } from '@/components/ScreenStub';
+
+import { AdminOrderDetailView } from '@/features/admin-orders/components/AdminOrderDetailView';
 
 export default function AdminOrderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  return <ScreenStub title="Admin · Order" detail={id} />;
+  return <AdminOrderDetailView id={id} />;
 }

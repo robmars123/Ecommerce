@@ -1,5 +1,7 @@
 using Ecommerce.Identity.Application;
 using Ecommerce.Identity.Domain;
+using Ecommerce.Notifications.Contracts;
+using Ecommerce.SharedKernel.Outbox;
 using Ecommerce.SharedKernel.Persistence;
 using Ecommerce.SharedKernel.Time;
 
@@ -118,6 +120,18 @@ internal sealed class FakePasswordResetTokenRepository(EventLog log) : IPassword
         }
         return Task.CompletedTask;
     }
+
+    public Task<bool> HasNewerRequestAsync(Guid userId, DateTimeOffset requestedAt, CancellationToken ct) =>
+        Task.FromResult(Tokens.Any(t => t.UserId == userId && t.RequestedAt > requestedAt));
+
+    public Task InvalidateOlderAsync(Guid userId, DateTimeOffset requestedAt, DateTimeOffset now, CancellationToken ct)
+    {
+        foreach (PasswordResetToken token in Tokens.Where(t => t.UserId == userId && (t.RequestedAt == null || t.RequestedAt < requestedAt)))
+        {
+            token.Invalidate(now);
+        }
+        return Task.CompletedTask;
+    }
 }
 
 internal sealed class FakeHashing(EventLog log) : IPasswordHashing
@@ -174,15 +188,36 @@ internal sealed class FakeSecurityEvents : ISecurityEventSink
     public void AccountLockedOut(Guid userId) => Lockouts.Add(userId);
 }
 
-internal sealed class FakeLinkSender(EventLog log) : IPasswordResetLinkSender
+internal sealed class FakeEmailSender(EventLog log) : IEmailSender
 {
-    public List<(Guid UserId, string Email, string? Link)> Sent { get; } = [];
+    private readonly Dictionary<string, EmailMessage> _byKey = [];
 
-    public Task SendAsync(Guid userId, string email, string? link, CancellationToken ct)
+    public IReadOnlyList<EmailMessage> Sent => _byKey.Values.ToList();
+    public int Attempts { get; private set; }
+    public int FailNext { get; set; }
+
+    public Task SendAsync(EmailMessage message, CancellationToken ct)
     {
-        log.Add("send-reset-link");
-        Sent.Add((userId, email, link));
+        Attempts++;
+        if (FailNext > 0)
+        {
+            FailNext--;
+            throw new EmailProviderUnavailableException("fake provider down");
+        }
+        log.Add("send-email");
+        _byKey.TryAdd(message.IdempotencyKey, message);
         return Task.CompletedTask;
+    }
+}
+
+internal sealed class FakeOutbox(EventLog log) : IOutbox
+{
+    public List<OutboxMessage> Messages { get; } = [];
+
+    public void Add(OutboxMessage message)
+    {
+        log.Add("outbox-added");
+        Messages.Add(message);
     }
 }
 
@@ -203,7 +238,8 @@ internal sealed class IdentityFakes
         Generator = new FakeTokenGenerator();
         AccessTokens = new FakeAccessTokenIssuer(Log);
         Security = new FakeSecurityEvents();
-        Sender = new FakeLinkSender(Log);
+        Sender = new FakeEmailSender(Log);
+        Outbox = new FakeOutbox(Log);
         Sessions = new SessionStarter(RefreshTokens, Generator, Lifetimes);
     }
 
@@ -222,7 +258,8 @@ internal sealed class IdentityFakes
     public FakeTokenGenerator Generator { get; }
     public FakeAccessTokenIssuer AccessTokens { get; }
     public FakeSecurityEvents Security { get; }
-    public FakeLinkSender Sender { get; }
+    public FakeEmailSender Sender { get; }
+    public FakeOutbox Outbox { get; }
     public SessionStarter Sessions { get; }
 
     public User AddUser(string email = "ana@example.test", string password = "correct horse", UserRole role = UserRole.Customer)
@@ -244,6 +281,29 @@ internal sealed class IdentityFakes
         new(RefreshTokens, Users, Generator, AccessTokens, Security, UnitOfWork, Clock, Lifetimes);
 
     public PasswordResetService PasswordReset(string? linkBaseUrl = "https://app.test/reset-password") =>
-        new(Users, ResetTokens, RefreshTokens, Hashing, Generator, Sender, UnitOfWork, Clock, Lifetimes,
-            new PasswordResetLinkSettings(linkBaseUrl));
+        new(Users, ResetTokens, RefreshTokens, Hashing, Generator, Outbox, UnitOfWork, Clock);
+
+    public PasswordResetConsumer ResetConsumer(string? linkBaseUrl = "https://app.test/reset-password") =>
+        new(Users, ResetTokens, Generator, Sender, UnitOfWork, Clock, Lifetimes, new PasswordResetLinkSettings(linkBaseUrl));
+
+    /// <summary>Runs the consumer for every staged password reset event (what the outbox worker does).</summary>
+    public async Task DeliverAsync(string? linkBaseUrl)
+    {
+        foreach (OutboxMessage message in Outbox.Messages.Where(m => m.EventType == PasswordResetService.RequestedEvent && !Delivered.Contains(m.EventId)).ToList())
+        {
+            await ResetConsumer(linkBaseUrl).HandleAsync(message, CancellationToken.None);
+            Delivered.Add(message.EventId);
+        }
+    }
+    private HashSet<Guid> Delivered { get; } = [];
+
+    public string TokenOf(int index) =>
+        LinkOf(Sender.Sent.Where(m => m.Subject == "Reset your password").ElementAt(index))[(LinkOf(Sender.Sent.First(m => m.Subject == "Reset your password")).IndexOf("token=", StringComparison.Ordinal) + 6)..];
+
+    public string LinkOf(EmailMessage mail)
+    {
+        int start = mail.TextBody.IndexOf("https://", StringComparison.Ordinal);
+        int end = mail.TextBody.IndexOfAny([' ', '\r', '\n'], start);
+        return mail.TextBody[start..end];
+    }
 }

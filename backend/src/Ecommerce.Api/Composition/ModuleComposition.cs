@@ -3,6 +3,7 @@ using Ecommerce.Cart;
 using Ecommerce.Catalog;
 using Ecommerce.Identity;
 using Ecommerce.Inventory;
+using Ecommerce.Notifications;
 using Ecommerce.Orders;
 using Ecommerce.Payments;
 using Microsoft.AspNetCore.Mvc;
@@ -17,11 +18,12 @@ public static class ModuleComposition
          typeof(CatalogModule).Assembly,
          typeof(IdentityModule).Assembly,
          typeof(InventoryModule).Assembly,
+         typeof(NotificationsModule).Assembly,
          typeof(OrdersModule).Assembly,
          typeof(PaymentsModule).Assembly];
 
     public static IServiceCollection AddEcommerceModules(this IServiceCollection services, IConfiguration configuration) =>
-        services.AddCartModule(configuration).AddCatalogModule(configuration).AddIdentityModule(configuration).AddInventoryModule(configuration).AddOrdersModule(configuration).AddPaymentsModule(configuration);
+        services.AddCartModule(configuration).AddCatalogModule(configuration).AddIdentityModule(configuration).AddInventoryModule(configuration).AddNotificationsModule(configuration).AddOrdersModule(configuration).AddPaymentsModule(configuration);
 
     public static IMvcBuilder AddModuleControllers(this IMvcBuilder mvc) =>
         mvc.ConfigureApplicationPartManager(m =>

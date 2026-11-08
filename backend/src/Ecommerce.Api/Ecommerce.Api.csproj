@@ -11,6 +11,7 @@
     <ProjectReference Include="..\Modules\Cart\Ecommerce.Cart\Ecommerce.Cart.csproj" />
     <ProjectReference Include="..\Modules\Orders\Ecommerce.Orders\Ecommerce.Orders.csproj" />
     <ProjectReference Include="..\Modules\Payments\Ecommerce.Payments\Ecommerce.Payments.csproj" />
+    <ProjectReference Include="..\Modules\Notifications\Ecommerce.Notifications\Ecommerce.Notifications.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Serilog.AspNetCore" />

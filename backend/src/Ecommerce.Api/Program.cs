@@ -5,6 +5,7 @@ using Ecommerce.Api.Composition;
 using Ecommerce.Api.Time;
 using Ecommerce.Catalog;
 using Ecommerce.Inventory;
+using Ecommerce.Notifications;
 using Ecommerce.SharedKernel.Time;
 using Ecommerce.Persistence;
 using Microsoft.AspNetCore.Cors;
@@ -43,7 +44,7 @@ builder.Services.AddOptions<CorsOptions>()
         // Configured origins only; never "*" with credentials (architecture 10.1). Empty list = no cross-origin access.
         string[] origins = config.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
         string[] methods = [HttpMethods.Get, HttpMethods.Post, HttpMethods.Put];
-        string[] headers = [CorrelationId.HeaderName, "Content-Type", "Authorization", RefreshTokenHeader, "Idempotency-Key"];
+        string[] headers = [CorrelationId.HeaderName, "Content-Type", "Authorization", RefreshTokenHeader, "Idempotency-Key", "X-SignalR-User-Agent", "X-Requested-With"];
 
         // Default policy (health and anything not listed below): no credentials.
         o.AddDefaultPolicy(policy => policy
@@ -54,6 +55,13 @@ builder.Services.AddOptions<CorsOptions>()
 
         // Auth and admin endpoints: the web refresh cookie rides on these, so credentials are allowed (D6). Applied only
         // to those routes, and only for the configured origins, so an unlisted origin never gets an ACAO header.
+        // The cart is the one public-policy route that deletes (remove a line), so only /api/v1/cart also allows DELETE.
+        o.AddPolicy(CartCorsPolicy, policy => policy
+            .WithOrigins(origins)
+            .WithMethods([.. methods, HttpMethods.Delete])
+            .WithHeaders(headers)
+            .WithExposedHeaders(CorrelationId.HeaderName));
+
         o.AddPolicy(CredentialedCorsPolicy, policy => policy
             .WithOrigins(origins)
             .WithMethods(methods)
@@ -104,12 +112,17 @@ app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapEcommerceHealthEndpoints();
+app.MapNotificationsHub();
 app.MapControllers().Add(endpoint =>
 {
     if (endpoint is RouteEndpointBuilder { RoutePattern.RawText: { } route } &&
         (route.StartsWith("api/v1/auth", StringComparison.OrdinalIgnoreCase) || route.StartsWith("api/v1/admin", StringComparison.OrdinalIgnoreCase)))
     {
         endpoint.Metadata.Add(new EnableCorsAttribute(CredentialedCorsPolicy));
+    }
+    else if (endpoint is RouteEndpointBuilder { RoutePattern.RawText: { } cartRoute } && cartRoute.StartsWith("api/v1/cart", StringComparison.OrdinalIgnoreCase))
+    {
+        endpoint.Metadata.Add(new EnableCorsAttribute(CartCorsPolicy));
     }
 });
 
@@ -126,5 +139,6 @@ app.Run();
 public partial class Program
 {
     private const string CredentialedCorsPolicy = "credentialed";
+    private const string CartCorsPolicy = "cart";
     private const string RefreshTokenHeader = "X-Auth-Transport";
 }

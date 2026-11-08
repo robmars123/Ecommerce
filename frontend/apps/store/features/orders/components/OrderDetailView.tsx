@@ -7,10 +7,12 @@ import { ScreenTitle } from '@/components/ScreenTitle';
 import { ApiError, userMessage } from '@/lib/api-client';
 import { formatMoney } from '@/lib/money';
 
+import { useOrderLiveStatus } from '../hooks/useOrderLiveStatus';
 import { useOrderQuery } from '../hooks/useOrderQuery';
-import { formatOrderDate, paymentStatusLabel, statusLabel } from '../status-labels';
+import { formatOrderDate, paymentStatusLabel, refundStatusLabel, statusLabel } from '../status-labels';
 import type { OrderDetail } from '../types';
 import { OrderTimeline } from './OrderTimeline';
+import { ReturnRequestForm } from './ReturnRequestForm';
 import { TrackingLink } from './TrackingLink';
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
@@ -75,6 +77,19 @@ function Content({ order }: { order: OrderDetail }) {
         </Section>
       ) : null}
 
+      {order.refunds.length > 0 ? (
+        <Section title="Refunds">
+          {order.refunds.map((refund) => (
+            <View key={`${refund.createdAt}-${refund.amount.amount}`} className="flex-row flex-wrap justify-between gap-sm">
+              <Text className="text-body text-foreground">{`${formatMoney(refund.amount)} · ${refundStatusLabel(refund.status)}`}</Text>
+              <Text className="text-small text-muted">{formatOrderDate(refund.createdAt)}</Text>
+            </View>
+          ))}
+        </Section>
+      ) : null}
+
+      <ReturnRequestForm order={order} />
+
       <Section title="Timeline">
         <OrderTimeline entries={order.timeline} />
       </Section>
@@ -89,6 +104,7 @@ function isMissing(error: unknown): boolean {
 
 export function OrderDetailView({ id }: { id: string }) {
   const query = useOrderQuery(id);
+  useOrderLiveStatus(id);
 
   return (
     <View className="w-full max-w-content flex-1 gap-sm self-center p-lg">

@@ -4,9 +4,12 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Ecommerce.Api.IntegrationTests.Catalog;
 using Ecommerce.Identity.Application;
+using Ecommerce.Notifications.Contracts;
 using Ecommerce.Identity.Domain;
 using Ecommerce.Identity.Infrastructure;
 using Ecommerce.Persistence;
+using Ecommerce.Persistence.Outbox;
+using Ecommerce.SharedKernel.Outbox;
 using Ecommerce.SharedKernel.Time;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,33 +17,63 @@ using Serilog.Core;
 
 namespace Ecommerce.Api.IntegrationTests.Identity;
 
-/// <summary>Records every reset link instead of sending it. Registered in place of the real sender.</summary>
-internal sealed class RecordingLinkSender : IPasswordResetLinkSender
+/// <summary>
+/// Stands in for the email provider: records one message per idempotency key (a repeat of a key is dropped, like a real provider
+/// does), counts every attempt, and can be told to fail the next sends. Registered in place of the real sender.
+/// </summary>
+internal sealed class RecordingEmailSender : IEmailSender
 {
-    private readonly List<(Guid UserId, string Email, string? Link)> _sent = [];
+    private readonly Dictionary<string, EmailMessage> _byKey = [];
     private readonly Lock _gate = new();
+    private int _failNext;
 
-    public IReadOnlyList<(Guid UserId, string Email, string? Link)> Sent
+    public IReadOnlyList<EmailMessage> Sent
     {
         get
         {
             lock (_gate)
             {
-                return _sent.ToList();
+                return _byKey.Values.ToList();
             }
         }
     }
 
-    public Task SendAsync(Guid userId, string email, string? link, CancellationToken ct)
+    public int Attempts { get; private set; }
+
+    /// <summary>The next <paramref name="count"/> sends throw, like a provider that is down.</summary>
+    public void FailNext(int count)
     {
         lock (_gate)
         {
-            _sent.Add((userId, email, link));
+            _failNext = count;
+        }
+    }
+
+    public Task SendAsync(EmailMessage message, CancellationToken ct)
+    {
+        lock (_gate)
+        {
+            Attempts++;
+            if (_failNext > 0)
+            {
+                _failNext--;
+                throw new EmailProviderUnavailableException("recording sender: provider down");
+            }
+            _byKey.TryAdd(message.IdempotencyKey, message);
         }
         return Task.CompletedTask;
     }
 
-    public string TokenOf(int index) => Sent[index].Link![(Sent[index].Link!.IndexOf("token=", StringComparison.Ordinal) + 6)..];
+    public IReadOnlyList<EmailMessage> To(string email) => Sent.Where(m => m.To == email).ToList();
+
+    /// <summary>The reset token in the index-th password reset mail (the part after "token=").</summary>
+    public string TokenOf(int index)
+    {
+        string body = Sent.Where(m => m.Subject == "Reset your password").ElementAt(index).TextBody;
+        int start = body.IndexOf("token=", StringComparison.Ordinal) + 6;
+        int end = body.IndexOfAny([' ', '\r', '\n'], start);
+        return body[start..(end < 0 ? body.Length : end)];
+    }
 }
 
 /// <summary>Counts real password verifications (delegates to the real hasher).</summary>
@@ -69,7 +102,7 @@ internal sealed class IdentityTestEnv : IAsyncDisposable
     public const string Password = "correct horse battery";
     private readonly IServiceScope _scope;
 
-    private IdentityTestEnv(ApiFactory factory, HttpClient client, IServiceScope scope, FakeClock clock, RecordingLinkSender sender, CollectingSink logs)
+    private IdentityTestEnv(ApiFactory factory, HttpClient client, IServiceScope scope, FakeClock clock, RecordingEmailSender sender, CollectingSink logs)
     {
         Factory = factory;
         Client = client;
@@ -83,7 +116,7 @@ internal sealed class IdentityTestEnv : IAsyncDisposable
     public ApiFactory Factory { get; }
     public HttpClient Client { get; }
     public FakeClock Clock { get; }
-    public RecordingLinkSender Sender { get; }
+    public RecordingEmailSender Sender { get; }
     public CollectingSink Logs { get; }
     public EcommerceDbContext Db { get; }
     public CountingPasswordHashing? Counter { get; private set; }
@@ -100,7 +133,7 @@ internal sealed class IdentityTestEnv : IAsyncDisposable
         // round trip and hide whether a guard (such as forcing updated_at into the UPDATE) is really what protects a write.
         DateTimeOffset start = DateTimeOffset.UtcNow;
         FakeClock clock = new FakeClock(start.AddTicks(-(start.Ticks % TimeSpan.TicksPerSecond)));
-        RecordingLinkSender sender = new RecordingLinkSender();
+        RecordingEmailSender sender = new RecordingEmailSender();
         CollectingSink logs = new CollectingSink();
         CountingPasswordHashing? counter = null;
         Dictionary<string, string> all = new Dictionary<string, string>
@@ -116,7 +149,7 @@ internal sealed class IdentityTestEnv : IAsyncDisposable
         {
             services.AddSingleton<IClock>(clock);
             services.AddSingleton<ILogEventSink>(logs);
-            services.AddSingleton<IPasswordResetLinkSender>(sender);
+            services.AddSingleton<IEmailSender>(sender);
             if (countHashing)
             {
                 ServiceDescriptor real = services.Single(d => d.ServiceType == typeof(IPasswordHashing));
@@ -130,6 +163,22 @@ internal sealed class IdentityTestEnv : IAsyncDisposable
         await scope.ServiceProvider.GetRequiredService<EcommerceDbContext>().Database.MigrateAsync(ct);
         HttpClient client = factory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions { HandleCookies = false });
         return new IdentityTestEnv(factory, client, scope, clock, sender, logs) { Counter = counter };
+    }
+
+    /// <summary>Runs every outbox consumer once (the worker is off in tests). Returns how many events were handled.</summary>
+    public async Task<int> DrainOutboxAsync(int rounds = 1)
+    {
+        int handled = 0;
+        for (int round = 0; round < rounds; round++)
+        {
+            using IServiceScope scope = Factory.Services.CreateScope();
+            OutboxProcessor processor = scope.ServiceProvider.GetRequiredService<OutboxProcessor>();
+            foreach (IOutboxConsumer consumer in scope.ServiceProvider.GetServices<IOutboxConsumer>())
+            {
+                handled += await processor.RunOnceAsync(consumer, TestContext.Current.CancellationToken);
+            }
+        }
+        return handled;
     }
 
     public async Task<User> AddUserAsync(string email, UserRole role = UserRole.Customer, string password = Password)

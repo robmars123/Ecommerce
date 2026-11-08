@@ -23,6 +23,8 @@ internal sealed record ShippingMethodResponse(string Code, string Name);
 
 internal sealed record TimelineEntryResponse(string? FromStatus, string ToStatus, DateTimeOffset At, string? Reason);
 
+internal sealed record RefundResponse(MoneyResponse Amount, string Status, DateTimeOffset CreatedAt);
+
 internal sealed record ShipmentResponse(
     string CarrierName, string TrackingNumber, string? TrackingUrl, DateTimeOffset ShippedAt, DateTimeOffset? DeliveredAt);
 
@@ -41,7 +43,8 @@ internal sealed record OrderDetailResponse(
     ShippingAddress ShippingAddress,
     IReadOnlyList<TimelineEntryResponse> Timeline,
     IReadOnlyList<ShipmentResponse> Shipments,
-    string? PaymentStatus);
+    string? PaymentStatus,
+    IReadOnlyList<RefundResponse> Refunds);
 
 internal static class OrderResponseMapping
 {
@@ -67,7 +70,8 @@ internal static class OrderResponseMapping
             o.ShippingAddress,
             o.Timeline.Select(t => new TimelineEntryResponse(t.FromStatus?.ToString(), t.ToStatus.ToString(), t.At, t.Reason)).ToList(),
             view.Shipments.Select(s => new ShipmentResponse(s.CarrierName, s.TrackingNumber, s.TrackingUrl, s.ShippedAt, s.DeliveredAt)).ToList(),
-            view.PaymentStatus);
+            view.PaymentStatus,
+            view.Refunds.Select(r => new RefundResponse(MoneyResponse.From(r.Amount, o.Currency), r.Status, r.CreatedAt)).ToList());
     }
 }
 
@@ -111,5 +115,45 @@ internal static class CheckoutResponseMapping
                 new ShippingMethodResponse(o.ShippingMethodCode, o.ShippingMethodName),
                 o.ShippingAddress),
             ok.ClientSecret);
+    }
+}
+
+// Admin detail (D14): the customer shape, the owner's id, every refund with its id, and the server's totals.
+internal sealed record AdminRefundResponse(Guid RefundId, MoneyResponse Amount, string Status, DateTimeOffset CreatedAt);
+
+internal sealed record ReturnItemResponse(Guid VariantId, string Name, int Quantity);
+
+internal sealed record ReturnRequestResponse(
+    Guid Id, Guid OrderId, string OrderNumber, string Status, string Reason, string? AdminNote,
+    IReadOnlyList<ReturnItemResponse> Items, DateTimeOffset CreatedAt, DateTimeOffset? DecidedAt);
+
+internal sealed record ReturnListResponse(IReadOnlyList<ReturnRequestResponse> Items, int Page, int PageSize, int TotalCount, int TotalPages);
+
+internal sealed record AdminOrderDetailResponse(
+    OrderDetailResponse Order,
+    Guid UserId,
+    IReadOnlyList<AdminRefundResponse> Refunds,
+    MoneyResponse RefundedTotal,
+    MoneyResponse PendingTotal,
+    MoneyResponse Remaining,
+    IReadOnlyList<ReturnRequestResponse> ReturnRequests);
+
+internal static class AdminResponseMapping
+{
+    public static ReturnRequestResponse ToResponse(this ReturnRow r) =>
+        new(r.Id, r.OrderId, r.OrderNumber, r.Status.ToString(), r.Reason, r.AdminNote,
+            r.Items.Select(i => new ReturnItemResponse(i.VariantId, i.Name, i.Quantity)).ToList(), r.CreatedAt, r.DecidedAt);
+
+    public static AdminOrderDetailResponse ToResponse(this AdminOrderDetailView view)
+    {
+        string currency = view.Detail.Order.Currency;
+        return new AdminOrderDetailResponse(
+            view.Detail.ToResponse(),
+            view.Detail.Order.UserId,
+            view.Summary.Refunds.Select(r => new AdminRefundResponse(r.RefundId, MoneyResponse.From(r.Amount, currency), r.Status, r.CreatedAt)).ToList(),
+            MoneyResponse.From(view.Summary.RefundedTotal, currency),
+            MoneyResponse.From(view.Summary.PendingTotal, currency),
+            MoneyResponse.From(view.Summary.Remaining, currency),
+            view.Returns.Select(r => r.ToResponse()).ToList());
     }
 }

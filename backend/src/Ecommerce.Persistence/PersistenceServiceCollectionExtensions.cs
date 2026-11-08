@@ -27,6 +27,8 @@ public static class PersistenceServiceCollectionExtensions
         services.AddScoped<IAuditLog, EfAuditLog>();
         services.AddScoped<IIdempotencyStore, Idempotency.EfIdempotencyStore>();
         services.AddScoped<IOutbox, Outbox.EfOutbox>();
+        services.AddScoped<Outbox.OutboxProcessor>();
+        services.AddHostedService<Outbox.OutboxWorker>();
 
         return services;
     }

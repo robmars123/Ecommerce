@@ -28,6 +28,8 @@ public sealed class ApiFactory(
         // Random placeholders so a non-Development host starts. Tests replace the gateway with a fake; nothing calls the real provider.
         builder.UseSetting("Stripe:SecretKey", Convert.ToHexString(RandomNumberGenerator.GetBytes(24)));
         builder.UseSetting("Stripe:WebhookSecret", WebhookSecret);
+        // The outbox worker is off in tests: they drive OutboxProcessor themselves so every run is deterministic.
+        builder.UseSetting("Outbox:Worker:Enabled", "false");
         foreach ((string? key, string? value) in settings ?? new Dictionary<string, string>())
         {
             builder.UseSetting(key, value);

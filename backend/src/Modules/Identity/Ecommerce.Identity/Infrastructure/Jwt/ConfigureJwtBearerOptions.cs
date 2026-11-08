@@ -24,6 +24,19 @@ internal sealed class ConfigureJwtBearerOptions(JwtSigningKeyProvider keys, IOpt
         JwtOptions settings = jwt.Value;
         options.MapInboundClaims = false;
         options.SaveToken = false;
+        // SignalR clients cannot set headers on a WebSocket, so a hub connection sends the token as access_token. Honoured only on
+        // /hubs paths (Slice 6 D16); every other route still needs the Authorization header.
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                if (context.HttpContext.Request.Path.StartsWithSegments("/hubs") && context.Request.Query.TryGetValue("access_token", out Microsoft.Extensions.Primitives.StringValues token))
+                {
+                    context.Token = token;
+                }
+                return Task.CompletedTask;
+            },
+        };
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidAlgorithms = [SecurityAlgorithms.HmacSha256],

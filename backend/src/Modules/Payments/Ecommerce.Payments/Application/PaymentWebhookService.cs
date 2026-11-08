@@ -29,6 +29,7 @@ internal sealed class PaymentWebhookService(
     IPaymentStore store,
     IIdempotencyStore keys,
     IOrderPayments orders,
+    IOrderRefunds refunds,
     IOutbox outbox,
     IAuditLog audit,
     IPaymentAlerts alerts,
@@ -40,7 +41,12 @@ internal sealed class PaymentWebhookService(
 
     private sealed record AutoRefund(Guid PaymentId, Guid OrderId, Guid RefundId, string Reason);
 
-    private sealed record Applied(AutoRefund? Refund, string? UnknownIntent);
+    private sealed record RefundProblem(Guid RefundId, Guid PaymentId, Guid? OrderId);
+
+    private sealed record Applied(
+        AutoRefund? Refund, string? UnknownIntent, IReadOnlyList<RefundProblem>? FailedRefunds = null, IReadOnlyList<RefundProblem>? BlockedOrders = null);
+
+    private sealed record RefundAuditState(string Status, string PaymentStatus, bool? OrderTransitioned = null);
 
     private sealed record PaymentAuditState(string Status, string? OrderStatus = null, Guid? RefundId = null, decimal? RefundAmount = null);
 
@@ -71,6 +77,14 @@ internal sealed class PaymentWebhookService(
         {
             alerts.AutoRefundIssued(refund.PaymentId, refund.OrderId, refund.RefundId, refund.Reason);
         }
+        foreach (RefundProblem failed in applied.FailedRefunds ?? [])
+        {
+            alerts.RefundFailed(failed.RefundId, failed.PaymentId);
+        }
+        foreach (RefundProblem blocked in applied.BlockedOrders ?? [])
+        {
+            alerts.RefundOrderNotTransitioned(blocked.RefundId, blocked.OrderId!.Value);
+        }
         if (applied.UnknownIntent is { } unknown)
         {
             alerts.UnknownIntent(paymentEvent.EventId, unknown);
@@ -80,6 +94,11 @@ internal sealed class PaymentWebhookService(
 
     private async Task<Applied> ApplyAsync(PaymentEvent evt, CancellationToken ct)
     {
+        if (evt.Kind == PaymentEventKind.Refund)
+        {
+            return await ApplyRefundAsync(evt, ct);
+        }
+
         Payment? payment = await store.LockByProviderIdAsync(evt.ProviderPaymentId!, ct);
         if (payment is null)
         {
@@ -122,6 +141,102 @@ internal sealed class PaymentWebhookService(
             JsonSerializer.Serialize(new PaymentAuditState(payment.Status.ToString(), outcome.OrderStatus, refund.Id, refund.Amount)),
             reason, now));
         return new Applied(new AutoRefund(payment.Id, payment.OrderId, refund.Id, reason), null);
+    }
+
+    /// <summary>
+    /// charge.refunded / refund.updated (arch 8.5 step 5, D11). Lock order payments then orders. The refund is found by our id
+    /// (metadata.refund_id), else by the provider refund id; the payment row is locked before anything is read for update.
+    /// A second terminal event for a refund is a no-op. Order totals are never touched.
+    /// </summary>
+    private async Task<Applied> ApplyRefundAsync(PaymentEvent evt, CancellationToken ct)
+    {
+        List<(RefundNotice Notice, Guid RefundId, Guid PaymentId)> known = [];
+        foreach (RefundNotice notice in evt.Refunds ?? [])
+        {
+            Refund? found = await store.FindRefundAsync(notice.RefundId, notice.ProviderRefundId, ct);
+            if (found is not null)
+            {
+                known.Add((notice, found.Id, found.PaymentId));
+            }
+        }
+        if (known.Count == 0)
+        {
+            return new Applied(null, evt.Refunds?.FirstOrDefault()?.ProviderRefundId ?? evt.EventType);
+        }
+
+        // One event reports the refunds of one charge, so one payment.
+        Guid paymentId = known[0].PaymentId;
+        Payment payment = await store.LockByIdAsync(paymentId, ct) ?? throw new InvalidOperationException($"Payment {paymentId} vanished.");
+        if (await keys.FindAsync(EventScope, evt.EventId, ct) is not null)
+        {
+            return new Applied(null, null);
+        }
+
+        DateTimeOffset now = clock.UtcNow;
+        keys.Add(new IdempotencyEntry(EventScope, evt.EventId, null, evt.EventType, payment.Id.ToString(), null, now, now + EventKeyLifetime));
+
+        List<Refund> changed = [];
+        foreach ((RefundNotice notice, Guid refundId, Guid _) in known.Where(k => k.PaymentId == paymentId))
+        {
+            Refund refund = await store.GetRefundTrackedAsync(refundId, ct) ?? throw new InvalidOperationException($"Refund {refundId} vanished.");
+            bool moved = notice.Status switch
+            {
+                RefundNoticeStatus.Succeeded => refund.Succeed(notice.ProviderRefundId, now),
+                RefundNoticeStatus.Failed => refund.Fail(now),
+                _ => false,
+            };
+            if (moved)
+            {
+                changed.Add(refund);
+            }
+        }
+        if (changed.Count == 0)
+        {
+            return new Applied(null, null);
+        }
+
+        IReadOnlyCollection<Guid> touched = changed.Select(r => r.Id).ToList();
+        decimal succeededTotal = await store.SumRefundsAsync(payment.Id, [RefundStatus.Succeeded], touched, ct)
+                                 + changed.Where(r => r.Status == RefundStatus.Succeeded).Sum(r => r.Amount);
+        string paymentBefore = payment.Status.ToString();
+        payment.ApplyRefundedTotal(succeededTotal, now);
+
+        List<RefundProblem> failed = changed
+            .Where(r => r.Status == RefundStatus.Failed)
+            .Select(r => new RefundProblem(r.Id, payment.Id, payment.OrderId))
+            .ToList();
+        List<RefundProblem> blocked = [];
+
+        // The order effect is decided once per event. An automatic refund returns money the order could not use; it never
+        // moves the order (rules 8 and 12).
+        Refund? adminSucceeded = changed.FirstOrDefault(r => r.Status == RefundStatus.Succeeded && r.ActorId is not null);
+        bool? transitioned = null;
+        if (adminSucceeded is not null)
+        {
+            if (succeededTotal >= payment.Amount)
+            {
+                transitioned = await refunds.ApplyFullRefundAsync(payment.OrderId, adminSucceeded.Id, adminSucceeded.ActorId, ct);
+                if (transitioned == false)
+                {
+                    blocked.Add(new RefundProblem(adminSucceeded.Id, payment.Id, payment.OrderId));
+                }
+            }
+            else
+            {
+                await refunds.MarkReturnRefundedAsync(payment.OrderId, ct);
+            }
+        }
+
+        foreach (Refund refund in changed)
+        {
+            bool? outcome = refund.Status == RefundStatus.Succeeded && refund.ActorId is not null ? transitioned : null;
+            audit.Add(new AuditEntry(
+                null, refund.Status == RefundStatus.Succeeded ? "refund.succeeded" : "refund.failed", "refund", refund.Id,
+                JsonSerializer.Serialize(new RefundAuditState(RefundStatus.Pending.ToString(), paymentBefore)),
+                JsonSerializer.Serialize(new RefundAuditState(refund.Status.ToString(), payment.Status.ToString(), outcome)),
+                null, now));
+        }
+        return new Applied(null, null, failed, blocked);
     }
 
     private async Task RequestCancelOfOtherAttemptsAsync(Payment paid, DateTimeOffset now, CancellationToken ct)

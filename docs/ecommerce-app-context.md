@@ -46,6 +46,94 @@ Enforced in the API per endpoint **and** per resource (architecture §3.4 rule 1
 
 **Anything not on this list is out of scope until Nathaniel adds it in writing.**
 
+### 3.1 Deliverables
+
+Each feature splits into deliverables that each touch **one** backend module (`backend/src/Modules/<M>`) or **one** frontend feature folder (`frontend/apps/store/features/<f>`). A deliverable ships with its own tests (arch §11) and adds no scope beyond its feature line. Backend before the screen that uses it. Slice = the arch §12.3 row whose numbered tests it carries.
+
+Status as of 2026-11-07: **Done** (Rob PASS) · **Review open** (code done, Slice 4 waiver pending) · **In progress** (Slice 6, Marco) · **Not started** · **Unverified** (exists in part; scope not confirmed).
+
+| ID | Deliverable | Module / folder | Slice | Status |
+|---|---|---|---|---|
+| **1** | **Catalog** | | | |
+| 1.1 | Product list API: search, category filter, sort, pagination | Catalog | 1a | Done |
+| 1.2 | Category list API | Catalog | 1a | Done |
+| 1.3 | Shop screen: search, filter, sort, paging | `catalog` | 1a | Done |
+| **2** | **Product detail** | | | |
+| 2.1 | Product detail API: variants, images, price | Catalog | 1a | Done |
+| 2.2 | Stock indicator (`InStock` / `Low` / `Out`) | Inventory | 2 | Done |
+| 2.3 | Product detail screen with Add to cart | `catalog` | 1a/3 | Done |
+| **3** | **Cart** | | | |
+| 3.1 | Device cart for guests | `cart` | 3 | Done |
+| 3.2 | Server cart API: add, edit quantity, remove, server prices | Cart | 3 | Done |
+| 3.3 | Merge on login API | Cart | 3 | Done |
+| 3.4 | Cart screen and merge-result notice | `cart` | 3 | Done |
+| **4** | **Checkout** | | | |
+| 4.1 | Stock reservation: lock in variant-ID order, reserve, commit on Paid, expire | Inventory | 2/4 | Review open |
+| 4.2 | Shipping methods API | Orders | 4 | Review open |
+| 4.3 | Checkout API: address, server total, idempotency key | Orders | 4 | Review open |
+| 4.4 | PaymentIntent creation | Payments | 4 | Review open |
+| 4.5 | Checkout screen: address, shipping, total, Stripe payment | `checkout` | 4 | Review open |
+| **5** | **Payments** | | | |
+| 5.1 | Signed webhook confirms payment; dedupe by event ID | Payments | 4 | Review open |
+| 5.2 | Retry payment on the same order | Orders | 4 | Review open |
+| 5.3 | Admin refund API: ceiling, idempotency, audit | Payments | 6 | In progress |
+| 5.4 | Stripe refund consumer and refund webhook | Payments | 6 | In progress |
+| 5.5 | Admin refund form | `admin-orders` | 6 | In progress |
+| **6** | **Orders** | | | |
+| 6.1 | Order history and detail API (owner only) | Orders | 5 | Done |
+| 6.2 | Status timeline and tracking number in detail | Orders | 5 | Done |
+| 6.3 | Order history and detail screens | `orders` | 5 | Done |
+| 6.4 | Refund rows in order detail (API + screen) | Orders, `orders` | 6 | In progress |
+| **7** | **Returns** | | | |
+| 7.1 | Return request API (customer) | Orders | 6 | In progress |
+| 7.2 | Admin returns API: list, approve, decline (audited) | Orders | 6 | In progress |
+| 7.3 | Return request form | `orders` | 6 | In progress |
+| 7.4 | Admin returns screen | `admin-orders` | 6 | In progress |
+| — | Refund of a return: uses 5.3–5.5 | | | |
+| **8** | **Admin dashboard** | | | |
+| 8.1 | Projector runtime: consumer checkpoints, gap handling, replay | Persistence | 6b | Not started |
+| 8.2 | KPIs and orders-by-status projection | per arch §6.1 | 6b | Not started |
+| 8.3 | Recent orders, low stock, needs-attention reads | per arch §6.1 | 6b | Not started |
+| 8.4 | Top products projection | per arch §6.1 | 6b | Not started |
+| 8.5 | Dashboard screen | `admin-dashboard` | 6b | Not started |
+| **9** | **Admin catalog** | | | |
+| 9.1 | Product create and edit API, with variants and image keys | Catalog | 1b | Done |
+| 9.2 | Publish and unpublish API | Catalog | 1b | Done |
+| 9.3 | Category create API | Catalog | 1b | Done |
+| 9.4 | Category edit and delete | Catalog | — | Unverified |
+| 9.5 | Image upload to storage (API returns a key only) | Catalog | — | Unverified |
+| 9.6 | Admin product list, create and edit screens | `admin-catalog` | 1b | Done |
+| 9.7 | Admin categories screen | `admin-catalog` | — | Unverified |
+| **10** | **Admin inventory** | | | |
+| 10.1 | Stock levels API | Inventory | 2 | Done |
+| 10.2 | Audited adjustment API | Inventory | 2 | Done |
+| 10.3 | Low-stock alerts | Inventory | 2 | Unverified |
+| 10.4 | Inventory screen: levels, adjust, low stock | `admin-inventory` | — | Not started |
+| **11** | **Admin orders** | | | |
+| 11.1 | Process, ship with tracking, deliver, audited override APIs | Orders | 5 | Done |
+| 11.2 | Admin order list API with filter | Orders | — | Not started |
+| 11.3 | Admin order detail API | Orders | 6 | In progress |
+| 11.4 | Admin order list screen with filter | `admin-orders` | — | Not started |
+| 11.5 | Order action buttons on the admin detail screen | `admin-orders` | — | Not started |
+| **12** | **Admin customers** | | | |
+| 12.1 | Customer list and detail API (read-only) | Identity | — | Not started |
+| 12.2 | Customer list and detail screens | `admin-customers` | — | Not started |
+| **13** | **Notifications** | | | |
+| 13.1 | Outbox runtime: retry, backoff, dead letter, alert | Persistence | 6 | In progress |
+| 13.2 | Order events: paid, shipped, status changed | Orders | 6 | In progress |
+| 13.3 | Email sender with placeholder senders | Notifications | 6 | In progress |
+| 13.4 | Confirmation and shipped emails | Notifications | 6 | In progress |
+| 13.5 | SignalR hub and live-status consumer | Notifications | 6 | In progress |
+| 13.6 | Live status on the order screens | `orders` | 6 | In progress |
+| 13.7 | Real email provider | — | — | Waiting on Nathaniel (arch §2) |
+| **14** | **Auth** | | | |
+| 14.1 | Register, login, logout, refresh rotation API | Identity | 1b | Done |
+| 14.2 | Password reset token and confirm API | Identity | 1b | Done |
+| 14.3 | Password-reset email through the outbox | Identity | 6 | In progress |
+| 14.4 | Auth screens | `auth` | 1b | Done |
+
+Rows with Slice "—" have no arch §12.3 row yet; Nathaniel assigns one before work starts.
+
 ---
 
 ## 4. Workflows

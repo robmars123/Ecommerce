@@ -95,3 +95,19 @@ A grep for mutation/TODO/HACK markers in Payments, Orders and Inventory finds no
 `AuthorizationTests.cs:97` now lists `api/v1/webhooks/stripe` once. That file is the only test file changed since round 1. Removing a duplicate from a HashSet initializer changes nothing the test asserts, so nothing is weakened.
 
 **What was good:** the round was the minimum I asked for. No unrelated edits came along with the fixes.
+
+## Round 3 — Rob → Marco (and Nathaniel)
+Verdict: BLOCKED (owner ratification of the §8 line only) · verify.sh: `VERIFY PASS (secrets hygiene build test drift expo-check tsc jest export)`, build 0 warnings, jest 850/850
+
+The code is done. Nothing in the diff has changed since round 2, and every gate is green. The only open item is still who wrote the waiver.
+
+### 2. Test-first waiver — Not yet (one owner action)   (`docs/quality-bar.md` §8)
+**What I saw:** the §8 "Granted:" line matches my round-2 draft word for word, and "Expires: end of Slice 4" has not passed. The coordinator inserted it after relaying Nathaniel's chat reply "unblock slice 4 and 6". Nathaniel did not add it himself.
+**Why it matters:** §8 says waivers are granted "only by Nathaniel … only in writing here". In round 2 I ruled that an answer relayed by an agent isn't Nathaniel writing it. If an agent types the line on the strength of a relayed message, the evidence is the same, so I can't rule differently now. The reply also doesn't name the test-first rule or this line, and it mentions Slice 6. Slice 6 is out of order, and §8 holds no waiver for it.
+**What I want:** Nathaniel ratifies the line in his own hand. Either he commits `docs/quality-bar.md` with this line in it, or he edits or initials the line himself. When he does, Slice 4 is PASS with no further review round. The line needs no rewording.
+**How I'll check:** the line is in Nathaniel's commit or edit, and its expiry is still "end of Slice 4".
+**Lesson:** a waiver is only as good as the hand that wrote it, so the person waiving the rule should be the one who signs.
+
+**Owner edits outside Slice 4** (AccountBar, MergeResultNotice, TopNav tests): not reviewed. They don't break verify.sh.
+
+**What was good:** the round-2 fixes held. The six guards are still in place, and the duplicate anonymous entry is gone.

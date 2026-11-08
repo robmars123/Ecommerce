@@ -14,6 +14,12 @@ internal sealed class LoggingPaymentAlerts(ILogger<LoggingPaymentAlerts> logger)
             "Payment {PaymentId} for order {OrderId} succeeded but no order can use it ({Reason}); automatic refund {RefundId} requested",
             paymentId, orderId, reason, refundId);
 
+    public void RefundFailed(Guid refundId, Guid paymentId) =>
+        logger.LogCritical(PaymentAlert, "Refund {RefundId} on payment {PaymentId} failed at the provider; its amount is free under the ceiling again", refundId, paymentId);
+
+    public void RefundOrderNotTransitioned(Guid refundId, Guid orderId) =>
+        logger.LogCritical(PaymentAlert, "Refund {RefundId} reached the captured amount but order {OrderId} could not move; check the order", refundId, orderId);
+
     public void UnknownIntent(string eventId, string providerPaymentId) =>
         logger.LogWarning("Webhook event {EventId} names unknown payment intent {ProviderPaymentId}; ignored", eventId, providerPaymentId);
 }

@@ -29,7 +29,7 @@ services:
       Identity__Bootstrap__AdminEmail: ${ADMIN_BOOTSTRAP_EMAIL:-}
       Identity__Bootstrap__AdminPassword: ${ADMIN_BOOTSTRAP_PASSWORD:-}
       Identity__PasswordReset__LinkBaseUrl: http://localhost:8082/reset-password
-      Identity__PasswordReset__DevPickupDirectory: /tmp/dev-mail
+      Notifications__DevPickupDirectory: /tmp/dev-mail
     ports:
       - "127.0.0.1:5081:8080"
   web:

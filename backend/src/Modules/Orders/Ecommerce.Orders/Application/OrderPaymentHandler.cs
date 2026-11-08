@@ -21,12 +21,13 @@ internal sealed class OrderPaymentHandler(
     IOutbox outbox,
     IClock clock) : IOrderPayments, IOrderExpiry
 {
-    public const string OrderPaid = "OrderPaid";
+    public const string OrderPaid = OrderEventTypes.OrderPaid;
 
     private sealed record OrderPaidLine(Guid VariantId, int Quantity);
 
     private sealed record OrderPaidPayload(
-        Guid OrderId, string OrderNumber, Guid UserId, decimal GrandTotal, string Currency, IReadOnlyList<OrderPaidLine> Items);
+        Guid OrderId, string OrderNumber, Guid UserId, decimal GrandTotal, string Currency, IReadOnlyList<OrderPaidLine> Items,
+        string FromStatus, string ToStatus, DateTimeOffset OccurredAt);
 
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
@@ -51,7 +52,8 @@ internal sealed class OrderPaymentHandler(
             JsonSerializer.Serialize(
                 new OrderPaidPayload(
                     order.Id, order.OrderNumber, order.UserId, order.GrandTotal, order.Currency,
-                    order.Items.Select(i => new OrderPaidLine(i.ProductVariantId, i.Quantity)).ToList()),
+                    order.Items.Select(i => new OrderPaidLine(i.ProductVariantId, i.Quantity)).ToList(),
+                    nameof(OrderStatus.PendingPayment), nameof(OrderStatus.Paid), now),
                 Json),
             now));
         return new MarkPaidOutcome(true, order.Status.ToString());
@@ -67,6 +69,7 @@ internal sealed class OrderPaymentHandler(
 
         order.CancelForExpiry(clock.UtcNow);
         await payments.RequestCancelOpenIntentAsync(order.Id, ct);
+        outbox.Add(OrderEvents.For(order));
         return true;
     }
 }

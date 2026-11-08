@@ -127,6 +127,8 @@ Beyond architecture §3 and §10:
 - Rules 1–6 can be waived only on a named experiment branch that never ships.
 - An expired waiver is a blocking failure again. Rob checks expiry dates on every review.
 
-**Granted:** None.
+**Granted:**
+
+- Waiver: §3 Tests "test-first ones shown failing first" (arch §11.2/§11.3) — Reason: Slice 4 backend Tests 2, 3, 4, 19, 23, 24, 25 and F4, F5, F6 written after the code; stub-red evidence and six mutation checks accepted — Scope: Slice 4 only, not a precedent — Expires: end of Slice 4 — Approved by: Nathaniel
 
 Format: `Waiver: [rule] — Reason: [...] — Scope: [slice/release] — Expires: [date/slice] — Approved by: Nathaniel`

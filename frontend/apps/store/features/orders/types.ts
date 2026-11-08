@@ -1,5 +1,5 @@
 // Wire types for the orders API (arch 9, Orders contract). Money amounts are strings formatted by the server.
-// refunds (Slice 6) are not in the response yet and are deliberately absent here.
+
 import type { Money } from '@/features/catalog/types';
 
 export type OrderStatus =
@@ -66,6 +66,15 @@ export type Shipment = {
   deliveredAt: string | null;
 };
 
+/** The money back to the customer (arch 8.5). Pending until the payment provider confirms it. */
+export type RefundStatus = 'Pending' | 'Succeeded' | 'Failed';
+
+export type Refund = { amount: Money; status: RefundStatus; createdAt: string };
+
+export type ReturnItemBody = { variantId: string; quantity: number };
+
+export type ReturnRequestBody = { items: ReturnItemBody[]; reason: string };
+
 export type OrderDetail = {
   id: string;
   orderNumber: string;
@@ -82,4 +91,5 @@ export type OrderDetail = {
   timeline: TimelineEntry[];
   shipments: Shipment[];
   paymentStatus: PaymentStatus | null;
+  refunds: Refund[];
 };
