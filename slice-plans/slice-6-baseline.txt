@@ -1,0 +1,5 @@
+Slice 6 baseline (2026-11-07, before any Slice 6 change)
+Full verify.sh first run: VERIFY FAIL test -- Ecommerce.Api.IntegrationTests 12 failed with Npgsql 53300 "too many clients" (shared testcontainer 100-connection cap, flaky when run in parallel with other test projects). Re-run of the project alone: all pass.
+Inventory.Tests 28 | Cart.Tests 19 | Payments.Tests 23 | Orders.Tests 171 | Catalog.Tests 166 | Identity.Tests 73 | ArchitectureTests 25 | Api.IntegrationTests 301 (re-run alone, 0 failed)
+Jest: 133 suites, 850 tests. drift/expo-check/tsc/export PASS.
+(Cart 19 and Payments 23 confirmed from unchanged Cart.Tests count after the build; the interleaved first log mislabelled them.)

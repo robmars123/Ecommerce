@@ -339,6 +339,10 @@ namespace Ecommerce.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("invalidated_at");
 
+                    b.Property<DateTimeOffset?>("RequestedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("requested_at");
+
                     b.Property<byte[]>("TokenHash")
                         .IsRequired()
                         .HasColumnType("bytea")
@@ -808,6 +812,63 @@ namespace Ecommerce.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Ecommerce.Orders.Domain.ReturnRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("AdminNote")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("admin_note");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset?>("DecidedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("decided_at");
+
+                    b.Property<string>("ItemsJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("items");
+
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("order_id");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reason");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.HasKey("Id")
+                        .HasName("pk_return_requests");
+
+                    b.HasIndex("OrderId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_return_requests_open_order_id")
+                        .HasFilter("status IN ('Requested','Approved')");
+
+                    b.HasIndex("Status", "CreatedAt")
+                        .HasDatabaseName("ix_return_requests_status_created_at");
+
+                    b.ToTable("return_requests", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_return_requests_status", "status IN ('Requested','Approved','Declined','Refunded')");
+                        });
+                });
+
             modelBuilder.Entity("Ecommerce.Orders.Domain.Shipment", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1144,6 +1205,53 @@ namespace Ecommerce.Persistence.Migrations
                     b.ToTable("outbox_events", (string)null);
                 });
 
+            modelBuilder.Entity("Ecommerce.Persistence.Outbox.ProcessedEventEntry", b =>
+                {
+                    b.Property<string>("Consumer")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("consumer");
+
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("event_id");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("integer")
+                        .HasColumnName("attempts");
+
+                    b.Property<string>("LastError")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("last_error");
+
+                    b.Property<DateTimeOffset?>("NextAttemptAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("next_attempt_at");
+
+                    b.Property<DateTimeOffset?>("ProcessedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("processed_at");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.HasKey("Consumer", "EventId")
+                        .HasName("pk_processed_events");
+
+                    b.HasIndex("NextAttemptAt")
+                        .HasDatabaseName("ix_processed_events_next_attempt_at")
+                        .HasFilter("status <> 'Done'");
+
+                    b.ToTable("processed_events", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_processed_events_status", "status IN ('Retrying','Done','DeadLetter')");
+                        });
+                });
+
             modelBuilder.Entity("Ecommerce.Cart.Domain.CartItem", b =>
                 {
                     b.HasOne("Ecommerce.Cart.Domain.Cart", null)
@@ -1251,6 +1359,16 @@ namespace Ecommerce.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_order_status_history_order_id");
+                });
+
+            modelBuilder.Entity("Ecommerce.Orders.Domain.ReturnRequest", b =>
+                {
+                    b.HasOne("Ecommerce.Orders.Domain.Order", null)
+                        .WithMany()
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_return_requests_order_id");
                 });
 
             modelBuilder.Entity("Ecommerce.Orders.Domain.Shipment", b =>

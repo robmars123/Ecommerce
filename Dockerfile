@@ -11,6 +11,8 @@ COPY backend/src/Modules/Inventory/Ecommerce.Inventory.Contracts/Ecommerce.Inven
 COPY backend/src/Modules/Inventory/Ecommerce.Inventory/Ecommerce.Inventory.csproj backend/src/Modules/Inventory/Ecommerce.Inventory/
 COPY backend/src/Modules/Cart/Ecommerce.Cart.Contracts/Ecommerce.Cart.Contracts.csproj backend/src/Modules/Cart/Ecommerce.Cart.Contracts/
 COPY backend/src/Modules/Cart/Ecommerce.Cart/Ecommerce.Cart.csproj backend/src/Modules/Cart/Ecommerce.Cart/
+COPY backend/src/Modules/Notifications/Ecommerce.Notifications.Contracts/Ecommerce.Notifications.Contracts.csproj backend/src/Modules/Notifications/Ecommerce.Notifications.Contracts/
+COPY backend/src/Modules/Notifications/Ecommerce.Notifications/Ecommerce.Notifications.csproj backend/src/Modules/Notifications/Ecommerce.Notifications/
 COPY backend/src/Modules/Orders/Ecommerce.Orders.Contracts/Ecommerce.Orders.Contracts.csproj backend/src/Modules/Orders/Ecommerce.Orders.Contracts/
 COPY backend/src/Modules/Orders/Ecommerce.Orders/Ecommerce.Orders.csproj backend/src/Modules/Orders/Ecommerce.Orders/
 COPY backend/src/Modules/Payments/Ecommerce.Payments.Contracts/Ecommerce.Payments.Contracts.csproj backend/src/Modules/Payments/Ecommerce.Payments.Contracts/

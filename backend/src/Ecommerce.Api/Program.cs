@@ -5,6 +5,7 @@ using Ecommerce.Api.Composition;
 using Ecommerce.Api.Time;
 using Ecommerce.Catalog;
 using Ecommerce.Inventory;
+using Ecommerce.Notifications;
 using Ecommerce.SharedKernel.Time;
 using Ecommerce.Persistence;
 using Microsoft.AspNetCore.Cors;
@@ -43,7 +44,7 @@ builder.Services.AddOptions<CorsOptions>()
         // Configured origins only; never "*" with credentials (architecture 10.1). Empty list = no cross-origin access.
         string[] origins = config.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
         string[] methods = [HttpMethods.Get, HttpMethods.Post, HttpMethods.Put];
-        string[] headers = [CorrelationId.HeaderName, "Content-Type", "Authorization", RefreshTokenHeader, "Idempotency-Key"];
+        string[] headers = [CorrelationId.HeaderName, "Content-Type", "Authorization", RefreshTokenHeader, "Idempotency-Key", "X-SignalR-User-Agent", "X-Requested-With"];
 
         // Default policy (health and anything not listed below): no credentials.
         o.AddDefaultPolicy(policy => policy
@@ -104,6 +105,7 @@ app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapEcommerceHealthEndpoints();
+app.MapNotificationsHub();
 app.MapControllers().Add(endpoint =>
 {
     if (endpoint is RouteEndpointBuilder { RoutePattern.RawText: { } route } &&

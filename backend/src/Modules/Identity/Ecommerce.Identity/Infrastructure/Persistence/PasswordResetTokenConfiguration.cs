@@ -17,6 +17,7 @@ internal sealed class PasswordResetTokenConfiguration : IEntityTypeConfiguration
         builder.Property(t => t.ExpiresAt).HasColumnName("expires_at");
         builder.Property(t => t.UsedAt).HasColumnName("used_at");
         builder.Property(t => t.InvalidatedAt).HasColumnName("invalidated_at");
+        builder.Property(t => t.RequestedAt).HasColumnName("requested_at");
 
         builder.HasIndex(t => t.TokenHash).IsUnique().HasDatabaseName("ux_password_reset_tokens_token_hash");
         builder.HasIndex(t => t.UserId).HasDatabaseName("ix_password_reset_tokens_user_id");

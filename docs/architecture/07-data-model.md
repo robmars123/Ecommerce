@@ -27,7 +27,7 @@ erDiagram
 | users | id, email (citext, unique), display_name, password_hash (ASP.NET Core Identity v3 format), security_stamp, role (`Customer` / `Support` / `Admin`, CHECK), access_failed_count, lockout_end, created_at, updated_at. Module-owned table, not the Identity EF stores (Slice 1b D1) |
 | refresh_token_families | id, user_id, created_at, absolute_expires_at, revoked_at, revoked_reason (`Logout` / `Reuse` / `PasswordReset`) |
 | refresh_tokens | id, family_id, token_hash (bytea SHA-256, unique — never the token), created_at, expires_at, consumed_at, replaced_by_id |
-| password_reset_tokens | id, user_id, token_hash (unique), created_at, expires_at, used_at, invalidated_at. Single use, newest only |
+| password_reset_tokens | id, user_id, token_hash (unique), requested_at (the request event's time; Slice 6), created_at, expires_at, used_at, invalidated_at. Single use, newest request only |
 | addresses | **Not created in v1.** Checkout takes an inline address that is snapshotted on the order (§9 checkout contract, §13.2). Saved addresses wait until Nathaniel scopes them |
 | categories | id, slug (unique), name, parent_id (nullable, one level in v1) |
 | products | id, slug (unique), name, description, category_id, is_active (default false), created_at, updated_at |
@@ -47,7 +47,7 @@ erDiagram
 | idempotency_keys | key, scope (`checkout` / `retry-payment` / `refund` / `cart-merge` / `stripe-event`), PK (scope, key), user_id, request_hash, result_ref, response_json (jsonb, nullable — the stored reply a repeated key returns, e.g. `cart-merge`), created_at, expires_at |
 | outbox_events | sequence (bigint identity, PK), event_id (uuid, unique), event_type, aggregate_type, aggregate_id, aggregate_version, payload (jsonb), occurred_at. **Append-only**, retained for replay |
 | consumer_checkpoints | consumer (PK), last_sequence, updated_at |
-| processed_events | consumer, event_id, PK (consumer, event_id), status (`Done` / `DeadLetter`), attempts, next_attempt_at, last_error, processed_at |
+| processed_events | consumer, event_id, PK (consumer, event_id), status (`Retrying` / `Done` / `DeadLetter`), attempts, next_attempt_at, last_error, processed_at |
 | audit_log | id, actor_id, action, entity_type, entity_id, before_json, after_json, reason, created_at |
 
 ### 7.2 Day-one indexes

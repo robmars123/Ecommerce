@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text;
 using Ecommerce.Identity.Domain;
+using Ecommerce.Notifications.Contracts;
 using Microsoft.EntityFrameworkCore;
 
 namespace Ecommerce.Api.IntegrationTests.Identity;
@@ -24,11 +25,12 @@ public class PasswordResetTests(PostgresFixture postgres)
         Assert.Equal(HttpStatusCode.Accepted, unknown.Status);
         Assert.Equal(HttpStatusCode.Accepted, known.Status);
         Assert.Equal(unknown.Text, known.Text);
+        Assert.Equal(1, await env.DrainOutboxAsync());
         Assert.Equal("", known.Text);
-        (Guid UserId, string Email, string? Link) sent = Assert.Single(env.Sender.Sent);
-        Assert.Equal("ana@example.test", sent.Email);
+        EmailMessage sent = Assert.Single(env.Sender.Sent);
+        Assert.Equal("ana@example.test", sent.To);
 
-        // The row is committed by the time the sender ran, and holds a 32-byte hash, never the token itself.
+        // The token row holds a 32-byte hash, never the token itself.
         PasswordResetToken row = await env.Db.Set<PasswordResetToken>().AsNoTracking().SingleAsync(TestContext.Current.CancellationToken);
         Assert.Equal(32, row.TokenHash.Length);
         Assert.NotEqual(Encoding.UTF8.GetBytes(env.Sender.TokenOf(0)), row.TokenHash);
@@ -47,6 +49,7 @@ public class PasswordResetTests(PostgresFixture postgres)
         Assert.Equal(HttpStatusCode.Unauthorized, (await env.LoginAsync("ana@example.test")).Status); // locked
 
         await env.PostAsync(RequestUrl, new { email = "ana@example.test" });
+        await env.DrainOutboxAsync();
         string token = env.Sender.TokenOf(0);
 
         Assert.Equal(HttpStatusCode.NoContent, (await env.PostAsync(ConfirmUrl, new { token, newPassword = NewPassword })).Status);
@@ -65,6 +68,7 @@ public class PasswordResetTests(PostgresFixture postgres)
         await using IdentityTestEnv env = await IdentityTestEnv.StartAsync(postgres);
         await env.AddUserAsync("ana@example.test");
         await env.PostAsync(RequestUrl, new { email = "ana@example.test" });
+        await env.DrainOutboxAsync();
         string token = env.Sender.TokenOf(0);
 
         env.Clock.UtcNow = env.Clock.UtcNow.AddMinutes(30);
@@ -79,7 +83,9 @@ public class PasswordResetTests(PostgresFixture postgres)
         await using IdentityTestEnv env = await IdentityTestEnv.StartAsync(postgres);
         await env.AddUserAsync("ana@example.test");
         await env.PostAsync(RequestUrl, new { email = "ana@example.test" });
+        await env.DrainOutboxAsync();
         await env.PostAsync(RequestUrl, new { email = "ana@example.test" });
+        await env.DrainOutboxAsync();
 
         Assert.Equal(HttpStatusCode.BadRequest, (await env.PostAsync(ConfirmUrl, new { token = env.Sender.TokenOf(0), newPassword = NewPassword })).Status);
         Assert.Equal(HttpStatusCode.NoContent, (await env.PostAsync(ConfirmUrl, new { token = env.Sender.TokenOf(1), newPassword = NewPassword })).Status);
@@ -91,6 +97,7 @@ public class PasswordResetTests(PostgresFixture postgres)
         await using IdentityTestEnv env = await IdentityTestEnv.StartAsync(postgres);
         await env.AddUserAsync("ana@example.test");
         await env.PostAsync(RequestUrl, new { email = "ana@example.test" });
+        await env.DrainOutboxAsync();
         string token = env.Sender.TokenOf(0);
 
         IdentityTestEnv.Api[] results = await Task.WhenAll(

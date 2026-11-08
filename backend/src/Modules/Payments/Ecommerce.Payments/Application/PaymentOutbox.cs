@@ -10,11 +10,11 @@ internal static class PaymentOutbox
     public const string CancelRequested = "PaymentIntentCancelRequested";
     public const string RefundRequested = "RefundRequested";
 
-    private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
+    public static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
-    private sealed record CancelIntentPayload(Guid PaymentId, Guid OrderId, string ProviderPaymentId, int Attempt);
+    internal sealed record CancelIntentPayload(Guid PaymentId, Guid OrderId, string ProviderPaymentId, int Attempt);
 
-    private sealed record RefundRequestedPayload(
+    internal sealed record RefundRequestedPayload(
         Guid RefundId, Guid PaymentId, Guid OrderId, string? ProviderPaymentId, decimal Amount, string Currency, string Reason, string IdempotencyKey);
 
     public static OutboxMessage CancelIntent(Payment payment, DateTimeOffset now) =>

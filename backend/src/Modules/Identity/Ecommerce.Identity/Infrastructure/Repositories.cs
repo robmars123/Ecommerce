@@ -109,4 +109,18 @@ internal sealed class PasswordResetTokenRepository(EcommerceDbContext db) : IPas
             .Where(t => t.UserId == userId && t.UsedAt == null && t.InvalidatedAt == null)
             .ExecuteUpdateAsync(s => s.SetProperty(t => t.InvalidatedAt, (DateTimeOffset?)now), ct);
     }
+
+    public Task<bool> HasNewerRequestAsync(Guid userId, DateTimeOffset requestedAt, CancellationToken ct)
+    {
+        LockGuard.RequireTransaction(db, nameof(HasNewerRequestAsync));
+        return db.Set<PasswordResetToken>().AsNoTracking().AnyAsync(t => t.UserId == userId && t.RequestedAt > requestedAt, ct);
+    }
+
+    public Task InvalidateOlderAsync(Guid userId, DateTimeOffset requestedAt, DateTimeOffset now, CancellationToken ct)
+    {
+        LockGuard.RequireTransaction(db, nameof(InvalidateOlderAsync));
+        return db.Set<PasswordResetToken>()
+            .Where(t => t.UserId == userId && t.UsedAt == null && t.InvalidatedAt == null && (t.RequestedAt == null || t.RequestedAt < requestedAt))
+            .ExecuteUpdateAsync(s => s.SetProperty(t => t.InvalidatedAt, (DateTimeOffset?)now), ct);
+    }
 }

@@ -27,5 +27,6 @@ public sealed class EcommerceDbContext : DbContext
         modelBuilder.ApplyConfiguration(new Audit.AuditLogEntryConfiguration());
         modelBuilder.ApplyConfiguration(new Idempotency.IdempotencyKeyEntryConfiguration());
         modelBuilder.ApplyConfiguration(new Outbox.OutboxEventEntryConfiguration());
+        modelBuilder.ApplyConfiguration(new Outbox.ProcessedEventEntryConfiguration());
     }
 }

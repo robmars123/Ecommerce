@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Ecommerce.SharedKernel\Ecommerce.SharedKernel.csproj" />
+    <ProjectReference Include="..\Ecommerce.Notifications.Contracts\Ecommerce.Notifications.Contracts.csproj" />
+    <ProjectReference Include="..\..\Orders\Ecommerce.Orders.Contracts\Ecommerce.Orders.Contracts.csproj" />
+    <ProjectReference Include="..\..\Identity\Ecommerce.Identity.Contracts\Ecommerce.Identity.Contracts.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Ecommerce.Notifications.Tests" />
+    <InternalsVisibleTo Include="Ecommerce.Api.IntegrationTests" />
+  </ItemGroup>
+</Project>

@@ -1,4 +1,4 @@
-import type { OrderStatus, PaymentStatus } from './types';
+import type { OrderStatus, PaymentStatus, RefundStatus } from './types';
 
 const LABELS: Record<OrderStatus, string> = {
   PendingPayment: 'Awaiting payment',
@@ -30,4 +30,14 @@ export function paymentStatusLabel(status: PaymentStatus): string {
 /** A fixed UTC date so the same order shows the same day on every device. */
 export function formatOrderDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-US', { timeZone: 'UTC', year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+const REFUND_LABELS: Record<RefundStatus, string> = {
+  Pending: 'Being processed',
+  Succeeded: 'Refunded',
+  Failed: 'Could not be refunded',
+};
+
+export function refundStatusLabel(status: RefundStatus): string {
+  return REFUND_LABELS[status] ?? status;
 }

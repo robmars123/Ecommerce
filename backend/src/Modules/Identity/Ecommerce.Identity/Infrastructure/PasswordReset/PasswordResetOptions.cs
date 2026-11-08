@@ -6,7 +6,4 @@ internal sealed class PasswordResetOptions
 
     /// <summary>Empty in committed config (no link). Development sets the local Expo web origin.</summary>
     public string LinkBaseUrl { get; set; } = "";
-
-    /// <summary>Development only: a directory the dev sender writes link files into. Startup fails if set elsewhere.</summary>
-    public string DevPickupDirectory { get; set; } = "";
 }

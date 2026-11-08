@@ -66,6 +66,12 @@ internal sealed class Order
     /// <summary>The reservation ran out (arch 8.2 rule 7). PendingPayment only; the actor is the system (null).</summary>
     public void CancelForExpiry(DateTimeOffset now) => Move(OrderStatus.Cancelled, null, ReservationExpired, now);
 
+    /// <summary>A refund reached the captured amount (arch 8.5): Paid or Processing to Refunded. The actor is the admin who asked (null: system).</summary>
+    public void RefundInFull(Guid? actorId, DateTimeOffset now) => Move(OrderStatus.Refunded, actorId, "Refunded in full", now);
+
+    /// <summary>A refund reached the captured amount on a Delivered order with an Approved return: Delivered to Returned.</summary>
+    public void ReturnInFull(Guid? actorId, DateTimeOffset now) => Move(OrderStatus.Returned, actorId, "Return refunded", now);
+
     public void Process(Guid actorId, DateTimeOffset now) => Move(OrderStatus.Processing, actorId, null, now);
 
     public void Ship(Guid actorId, string carrierCode, string trackingNumber, DateTimeOffset now)

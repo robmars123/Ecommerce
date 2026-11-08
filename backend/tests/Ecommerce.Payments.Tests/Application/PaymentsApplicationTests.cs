@@ -42,7 +42,7 @@ public class PaymentsApplicationTests
     [Fact]
     public void An_event_type_we_ignore_is_verified_but_has_no_intent()
     {
-        string body = Body("charge.refunded");
+        string body = Body("charge.succeeded");
 
         bool ok = Verifier().TryVerify(body, Sign(body, Now), Now, out PaymentEvent? evt);
 

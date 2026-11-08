@@ -1,4 +1,5 @@
 using Ecommerce.Orders.Domain;
+using Ecommerce.Payments.Contracts;
 
 namespace Ecommerce.Orders.Application;
 
@@ -55,7 +56,11 @@ internal sealed record OrderListPage(IReadOnlyList<OrderListItem> Items, int Pag
 internal sealed record ShipmentView(string CarrierName, string TrackingNumber, string? TrackingUrl, DateTimeOffset ShippedAt, DateTimeOffset? DeliveredAt);
 
 /// <summary>PaymentStatus is the latest attempt (arch 9 orders contract), or null before any attempt.</summary>
-internal sealed record OrderDetailView(OrderDetailRow Order, IReadOnlyList<ShipmentView> Shipments, string? PaymentStatus);
+internal sealed record OrderDetailView(
+    OrderDetailRow Order, IReadOnlyList<ShipmentView> Shipments, string? PaymentStatus, IReadOnlyList<RefundInfo> Refunds);
+
+/// <summary>The customer detail plus what F13 needs (D14): every refund, the server-computed totals and the return requests.</summary>
+internal sealed record AdminOrderDetailView(OrderDetailView Detail, RefundSummary Summary, IReadOnlyList<ReturnRow> Returns);
 
 /// <summary>Ok | NotFound | Forbidden (the order belongs to someone else, Test 7).</summary>
 internal abstract record OrderReadResult<T>

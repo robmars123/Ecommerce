@@ -50,6 +50,12 @@ internal interface IPasswordResetTokenRepository
 
     /// <summary>Set-based; invalidates every outstanding (unused, not yet invalidated) token of the user.</summary>
     Task InvalidateOutstandingAsync(Guid userId, DateTimeOffset now, CancellationToken ct);
+
+    /// <summary>True if the user has a token minted for a request newer than this one. Needs the user lock.</summary>
+    Task<bool> HasNewerRequestAsync(Guid userId, DateTimeOffset requestedAt, CancellationToken ct);
+
+    /// <summary>Set-based; invalidates the user's outstanding tokens from older requests (requested_at before this one, or null).</summary>
+    Task InvalidateOlderAsync(Guid userId, DateTimeOffset requestedAt, DateTimeOffset now, CancellationToken ct);
 }
 
 internal enum PasswordVerification
@@ -80,16 +86,6 @@ internal interface ISecureTokenGenerator
     string NewToken();
 
     string NewSecurityStamp();
-}
-
-/// <summary>
-/// The seam for the reset email. Called only after the state change committed. Implementations must not throw:
-/// a failure that differed between existing and unknown accounts would be an enumeration oracle.
-/// Slice 6 replaces this with an outbox event.
-/// </summary>
-internal interface IPasswordResetLinkSender
-{
-    Task SendAsync(Guid userId, string email, string? link, CancellationToken ct);
 }
 
 internal interface ISecurityEventSink

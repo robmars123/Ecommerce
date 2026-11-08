@@ -1,13 +1,16 @@
+using System.Text.Json;
 using Ecommerce.Identity.Domain;
+using Ecommerce.SharedKernel.Outbox;
 using Ecommerce.SharedKernel.Persistence;
 using Ecommerce.SharedKernel.Time;
 
 namespace Ecommerce.Identity.Application;
 
 /// <summary>
-/// D10. Request: state change first, the link goes out only after commit (rule 6: no external call in a transaction).
-/// Confirm: lock the user, then the token (lock order users -> tokens), so two parallel confirms with one token
-/// produce exactly one success.
+/// D10, Slice 6 D15. Request: in one transaction lock the user, invalidate outstanding tokens and stage a PasswordResetRequested
+/// outbox row; the token is minted and mailed later by <see cref="PasswordResetConsumer"/>, so no plaintext token is ever stored
+/// and no external call runs in a transaction (rule 6). Confirm: lock the user, then the token (lock order users, tokens), so two
+/// parallel confirms with one token produce exactly one success.
 /// </summary>
 internal sealed class PasswordResetService(
     IUserRepository users,
@@ -15,44 +18,34 @@ internal sealed class PasswordResetService(
     IRefreshTokenRepository refreshTokens,
     IPasswordHashing hashing,
     ISecureTokenGenerator generator,
-    IPasswordResetLinkSender sender,
+    IOutbox outbox,
     IUnitOfWork unitOfWork,
-    IClock clock,
-    TokenLifetimes lifetimes,
-    PasswordResetLinkSettings linkSettings)
+    IClock clock)
 {
-    private sealed record Issued(Guid UserId, string Email, string PlaintextToken);
+    public const string RequestedEvent = "PasswordResetRequested";
+
+    internal sealed record PasswordResetRequestedPayload(Guid UserId);
 
     /// <summary>Always completes the same way for known and unknown emails (no enumeration).</summary>
     public async Task RequestAsync(string email, CancellationToken ct)
     {
         string normalized = EmailAddress.Normalize(email);
 
-        Issued? issued = await unitOfWork.InTransactionAsync(async c =>
+        await unitOfWork.InTransactionAsync(async c =>
         {
             User? user = await users.FindByEmailForUpdateAsync(normalized, c);
             if (user is null)
             {
-                return null;
+                return false;
             }
 
             DateTimeOffset now = clock.UtcNow;
             await resetTokens.InvalidateOutstandingAsync(user.Id, now, c);
-            string plaintext = generator.NewToken();
-            resetTokens.Add(PasswordResetToken.Create(
-                Guid.CreateVersion7(now), user.Id, TokenHash.Of(plaintext), now, now + lifetimes.PasswordReset));
-            return new Issued(user.Id, user.Email, plaintext);
+            outbox.Add(new OutboxMessage(
+                Guid.CreateVersion7(now), RequestedEvent, "User", user.Id, 1,
+                JsonSerializer.Serialize(new PasswordResetRequestedPayload(user.Id), new JsonSerializerOptions(JsonSerializerDefaults.Web)), now));
+            return true;
         }, ct);
-
-        if (issued is null)
-        {
-            return;
-        }
-
-        string? link = string.IsNullOrWhiteSpace(linkSettings.LinkBaseUrl)
-            ? null
-            : $"{linkSettings.LinkBaseUrl}?token={Uri.EscapeDataString(issued.PlaintextToken)}";
-        await sender.SendAsync(issued.UserId, issued.Email, link, ct);
     }
 
     public async Task<ResetConfirmOutcome> ConfirmAsync(string token, string newPassword, CancellationToken ct)

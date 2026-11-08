@@ -8,6 +8,7 @@ using Ecommerce.Identity.Infrastructure.Jwt;
 using Ecommerce.Identity.Infrastructure.PasswordReset;
 using Ecommerce.Identity.Infrastructure.Persistence;
 using Ecommerce.Persistence;
+using Ecommerce.SharedKernel.Outbox;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -58,9 +59,6 @@ public static class IdentityModule
                 o => string.IsNullOrWhiteSpace(o.LinkBaseUrl)
                      || (Uri.TryCreate(o.LinkBaseUrl, UriKind.Absolute, out Uri? u) && u.Scheme is "http" or "https"),
                 "Identity:PasswordReset:LinkBaseUrl must be empty or an absolute http/https URL.")
-            .Validate<IHostEnvironment>(
-                (o, env) => string.IsNullOrWhiteSpace(o.DevPickupDirectory) || env.IsDevelopment(),
-                "Identity:PasswordReset:DevPickupDirectory may only be set in Development.")
             .ValidateOnStart();
 
         services.AddOptions<AdminBootstrapOptions>()
@@ -99,6 +97,8 @@ public static class IdentityModule
         services.AddScoped<LoginService>();
         services.AddScoped<RefreshService>();
         services.AddScoped<PasswordResetService>();
+        services.AddScoped<IOutboxConsumer, PasswordResetConsumer>();
+        services.AddScoped<IUserReader, UserReader>();
         services.AddScoped<CurrentUserService>();
 
         services.AddSingleton<RefreshTokenTransport>();
@@ -122,14 +122,6 @@ public static class IdentityModule
         services.AddSingleton<JwtSigningKeyProvider>();
         services.AddSingleton<IAccessTokenIssuer, JwtAccessTokenIssuer>();
 
-        // Development with a configured pickup directory writes a file; everywhere else nothing is sent (no provider yet).
-        services.AddScoped<IPasswordResetLinkSender>(sp =>
-        {
-            bool configured = !string.IsNullOrWhiteSpace(sp.GetRequiredService<IOptions<PasswordResetOptions>>().Value.DevPickupDirectory);
-            return sp.GetRequiredService<IHostEnvironment>().IsDevelopment() && configured
-                ? ActivatorUtilities.CreateInstance<DevPickupDirectoryLinkSender>(sp)
-                : ActivatorUtilities.CreateInstance<NoProviderLinkSender>(sp);
-        });
 
         services.AddHostedService<AdminBootstrapHostedService>();
     }

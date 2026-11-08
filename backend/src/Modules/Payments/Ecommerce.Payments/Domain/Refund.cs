@@ -25,6 +25,41 @@ internal sealed class Refund
 
     public static string AutomaticKey(Guid paymentId) => $"auto:{paymentId}";
 
+    public bool IsPending => Status == RefundStatus.Pending;
+
+    /// <summary>An admin's refund request (arch 8.5 step 3): Pending, with the admin's idempotency key. The ceiling was checked by the caller.</summary>
+    public static Refund CreateAdmin(Guid id, Payment payment, decimal amount, string reason, Guid actorId, string idempotencyKey, DateTimeOffset now) =>
+        new()
+        {
+            Id = id, PaymentId = payment.Id, Amount = amount, Currency = payment.Currency, Status = RefundStatus.Pending,
+            Reason = reason, ActorId = actorId, IdempotencyKey = idempotencyKey, CreatedAt = now,
+        };
+
+    /// <summary>Pending to Succeeded (the verified refund webhook). A second terminal event is a no-op: returns false.</summary>
+    public bool Succeed(string? providerRefundId, DateTimeOffset now)
+    {
+        if (Status != RefundStatus.Pending)
+        {
+            return false;
+        }
+        Status = RefundStatus.Succeeded;
+        ProviderRefundId ??= providerRefundId;
+        CompletedAt = now;
+        return true;
+    }
+
+    /// <summary>Pending to Failed: its amount is free under the ceiling again. A second terminal event is a no-op: returns false.</summary>
+    public bool Fail(DateTimeOffset now)
+    {
+        if (Status != RefundStatus.Pending)
+        {
+            return false;
+        }
+        Status = RefundStatus.Failed;
+        CompletedAt = now;
+        return true;
+    }
+
     /// <summary>The whole payment, Pending, no actor, key <c>auto:{paymentId}</c> (unique, so a payment is refunded automatically once).</summary>
     public static Refund CreateAutomatic(Guid id, Payment payment, string reason, DateTimeOffset now) =>
         new()

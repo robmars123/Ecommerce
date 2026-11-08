@@ -14,7 +14,10 @@ internal sealed class PasswordResetToken
     public DateTimeOffset? UsedAt { get; private set; }
     public DateTimeOffset? InvalidatedAt { get; private set; }
 
-    public static PasswordResetToken Create(Guid id, Guid userId, byte[] tokenHash, DateTimeOffset now, DateTimeOffset expiresAt)
+    /// <summary>The reset request event that caused this token (Slice 6). Null on tokens from before; those count as older.</summary>
+    public DateTimeOffset? RequestedAt { get; private set; }
+
+    public static PasswordResetToken Create(Guid id, Guid userId, byte[] tokenHash, DateTimeOffset now, DateTimeOffset expiresAt, DateTimeOffset? requestedAt = null)
     {
         if (tokenHash is null || tokenHash.Length != RefreshToken.HashLength)
         {
@@ -24,7 +27,7 @@ internal sealed class PasswordResetToken
         {
             throw new DomainException("A reset token must expire after it is created.");
         }
-        return new PasswordResetToken { Id = id, UserId = userId, TokenHash = tokenHash, CreatedAt = now, ExpiresAt = expiresAt };
+        return new PasswordResetToken { Id = id, UserId = userId, TokenHash = tokenHash, CreatedAt = now, ExpiresAt = expiresAt, RequestedAt = requestedAt };
     }
 
     public bool CanRedeem(DateTimeOffset now) => UsedAt is null && InvalidatedAt is null && now < ExpiresAt;

@@ -38,6 +38,13 @@ export const queryKeys = {
       detail: (id: string) => ['admin', 'products', 'detail', id] as const,
       preview: (id: string) => ['admin', 'products', 'preview', id] as const,
     },
+    orders: {
+      detail: (id: string) => ['admin', 'orders', 'detail', id] as const,
+    },
+    returns: {
+      all: ['admin', 'returns'] as const,
+      list: (status: string, page: number) => ['admin', 'returns', 'list', status, page] as const,
+    },
   },
   orders: {
     all: ['orders'] as const,

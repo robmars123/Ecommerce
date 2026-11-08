@@ -41,6 +41,7 @@ public class IdentityHostTests(PostgresFixture postgres)
         await env.GetAsync("/api/v1/auth/me", "tampered.bearer.value");
         secrets.Add("tampered.bearer.value");
         await env.PostAsync("/api/v1/auth/password-reset", new { email = "ana@example.test" });
+        await env.DrainOutboxAsync();
         string reset = env.Sender.TokenOf(0);
         secrets.Add(reset);
         await env.PostAsync("/api/v1/auth/password-reset/confirm", new { token = reset, newPassword = fresh });
@@ -82,7 +83,7 @@ public class IdentityHostTests(PostgresFixture postgres)
     [Fact]
     public void II14_a_dev_pickup_directory_outside_development_fails_startup()
     {
-        using ApiFactory factory = new ApiFactory(ApiFactory.Unreachable, settings: new Dictionary<string, string> { ["Identity:PasswordReset:DevPickupDirectory"] = "dev-mail" });
+        using ApiFactory factory = new ApiFactory(ApiFactory.Unreachable, settings: new Dictionary<string, string> { ["Notifications:DevPickupDirectory"] = "dev-mail" });
         Exception? ex = Record.Exception(() => factory.CreateClient());
         Assert.NotNull(ex);
         Assert.Contains("DevPickupDirectory", AllMessages(ex));

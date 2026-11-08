@@ -31,8 +31,9 @@ internal sealed class OrderStore(EcommerceDbContext db) : IOrderStore
         Order? order = rows.SingleOrDefault();
         if (order is not null)
         {
-            // Loads the lines; EF attaches them to the tracked order.
+            // Loads the lines and shipments; EF attaches them to the tracked order.
             await db.Set<OrderItem>().Where(i => i.OrderId == id).ToListAsync(ct);
+            await db.Set<Shipment>().Where(s => s.OrderId == id).ToListAsync(ct);
         }
         return order;
     }
@@ -78,4 +79,59 @@ internal sealed class OrderReadStore(EcommerceDbContext db) : IOrderReadStore
                     .Select(s => new ShipmentRow(s.Carrier, s.TrackingNumber, s.ShippedAt, s.DeliveredAt))
                     .ToList()))
             .FirstOrDefaultAsync(ct);
+}
+
+internal sealed record LineName(Guid OrderId, Guid VariantId, string Name);
+
+internal sealed class ReturnStore(EcommerceDbContext db) : IReturnStore
+{
+    public void Add(ReturnRequest request) => db.Set<ReturnRequest>().Add(request);
+
+    public async Task<ReturnRequest?> LockAsync(Guid id, CancellationToken ct)
+    {
+        if (db.Database.CurrentTransaction is null)
+        {
+            throw new InvalidOperationException("The return lock needs an open transaction; call inside IUnitOfWork.InTransactionAsync.");
+        }
+        List<ReturnRequest> rows = await db.Set<ReturnRequest>()
+            .FromSql($"SELECT id, order_id, items, reason, status, admin_note, created_at, decided_at FROM return_requests WHERE id = {id} FOR UPDATE")
+            .ToListAsync(ct);
+        return rows.SingleOrDefault();
+    }
+
+    public Task<ReturnRequest?> GetOpenAsync(Guid orderId, CancellationToken ct) =>
+        db.Set<ReturnRequest>().FirstOrDefaultAsync(
+            r => r.OrderId == orderId && (r.Status == ReturnStatus.Requested || r.Status == ReturnStatus.Approved), ct);
+
+    public async Task<ReturnRows> ListAsync(ReturnStatus? status, int page, int pageSize, CancellationToken ct)
+    {
+        IQueryable<ReturnRequest> query = db.Set<ReturnRequest>().AsNoTracking().Where(r => status == null || r.Status == status);
+        int total = await query.CountAsync(ct);
+        List<ReturnRequest> page1 = await query.OrderByDescending(r => r.CreatedAt).ThenByDescending(r => r.Id)
+            .Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(ct);
+        return new ReturnRows(await ToRowsAsync(page1, ct), total);
+    }
+
+    public async Task<IReadOnlyList<ReturnRow>> ListForOrderAsync(Guid orderId, CancellationToken ct) =>
+        await ToRowsAsync(await db.Set<ReturnRequest>().AsNoTracking().Where(r => r.OrderId == orderId).OrderBy(r => r.CreatedAt).ToListAsync(ct), ct);
+
+    public async Task<ReturnRow?> GetRowAsync(Guid id, CancellationToken ct)
+    {
+        ReturnRequest? request = await db.Set<ReturnRequest>().AsNoTracking().FirstOrDefaultAsync(r => r.Id == id, ct);
+        return request is null ? null : (await ToRowsAsync([request], ct))[0];
+    }
+
+    // Order number and line names come from the same module's tables (no cross-module join).
+    private async Task<IReadOnlyList<ReturnRow>> ToRowsAsync(List<ReturnRequest> requests, CancellationToken ct)
+    {
+        Guid[] orderIds = requests.Select(r => r.OrderId).Distinct().ToArray();
+        Dictionary<Guid, string> numbers = await db.Set<Order>().AsNoTracking().Where(o => orderIds.Contains(o.Id))
+            .ToDictionaryAsync(o => o.Id, o => o.OrderNumber, ct);
+        List<LineName> lines = await db.Set<OrderItem>().AsNoTracking().Where(i => orderIds.Contains(i.OrderId))
+            .Select(i => new LineName(i.OrderId, i.ProductVariantId, i.NameSnapshot)).ToListAsync(ct);
+        return requests.Select(r => new ReturnRow(
+            r.Id, r.OrderId, numbers.GetValueOrDefault(r.OrderId, ""), r.Status, r.Reason, r.AdminNote,
+            r.Items.Select(i => new ReturnItemRow(i.VariantId, lines.FirstOrDefault(l => l.OrderId == r.OrderId && l.VariantId == i.VariantId)?.Name ?? "", i.Quantity)).ToList(),
+            r.CreatedAt, r.DecidedAt)).ToList();
+    }
 }

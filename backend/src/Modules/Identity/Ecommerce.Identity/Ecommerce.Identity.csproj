@@ -6,6 +6,7 @@
     <ProjectReference Include="..\..\..\Ecommerce.SharedKernel\Ecommerce.SharedKernel.csproj" />
     <ProjectReference Include="..\..\..\Ecommerce.Persistence\Ecommerce.Persistence.csproj" />
     <ProjectReference Include="..\Ecommerce.Identity.Contracts\Ecommerce.Identity.Contracts.csproj" />
+    <ProjectReference Include="..\..\Notifications\Ecommerce.Notifications.Contracts\Ecommerce.Notifications.Contracts.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
