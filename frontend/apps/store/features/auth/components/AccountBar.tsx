@@ -32,9 +32,6 @@ export function AccountBar() {
   return (
     <View className="flex-row flex-wrap items-center gap-md">
       <Text className="text-body text-foreground">{session.user.displayName}</Text>
-      <Link href="/orders" asChild>
-        <Text className="min-h-touch py-md text-body text-foreground">Orders</Text>
-      </Link>
       {isStaff ? (
         <Link href="/admin" asChild>
           <Text className="min-h-touch py-md text-body text-foreground">Admin</Text>

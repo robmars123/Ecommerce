@@ -82,3 +82,21 @@ describe('GuestCartNotice', () => {
     expect(screen.getByText("Items in this device's cart will be added to your account.")).toBeOnTheScreen();
   });
 });
+
+describe('MergeResultNotice layout', () => {
+  const classesOf = (testID: string) => String(screen.getByTestId(testID).props.className).split(/\s+/);
+
+  it('keeps its content in the same centred column as the top bar', async () => {
+    useMergeResultStore.getState().publish([{ variantId: 'a', outcome: 'Kept', quantity: 1, reason: null, name: 'Blue Shirt - Medium' }]);
+    await renderRouter(routes(() => <MergeResultNotice />), { initialUrl: '/' });
+
+    expect(classesOf('merge-notice-content')).toEqual(expect.arrayContaining(['w-full', 'max-w-content', 'self-center', 'px-lg']));
+  });
+
+  it('does the same for the failure notice', async () => {
+    useMergeResultStore.setState({ results: null, failed: true, retry: () => undefined });
+    await renderRouter(routes(() => <MergeResultNotice />), { initialUrl: '/' });
+
+    expect(classesOf('merge-notice-content')).toEqual(expect.arrayContaining(['w-full', 'max-w-content', 'self-center', 'px-lg']));
+  });
+});

@@ -83,7 +83,7 @@ describe('TopNav', () => {
     await signInAs('Customer');
     await renderRouter(routes(), { initialUrl: '/' });
 
-    expect(screen.getAllByRole('link', { name: 'Orders' }).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByRole('link', { name: 'Orders' })).toBeOnTheScreen();
   });
 
   it('hides Orders while the session is still restoring', async () => {
