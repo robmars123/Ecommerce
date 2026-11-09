@@ -91,11 +91,11 @@ Status as of 2026-11-08: **Done** (Rob PASS) · **In progress** · **Not started
 | 7.4 | Admin returns screen | `admin-orders` | 6 | Done |
 | — | Refund of a return: uses 5.3–5.5 | | | |
 | **8** | **Admin dashboard** | | | |
-| 8.1 | Projector runtime: consumer checkpoints, gap handling, replay | Persistence | 6b | Not started |
-| 8.2 | KPIs and orders-by-status projection | per arch §6.1 | 6b | Not started |
-| 8.3 | Recent orders, low stock, needs-attention reads | per arch §6.1 | 6b | Not started |
-| 8.4 | Top products projection | per arch §6.1 | 6b | Not started |
-| 8.5 | Dashboard screen | `admin-dashboard` | 6b | Not started |
+| 8.1 | Projector runtime: consumer checkpoints, gap handling, replay | Persistence | 6b | Done |
+| 8.2 | KPIs and orders-by-status projection | per arch §6.1 | 6b | Done |
+| 8.3 | Recent orders, low stock, needs-attention reads | per arch §6.1 | 6b | Done |
+| 8.4 | Top products projection | per arch §6.1 | 6b | Done |
+| 8.5 | Dashboard screen | `admin-dashboard` | 6b | Done |
 | **9** | **Admin catalog** | | | |
 | 9.1 | Product create and edit API, with variants and image keys | Catalog | 1b | Done |
 | 9.2 | Publish and unpublish API | Catalog | 1b | Done |

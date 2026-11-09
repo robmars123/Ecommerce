@@ -7,3 +7,5 @@
 
 - 6b (Rob, plan): split `docs/architecture/13.2-decision-log.md` (~39 KB) per the ~10 KB file rule; `09-api.md` and `07-data-model.md` are also just over 10 KB.
 - 6b (Rob, plan): Slice 6 outbox consumers keep the anti-join scan without a checkpoint; measure in the Slice 7 slow-query pass.
+- 6b R1 (Rob): `ProjectionWorker.TickAsync` wraps all projectors in one try; an infrastructure exception from one projector ends the tick before the next runs. Wrap each `RunOnceAsync` loop in its own try/log.
+- 6b R1 (Rob): `tests/app/admin.test.tsx` F7b Support-redirect filter uses `includes('/api/v1/admin/dashboard')`; tighten to an exact allow-list of the two dashboard paths.

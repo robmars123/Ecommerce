@@ -5,9 +5,9 @@ Agents update this at the **start and end of every task**.
 
 | Agent | Status | Slice | Task | Fix round | Updated |
 |---|---|---|---|---|---|
-| Marco (developer) | 🟢 AVAILABLE | 6b | Built admin dashboard + projections, verify PASS | 0 | 2026-11-09 03:00 |
+| Marco (developer) | 🟢 AVAILABLE | 6b | Fix round 1 done, verify changed PASS | 1 | 2026-11-09 04:10 |
 | Shin (developer 2) | 🟢 AVAILABLE | — | Ready | 0 | 2026-11-08 18:45 |
-| Rob (architect, on demand) | 🔴 BUSY | 6b | Review round 1 | 1 | 2026-11-09 03:10 |
+| Rob (architect, on demand) | 🟢 AVAILABLE | 6b | Review round 2: PASS | 2 | 2026-11-09 |
 
 **Rules**
 
@@ -19,4 +19,4 @@ Agents update this at the **start and end of every task**.
 
 - Marco: slice-plans/slice-6b-marco-report.md (previous: slice-plans/archive/slice-6-marco-report.md)
 - Shin: none yet
-- Rob: slice-plans/slice-6b-plan.md (previous: slice-plans/archive/deliverable-5.2-rob-review.md)
+- Rob: slice-plans/slice-6b-rob-review.md (previous: slice-plans/slice-6b-plan.md)
