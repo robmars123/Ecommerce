@@ -11,4 +11,7 @@ internal sealed class UserReader(IUserRepository users) : IUserReader
         User? user = await users.FindByIdAsync(userId, ct);
         return user is null ? null : new UserContact(user.Email, user.DisplayName);
     }
+
+    public async Task<IReadOnlyDictionary<Guid, UserContact>> GetContactsAsync(IReadOnlyCollection<Guid> userIds, CancellationToken ct) =>
+        (await users.FindByIdsAsync(userIds, ct)).ToDictionary(u => u.Id, u => new UserContact(u.Email, u.DisplayName));
 }

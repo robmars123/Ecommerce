@@ -26,6 +26,7 @@ internal sealed class CatalogReadStore(EcommerceDbContext db) : ICatalogReadStor
         public required string CategoryName { get; init; }
         public required decimal MinPrice { get; init; }
         public required float Rank { get; init; }
+        public required int Units { get; init; }
         public required CheapestShape? Cheapest { get; init; }
         public required ImageShape? FirstImage { get; init; }
         public required List<Guid> ActiveVariantIds { get; init; }
@@ -80,6 +81,7 @@ internal sealed class CatalogReadStore(EcommerceDbContext db) : ICatalogReadStor
                          CategorySlug = cat.Slug,
                          CategoryName = cat.Name,
                          MinPrice = p.Variants.Where(v => v.IsActive).Min(v => v.Price),
+                         Units = db.Set<ProductSalesDaily>().Where(s => s.ProductId == p.Id).Sum(s => (int?)s.Units) ?? 0,
                          Rank = EF.Property<NpgsqlTsVector>(p, ProductConfiguration.SearchVector)
                              .Rank(EF.Functions.WebSearchToTsQuery(SearchConfig, searchText)),
                          Cheapest = p.Variants.Where(v => v.IsActive)
@@ -98,6 +100,7 @@ internal sealed class CatalogReadStore(EcommerceDbContext db) : ICatalogReadStor
             ProductSort.Relevance => shaped.OrderByDescending(x => x.Rank).ThenByDescending(x => x.CreatedAt).ThenByDescending(x => x.Id),
             ProductSort.PriceAsc => shaped.OrderBy(x => x.MinPrice).ThenBy(x => x.Id),
             ProductSort.PriceDesc => shaped.OrderByDescending(x => x.MinPrice).ThenBy(x => x.Id),
+            ProductSort.BestSelling => shaped.OrderByDescending(x => x.Units).ThenByDescending(x => x.CreatedAt).ThenByDescending(x => x.Id),
             _ => shaped.OrderByDescending(x => x.CreatedAt).ThenByDescending(x => x.Id),
         };
 

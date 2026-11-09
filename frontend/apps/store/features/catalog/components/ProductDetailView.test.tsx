@@ -3,7 +3,7 @@ import { Text } from 'react-native';
 
 import ProductDetailScreen from '@/app/products/[slug]';
 import { jsonResponse, problemResponse } from '@/tests/fetch-mock';
-import { makeDetail, makeVariant } from '@/tests/fixtures';
+import { makeDetail, makeItem, makeVariant } from '@/tests/fixtures';
 import { renderRouterWithQuery } from '@/tests/render-with-query';
 
 beforeEach(() => {
@@ -168,5 +168,27 @@ describe('ProductDetailView navigation and variant details', () => {
     expect(screen.getByText('BS-M')).toBeOnTheScreen();
     expect(screen.queryByText('BS-S')).toBeNull();
     expect(screen.queryByText(/save|rating|review/i)).toBeNull();
+  });
+
+  it('shows related products as cards, in the order the server sent, and hides the section when there are none', async () => {
+    mockDetail(() =>
+      jsonResponse(
+        200,
+        makeDetail({ related: [makeItem({ id: 'p-2', slug: 'red-shirt', name: 'Red Shirt' }), makeItem({ id: 'p-3', slug: 'green-shirt', name: 'Green Shirt' })] }),
+      ),
+    );
+    await render();
+
+    expect(await screen.findByRole('header', { name: 'Related products' })).toBeOnTheScreen();
+    expect(screen.getByRole('link', { name: 'Red Shirt' })).toBeOnTheScreen();
+    expect(screen.getByRole('link', { name: 'Green Shirt' })).toBeOnTheScreen();
+  });
+
+  it('has no related section when the server sent no related products', async () => {
+    mockDetail(() => jsonResponse(200, detail));
+    await render();
+
+    await screen.findByText('Size: Small');
+    expect(screen.queryByText('Related products')).toBeNull();
   });
 });

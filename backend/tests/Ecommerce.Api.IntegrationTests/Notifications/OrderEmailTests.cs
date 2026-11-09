@@ -3,6 +3,12 @@ using Ecommerce.Api.IntegrationTests.Checkout;
 using Ecommerce.Api.IntegrationTests.Identity;
 using Ecommerce.Api.IntegrationTests.Refunds;
 using Ecommerce.Notifications.Contracts;
+using Ecommerce.Notifications.Infrastructure;
+using Ecommerce.SharedKernel.Outbox;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Serilog.Events;
 
 namespace Ecommerce.Api.IntegrationTests.Notifications;
@@ -53,6 +59,53 @@ public class OrderEmailTests(PostgresFixture postgres)
         Assert.Equal(("Done", 3), await RowAsync(e, eventId));
         Assert.Equal(3, e.Env.Sender.Attempts);
         Assert.Equal("Paid", await e.F.OrderStatusAsync(order));
+    }
+
+    // Test 15 (arch 11.2, Slice 6b D20): delivery is at-least-once by design. The duplicate is proven harmless because the resend
+    // carries the same idempotency key, and a sender that honours keys (the dev pickup directory here) keeps one email.
+    [Fact]
+    public async Task T15_a_send_whose_mark_is_lost_is_sent_again_with_the_same_key_and_the_dev_pickup_directory_keeps_one_file()
+    {
+        (RefundEnv e, Guid order, Guid eventId) = await PaidOrderAsync(postgres);
+        await using RefundEnv env = e;
+        string directory = Path.Combine(Path.GetTempPath(), "ecommerce-t15-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            using (IServiceScope scope = e.Env.Factory.Services.CreateScope())
+            {
+                IOutboxConsumer consumer = scope.ServiceProvider.GetServices<IOutboxConsumer>().Single(c => c.Name == Consumer);
+                OutboxMessage message = new(
+                    eventId, "OrderPaid", "Order", order, 1,
+                    await e.F.ScalarAsync<string>("SELECT payload::text FROM outbox_events WHERE event_id = @e", ("e", eventId)), e.Env.Clock.UtcNow);
+                await consumer.HandleAsync(message, TestContext.Current.CancellationToken); // the send happens; the crash comes before the mark
+            }
+            Assert.Single(e.Env.Sender.Sent);
+            Assert.Equal(0, await e.F.CountAsync("SELECT count(*) FROM processed_events WHERE consumer = @c AND event_id = @e", ("c", Consumer), ("e", eventId)));
+
+            await e.Env.DrainOutboxAsync(rounds: 2); // the runtime finds no mark and handles the event again
+
+            Assert.Equal(2, e.Env.Sender.Attempts); // the second send happened ...
+            EmailMessage kept = Assert.Single(e.Env.Sender.Sent); // ... and the provider, seeing the same key, kept one
+            Assert.Equal($"{Consumer}:{eventId}", kept.IdempotencyKey);
+            Assert.Equal(("Done", 1), await RowAsync(e, eventId));
+
+            DevPickupDirectoryEmailSender dev = new(
+                Options.Create(new NotificationsOptions { DevPickupDirectory = directory }),
+                e.Env.Factory.Services.GetRequiredService<IHostEnvironment>(),
+                NullLogger<DevPickupDirectoryEmailSender>.Instance);
+            foreach (EmailMessage sent in new[] { kept, kept })
+            {
+                await dev.SendAsync(sent, TestContext.Current.CancellationToken);
+            }
+            Assert.Single(Directory.GetFiles(directory));
+        }
+        finally
+        {
+            if (Directory.Exists(directory))
+            {
+                Directory.Delete(directory, recursive: true);
+            }
+        }
     }
 
     [Fact]

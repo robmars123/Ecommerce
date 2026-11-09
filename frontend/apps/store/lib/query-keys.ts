@@ -41,6 +41,8 @@ export const queryKeys = {
     orders: {
       detail: (id: string) => ['admin', 'orders', 'detail', id] as const,
     },
+    dashboard: (period: string) => ['admin', 'dashboard', period] as const,
+    recentOrders: (page: number) => ['admin', 'dashboard', 'recent-orders', page] as const,
     returns: {
       all: ['admin', 'returns'] as const,
       list: (status: string, page: number) => ['admin', 'returns', 'list', status, page] as const,

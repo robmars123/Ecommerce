@@ -1,5 +1,5 @@
-import { ScreenStub } from '@/components/ScreenStub';
+import { DashboardView } from '@/features/admin-dashboard/components/DashboardView';
 
 export default function AdminDashboardScreen() {
-  return <ScreenStub title="Admin dashboard" />;
+  return <DashboardView />;
 }

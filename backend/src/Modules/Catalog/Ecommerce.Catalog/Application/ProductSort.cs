@@ -6,6 +6,7 @@ internal enum ProductSort
     PriceAsc,
     PriceDesc,
     Newest,
+    BestSelling,
 }
 
 internal static class ProductSortNames
@@ -14,6 +15,7 @@ internal static class ProductSortNames
     public const string PriceAsc = "price-asc";
     public const string PriceDesc = "price-desc";
     public const string Newest = "newest";
+    public const string BestSelling = "bestselling";
 
     public static bool TryParse(string value, out ProductSort sort)
     {
@@ -23,6 +25,7 @@ internal static class ProductSortNames
             case PriceAsc: sort = ProductSort.PriceAsc; return true;
             case PriceDesc: sort = ProductSort.PriceDesc; return true;
             case Newest: sort = ProductSort.Newest; return true;
+            case BestSelling: sort = ProductSort.BestSelling; return true;
             default: sort = default; return false;
         }
     }

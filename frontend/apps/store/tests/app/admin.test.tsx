@@ -68,7 +68,7 @@ describe('admin area gate (F7b)', () => {
     await renderRouter('./app', { initialUrl: '/admin/products' });
 
     await waitFor(() => expect(screen).toHavePathname('/admin'));
-    expect(adminCalls(spy)).toHaveLength(0);
+    expect(adminCalls(spy).filter((c) => !String(c[0]).includes('/api/v1/admin/dashboard'))).toHaveLength(0); // the dashboard it lands on is allowed to load
   });
 
   it('Admin: the product list loads', async () => {

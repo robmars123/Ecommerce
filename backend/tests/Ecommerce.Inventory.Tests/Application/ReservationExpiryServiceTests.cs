@@ -1,3 +1,4 @@
+using Ecommerce.Inventory.Contracts;
 using Ecommerce.Inventory.Application;
 using Ecommerce.Inventory.Domain;
 using Ecommerce.Orders.Contracts;
@@ -28,6 +29,8 @@ public class ReservationExpiryServiceTests
     /// <summary>Reports an order as expired in the unlocked search, then hands back whatever the locked read is told to.</summary>
     private sealed class FakeStore(Guid orderId, InventoryReservation reservation, InventoryStock stock) : IInventoryStore
     {
+    public Task<IReadOnlyList<LowStockItem>> ListLowAsync(int threshold, int max, CancellationToken ct) => throw new NotSupportedException();
+
         public Task<IReadOnlyList<Guid>> FindExpiredOrderIdsAsync(DateTimeOffset now, int max, CancellationToken ct) =>
             Task.FromResult<IReadOnlyList<Guid>>([orderId]);
 

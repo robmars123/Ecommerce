@@ -7,6 +7,7 @@ import type { ProductSort } from '../types';
 const LABELS: Record<ProductSort, string> = {
   relevance: 'Relevance',
   newest: 'Newest',
+  bestselling: 'Best selling',
   'price-asc': 'Price: low to high',
   'price-desc': 'Price: high to low',
 };
@@ -19,8 +20,8 @@ type SortPickerProps = {
 
 export function SortPicker({ sort, hasSearch, onSelect }: SortPickerProps) {
   const options: ProductSort[] = hasSearch
-    ? ['relevance', 'newest', 'price-asc', 'price-desc']
-    : ['newest', 'price-asc', 'price-desc'];
+    ? ['relevance', 'newest', 'bestselling', 'price-asc', 'price-desc']
+    : ['newest', 'bestselling', 'price-asc', 'price-desc'];
   const active = sort ?? (hasSearch ? 'relevance' : 'newest');
 
   return (

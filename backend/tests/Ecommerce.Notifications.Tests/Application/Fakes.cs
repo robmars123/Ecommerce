@@ -8,6 +8,8 @@ namespace Ecommerce.Notifications.Tests.Application;
 
 internal sealed class FakeUsers : IUserReader
 {
+    public Task<IReadOnlyDictionary<Guid, UserContact>> GetContactsAsync(IReadOnlyCollection<Guid> userIds, CancellationToken ct) => throw new NotSupportedException();
+
     public Dictionary<Guid, UserContact> Contacts { get; } = [];
 
     public Task<UserContact?> GetContactAsync(Guid userId, CancellationToken ct) => Task.FromResult(Contacts.GetValueOrDefault(userId));
@@ -15,6 +17,10 @@ internal sealed class FakeUsers : IUserReader
 
 internal sealed class FakeOrders : IOrderReader
 {
+    public Task<RecentOrderPage> ListRecentAsync(int page, int pageSize, CancellationToken ct) => throw new NotSupportedException();
+
+    public Task<int> CountPendingReturnsAsync(CancellationToken ct) => throw new NotSupportedException();
+
     public Dictionary<Guid, OrderNotificationView> Views { get; } = [];
 
     public Task<OrderNotificationView?> GetNotificationViewAsync(Guid orderId, CancellationToken ct) => Task.FromResult(Views.GetValueOrDefault(orderId));

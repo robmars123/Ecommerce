@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Ecommerce.Orders.Contracts;
+using Ecommerce.Payments.Contracts;
 using Ecommerce.Payments.Domain;
 using Ecommerce.SharedKernel.Audit;
 using Ecommerce.SharedKernel.Outbox;
@@ -240,6 +241,13 @@ internal sealed class PaymentWebhookService(
                 JsonSerializer.Serialize(new RefundAuditState(RefundStatus.Pending.ToString(), paymentBefore)),
                 JsonSerializer.Serialize(new RefundAuditState(refund.Status.ToString(), payment.Status.ToString(), outcome)),
                 null, now));
+            if (refund.Status == RefundStatus.Succeeded && refund.ActorId is not null)
+            {
+                // Revenue falls by this amount (Slice 6b D12). Version 2: version 1 is the RefundRequested event of the same refund.
+                outbox.Add(new OutboxMessage(
+                    Guid.CreateVersion7(now), PaymentEventTypes.RefundSucceeded, "Refund", refund.Id, 2,
+                    JsonSerializer.Serialize(new RefundSucceededPayload(refund.Id, payment.OrderId, refund.Amount, refund.Currency, now), PaymentOutbox.Json), now));
+            }
         }
         return new Applied(null, null, failed, blocked);
     }

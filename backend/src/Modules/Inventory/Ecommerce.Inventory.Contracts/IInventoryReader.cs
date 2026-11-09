@@ -1,5 +1,7 @@
 namespace Ecommerce.Inventory.Contracts;
 
+public sealed record LowStockItem(Guid VariantId, int Available);
+
 /// <summary>Display-grade availability: never below 0. A variant with no stock row is 0 / Out.</summary>
 public sealed record StockAvailability(int Available, StockStatus Status);
 
@@ -16,4 +18,7 @@ public interface IInventoryReader
     /// <summary>One entry per distinct requested ID.</summary>
     Task<IReadOnlyDictionary<Guid, StockAvailability>> GetAvailabilityAsync(
         IReadOnlyCollection<Guid> variantIds, CancellationToken ct);
+
+    /// <summary>Stock rows with available at or below the low-stock threshold (0 included), lowest first, then variant id. Display-only, no locks.</summary>
+    Task<IReadOnlyList<LowStockItem>> ListLowStockAsync(int max, CancellationToken ct);
 }

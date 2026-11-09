@@ -75,3 +75,13 @@ internal sealed class DecisionRequestValidator : AbstractValidator<DecisionReque
             .Must(r => r is not null && r.Trim().Length is >= 1 and <= ReturnRequest.MaxReasonLength)
             .WithMessage($"Enter a reason of 1 to {ReturnRequest.MaxReasonLength} characters.");
 }
+
+internal sealed record UnfulfillableRequest(string? Reason);
+
+internal sealed class UnfulfillableRequestValidator : AbstractValidator<UnfulfillableRequest>
+{
+    public UnfulfillableRequestValidator() =>
+        RuleFor(r => r.Reason)
+            .Must(r => r is not null && r.Trim().Length is >= 1 and <= Order.MaxReasonLength)
+            .WithMessage($"Enter a reason of 1 to {Order.MaxReasonLength} characters.");
+}

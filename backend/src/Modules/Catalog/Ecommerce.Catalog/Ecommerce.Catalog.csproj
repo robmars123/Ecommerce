@@ -8,6 +8,7 @@
     <ProjectReference Include="..\Ecommerce.Catalog.Contracts\Ecommerce.Catalog.Contracts.csproj" />
     <ProjectReference Include="..\..\Identity\Ecommerce.Identity.Contracts\Ecommerce.Identity.Contracts.csproj" />
     <ProjectReference Include="..\..\Inventory\Ecommerce.Inventory.Contracts\Ecommerce.Inventory.Contracts.csproj" />
+    <ProjectReference Include="..\..\Orders\Ecommerce.Orders.Contracts\Ecommerce.Orders.Contracts.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />

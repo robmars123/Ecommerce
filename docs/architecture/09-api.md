@@ -7,7 +7,7 @@ Base `/api/v1`. Errors are Problem Details (`application/problem+json`). Lists a
 | `POST /auth/register` · `login` · `refresh` · `logout` · `password-reset` · `password-reset/confirm` | Public / Customer | Refresh tokens rotate; reuse revokes the family |
 | `GET /auth/me` | Any authenticated | Caller's own `{ id, email, displayName, role }` |
 | `GET /products?search=&category=&sort=&page=&pageSize=` | Public | Active products only |
-| `GET /products/{slug}` | Public | Variants, images, stock indicator. Inactive → 404 (admin preview via admin API) |
+| `GET /products/{slug}` | Public | Variants, images, stock indicator, `related` (6b: ≤ 4, same category, best sellers first). Inactive → 404 (admin preview via admin API) |
 | `GET /categories` | Public | |
 | `GET /cart` · `POST /cart/items` · `PUT /cart/items/{variantId}` · `DELETE /cart/items/{variantId}` | Customer | Server-validated prices. `PUT` sets the quantity; 0 removes. Cart contract below |
 | `POST /cart/merge` | Customer | `Idempotency-Key` required. Guest lines in; merge result out |
@@ -17,7 +17,8 @@ Base `/api/v1`. Errors are Problem Details (`application/problem+json`). Lists a
 | `GET /orders` · `GET /orders/{id}` | Owner | History, detail, timeline, tracking. Orders contract below |
 | `POST /orders/{id}/return-request` | Owner | `Delivered` only |
 | `POST /webhooks/stripe` | Stripe | Signature verified, event-idempotent |
-| `GET /admin/dashboard?period=` | Admin | Projected KPIs with as-of time |
+| `GET /admin/dashboard?period=today\|7d\|30d` · `GET /admin/dashboard/recent-orders?page=&pageSize=` | Admin, Support | Projected KPIs with as-of time; Support gets `kpis: null`. Recent orders are a direct read (§8.8.6) |
+| `POST /admin/orders/{id}/unfulfillable` · `POST /admin/projections/{name}/replay` | Admin | Saga start (§8.8.4), reason required · replay (§8.8.2), 409 while busy |
 | `GET/POST /admin/products` · `GET/PUT /admin/products/{id}` · `GET /admin/products/{id}/preview` · `POST /admin/products/{id}/images` · `POST /admin/products/{id}/publish` · `…/unpublish` | Admin | `PUT` carries `version` (optimistic, stale → 409). `images` upload waits for the bucket decision (§2); until then image keys go in the create/update body |
 | `POST /admin/categories` | Admin | One level of nesting; duplicate slug → 409 |
 | `GET /admin/inventory` · `POST /admin/inventory/adjust` | Admin | Adjust requires a reason; audited |
@@ -29,7 +30,7 @@ Base `/api/v1`. Errors are Problem Details (`application/problem+json`). Lists a
 **Catalog read contract (Slice 1a):**
 - **Visible** = `is_active` and ≥ 1 active variant; otherwise list-excluded and detail 404 (also 404 for a malformed slug).
 - `page` ≥ 1 (default 1), `pageSize` 1–100 (default 20); out of range → 400, never clamped. Past the last page → 200, empty `items`, real `totalCount`. Response `{ items, page, pageSize, totalCount, totalPages }`.
-- `sort` = `relevance | price-asc | price-desc | newest`; default `relevance` with `search`, else `newest`; `relevance` without `search` → 400. Every sort ends in a unique tie-breaker (`id`). Product price = minimum **active** variant price.
+- `sort` = `relevance | price-asc | price-desc | newest | bestselling` (6b: all-time units sold, projected); default `relevance` with `search`, else `newest`; `relevance` without `search` → 400. Every sort ends in a unique tie-breaker (`id`). Product price = minimum **active** variant price.
 - `search` trimmed, ≤ 100 chars, `websearch_to_tsquery('english')` over the weighted generated `search_vector` (name A, description B).
 - `category` = slug; matches the category and its direct children; unknown slug → 200 empty.
 - `GET /categories` → `{ items: [{ slug, name, parentSlug }] }`, unpaginated (bounded one-level set — exception to the pagination rule).

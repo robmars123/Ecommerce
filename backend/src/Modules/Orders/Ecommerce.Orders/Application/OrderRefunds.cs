@@ -10,7 +10,7 @@ namespace Ecommerce.Orders.Application;
 /// payments, orders). A full refund moves the order through the same state table as every other transition and writes the
 /// one OrderStatusChanged event; the order's totals are never touched.
 /// </summary>
-internal sealed class OrderRefunds(IOrderStore orders, IReturnStore returns, IOutbox outbox, IClock clock) : IOrderRefunds
+internal sealed class OrderRefunds(IOrderStore orders, IReturnStore returns, IFulfillmentSagaStore sagas, IOutbox outbox, IClock clock) : IOrderRefunds
 {
     public async Task<RefundOrderInfo?> LockForRefundAsync(Guid orderId, CancellationToken ct)
     {
@@ -41,6 +41,8 @@ internal sealed class OrderRefunds(IOrderStore orders, IReturnStore returns, IOu
 
         outbox.Add(OrderEvents.For(order));
         (await returns.GetOpenAsync(orderId, ct))?.MarkRefunded(now);
+        // The full refund is what the saga was waiting for (Slice 6b D18); whoever asked for it.
+        (await sagas.GetByOrderAsync(orderId, ct))?.MarkCompensated();
         return true;
     }
 

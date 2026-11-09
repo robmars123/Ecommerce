@@ -1,4 +1,5 @@
 using System.Reflection;
+using Ecommerce.Admin;
 using Ecommerce.Cart;
 using Ecommerce.Catalog;
 using Ecommerce.Identity;
@@ -14,7 +15,8 @@ namespace Ecommerce.Api.Composition;
 public static class ModuleComposition
 {
     public static readonly IReadOnlyList<Assembly> ModuleAssemblies =
-        [typeof(CartModule).Assembly,
+        [typeof(AdminModule).Assembly,
+         typeof(CartModule).Assembly,
          typeof(CatalogModule).Assembly,
          typeof(IdentityModule).Assembly,
          typeof(InventoryModule).Assembly,
@@ -23,7 +25,7 @@ public static class ModuleComposition
          typeof(PaymentsModule).Assembly];
 
     public static IServiceCollection AddEcommerceModules(this IServiceCollection services, IConfiguration configuration) =>
-        services.AddCartModule(configuration).AddCatalogModule(configuration).AddIdentityModule(configuration).AddInventoryModule(configuration).AddNotificationsModule(configuration).AddOrdersModule(configuration).AddPaymentsModule(configuration);
+        services.AddAdminModule(configuration).AddCartModule(configuration).AddCatalogModule(configuration).AddIdentityModule(configuration).AddInventoryModule(configuration).AddNotificationsModule(configuration).AddOrdersModule(configuration).AddPaymentsModule(configuration);
 
     public static IMvcBuilder AddModuleControllers(this IMvcBuilder mvc) =>
         mvc.ConfigureApplicationPartManager(m =>

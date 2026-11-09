@@ -54,6 +54,7 @@ export function makeDetail(overrides: Partial<ProductDetail> = {}): ProductDetai
     category: { slug: 'tops', name: 'Tops' },
     images: [{ url: null, altText: 'Blue shirt, front' }],
     variants: [makeVariant()],
+    related: [],
     ...overrides,
   };
 }

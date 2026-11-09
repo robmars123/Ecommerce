@@ -48,6 +48,9 @@ internal sealed class FakeUnitOfWork(EventLog log) : IUnitOfWork
 
 internal sealed class FakeUserRepository : IUserRepository
 {
+    public Task<IReadOnlyList<User>> FindByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken ct) =>
+        Task.FromResult<IReadOnlyList<User>>(Users.Where(u => ids.Contains(u.Id)).ToList());
+
     public List<User> Users { get; } = [];
 
     public void Add(User user) => Users.Add(user);

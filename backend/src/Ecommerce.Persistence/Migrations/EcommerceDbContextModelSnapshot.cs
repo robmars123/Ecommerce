@@ -26,6 +26,73 @@ namespace Ecommerce.Persistence.Migrations
 
             modelBuilder.HasSequence("order_number_seq");
 
+            modelBuilder.Entity("Ecommerce.Admin.Domain.DashboardOrder", b =>
+                {
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("order_id");
+
+                    b.Property<string>("Currency")
+                        .HasColumnType("character(3)")
+                        .HasColumnName("currency");
+
+                    b.Property<decimal?>("GrandTotal")
+                        .HasColumnType("numeric(19,4)")
+                        .HasColumnName("grand_total");
+
+                    b.Property<DateTimeOffset?>("PaidAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("paid_at");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("OrderId")
+                        .HasName("pk_admin_dashboard_orders");
+
+                    b.HasIndex("PaidAt")
+                        .HasDatabaseName("ix_admin_dashboard_orders_paid_at");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("ix_admin_dashboard_orders_status");
+
+                    b.ToTable("admin_dashboard_orders", (string)null);
+                });
+
+            modelBuilder.Entity("Ecommerce.Admin.Domain.DashboardRefund", b =>
+                {
+                    b.Property<Guid>("RefundId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("refund_id");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("numeric(19,4)")
+                        .HasColumnName("amount");
+
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("order_id");
+
+                    b.Property<DateTimeOffset>("SucceededAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("succeeded_at");
+
+                    b.HasKey("RefundId")
+                        .HasName("pk_admin_dashboard_refunds");
+
+                    b.HasIndex("SucceededAt")
+                        .HasDatabaseName("ix_admin_dashboard_refunds_succeeded_at");
+
+                    b.ToTable("admin_dashboard_refunds", (string)null);
+                });
+
             modelBuilder.Entity("Ecommerce.Cart.Domain.Cart", b =>
                 {
                     b.Property<Guid>("Id")
@@ -244,6 +311,26 @@ namespace Ecommerce.Persistence.Migrations
                         .HasDatabaseName("ix_product_images_product_id_sort_order");
 
                     b.ToTable("product_images", (string)null);
+                });
+
+            modelBuilder.Entity("Ecommerce.Catalog.Domain.ProductSalesDaily", b =>
+                {
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("product_id");
+
+                    b.Property<DateOnly>("SalesDate")
+                        .HasColumnType("date")
+                        .HasColumnName("sales_date");
+
+                    b.Property<int>("Units")
+                        .HasColumnType("integer")
+                        .HasColumnName("units");
+
+                    b.HasKey("ProductId", "SalesDate")
+                        .HasName("pk_catalog_product_sales_daily");
+
+                    b.ToTable("catalog_product_sales_daily", (string)null);
                 });
 
             modelBuilder.Entity("Ecommerce.Catalog.Domain.ProductVariant", b =>
@@ -595,6 +682,59 @@ namespace Ecommerce.Persistence.Migrations
                     b.ToTable("inventory_stock", null, t =>
                         {
                             t.HasCheckConstraint("ck_inventory_stock_quantities", "quantity_on_hand - quantity_reserved >= 0 AND quantity_reserved >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("Ecommerce.Orders.Domain.FulfillmentSaga", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("ActorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("actor_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("order_id");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reason");
+
+                    b.Property<decimal>("RefundAmount")
+                        .HasColumnType("numeric(19,4)")
+                        .HasColumnName("refund_amount");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<string>("Step")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("step");
+
+                    b.HasKey("Id")
+                        .HasName("pk_fulfillment_sagas");
+
+                    b.HasIndex("OrderId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_fulfillment_sagas_order_id");
+
+                    b.ToTable("fulfillment_sagas", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_fulfillment_sagas_status", "status IN ('Compensating','Compensated')");
                         });
                 });
 
@@ -1252,6 +1392,53 @@ namespace Ecommerce.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Ecommerce.Persistence.Projections.ConsumerCheckpointEntry", b =>
+                {
+                    b.Property<string>("Consumer")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("consumer");
+
+                    b.Property<long>("LastSequence")
+                        .HasColumnType("bigint")
+                        .HasColumnName("last_sequence");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Consumer")
+                        .HasName("pk_consumer_checkpoints");
+
+                    b.ToTable("consumer_checkpoints", (string)null);
+                });
+
+            modelBuilder.Entity("Ecommerce.Persistence.Projections.ProjectionVersionEntry", b =>
+                {
+                    b.Property<string>("Projector")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("projector");
+
+                    b.Property<string>("AggregateType")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("aggregate_type");
+
+                    b.Property<Guid>("AggregateId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("aggregate_id");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("integer")
+                        .HasColumnName("version");
+
+                    b.HasKey("Projector", "AggregateType", "AggregateId")
+                        .HasName("pk_projection_versions");
+
+                    b.ToTable("projection_versions", (string)null);
+                });
+
             modelBuilder.Entity("Ecommerce.Cart.Domain.CartItem", b =>
                 {
                     b.HasOne("Ecommerce.Cart.Domain.Cart", null)
@@ -1339,6 +1526,16 @@ namespace Ecommerce.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_inventory_reservations_stock");
+                });
+
+            modelBuilder.Entity("Ecommerce.Orders.Domain.FulfillmentSaga", b =>
+                {
+                    b.HasOne("Ecommerce.Orders.Domain.Order", null)
+                        .WithMany()
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_fulfillment_sagas_order_id");
                 });
 
             modelBuilder.Entity("Ecommerce.Orders.Domain.OrderItem", b =>

@@ -1,0 +1,182 @@
+import { fireEvent, screen, waitFor } from 'expo-router/testing-library';
+import { Text } from 'react-native';
+
+import AdminDashboardScreen from '@/app/admin/index';
+import { resetSession } from '@/features/auth/session';
+import { makeDashboard, makeRecentOrder, makeRecentOrdersPage } from '@/tests/admin-dashboard-fixtures';
+import { calledUrls, jsonResponse, problemResponse } from '@/tests/fetch-mock';
+import { renderRouterWithQuery } from '@/tests/render-with-query';
+import { signInAs } from '@/tests/session';
+
+jest.mock('expo-secure-store');
+
+beforeEach(() => {
+  process.env.EXPO_PUBLIC_API_BASE_URL = 'http://api.test.invalid:5080';
+});
+
+afterEach(() => {
+  resetSession();
+  jest.restoreAllMocks();
+  delete process.env.EXPO_PUBLIC_API_BASE_URL;
+});
+
+const render = () =>
+  renderRouterWithQuery(
+    {
+      'admin/index': AdminDashboardScreen,
+      'admin/orders/index': () => <Text>Orders list screen</Text>,
+      'admin/returns': () => <Text>Returns screen</Text>,
+      'admin/inventory': () => <Text>Inventory screen</Text>,
+    },
+    { initialUrl: '/admin' },
+  );
+
+function mockApi(dashboard = makeDashboard(), recent = makeRecentOrdersPage([makeRecentOrder()])) {
+  return jest.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+    const { pathname } = new URL(String(input));
+    if (pathname === '/api/v1/admin/dashboard') return jsonResponse(200, dashboard);
+    if (pathname === '/api/v1/admin/dashboard/recent-orders') return jsonResponse(200, recent);
+    return new Response('not mocked', { status: 599 });
+  });
+}
+
+describe('DashboardView', () => {
+  it('shows the figures exactly as the server returned them, with the as-of time', async () => {
+    await signInAs('Admin');
+    mockApi();
+
+    await render();
+
+    expect(await screen.findByText('Revenue: $1,234.50')).toBeOnTheScreen();
+    expect(screen.getByText('Orders: 7')).toBeOnTheScreen();
+    expect(screen.getByText('Average order value: $176.36')).toBeOnTheScreen();
+    expect(screen.getByText('Customers: 5 (3 new, 2 returning)')).toBeOnTheScreen();
+    expect(screen.getByText('Figures as of Nov 8, 2026, 14:30 UTC')).toBeOnTheScreen();
+    expect(screen.getByText('Blue Shirt · 9 sold')).toBeOnTheScreen();
+    expect(screen.getByText('Blue Shirt (BS-M) · 2 left')).toBeOnTheScreen();
+  });
+
+  it('hides the sales figures when the server sent none (Support)', async () => {
+    await signInAs('Support');
+    mockApi(makeDashboard({ kpis: null }));
+
+    await render();
+
+    expect(await screen.findByText('Orders by status')).toBeOnTheScreen();
+    expect(screen.queryByText('Sales')).toBeNull();
+    expect(screen.queryByText(/Revenue/)).toBeNull();
+  });
+
+  it('opens the orders list filtered by the tapped status', async () => {
+    await signInAs('Admin');
+    mockApi();
+    await render();
+
+    await fireEvent.press(await screen.findByText('Paid: 4'));
+
+    expect(await screen.findByText('Orders list screen')).toBeOnTheScreen();
+    expect(screen).toHavePathname('/admin/orders');
+    expect(screen).toHaveSearchParams({ status: 'Paid' });
+  });
+
+  it('links a low-stock row to inventory', async () => {
+    await signInAs('Admin');
+    mockApi();
+    await render();
+
+    await fireEvent.press(await screen.findByText('Blue Shirt (BS-M) · 2 left'));
+
+    expect(await screen.findByText('Inventory screen')).toBeOnTheScreen();
+    expect(screen).toHavePathname('/admin/inventory');
+  });
+
+  it('raises dead letters and a lagging projector as alerts and links pending returns', async () => {
+    await signInAs('Admin');
+    mockApi(
+      makeDashboard({
+        needsAttention: {
+          pendingReturns: 2,
+          deadLetters: [{ consumer: 'notifications.order-email', count: 3 }],
+          laggingProjectors: [{ name: 'admin.dashboard', lagSeconds: 125 }],
+        },
+      }),
+    );
+
+    await render();
+
+    expect(await screen.findByText('notifications.order-email: 3 failed events need attention')).toBeOnTheScreen();
+    expect(screen.getByText('admin.dashboard is 125 seconds behind')).toBeOnTheScreen();
+    expect(screen.getAllByRole('alert')).toHaveLength(2);
+    expect(screen.queryByText('Nothing needs attention.')).toBeNull();
+    await fireEvent.press(screen.getByText('2 return requests waiting for a decision'));
+    expect(await screen.findByText('Returns screen')).toBeOnTheScreen();
+  });
+
+  it('says nothing needs attention when there is nothing', async () => {
+    await signInAs('Admin');
+    mockApi();
+
+    await render();
+
+    expect(await screen.findByText('Nothing needs attention.')).toBeOnTheScreen();
+  });
+
+  it('asks the server again when the period changes and when Refresh is pressed', async () => {
+    await signInAs('Admin');
+    const spy = mockApi();
+    await render();
+    await screen.findByText('Revenue: $1,234.50');
+
+    await fireEvent.press(screen.getByRole('button', { name: '30 days' }));
+    await waitFor(() => expect(calledUrls(spy).some((u) => u.includes('period=30d'))).toBe(true));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Refresh' })).toBeEnabled());
+    await fireEvent.press(screen.getByRole('button', { name: 'Refresh' }));
+
+    const dashboardCalls = calledUrls(spy).filter((u) => u.includes('/admin/dashboard?'));
+    expect(dashboardCalls[0]).toContain('period=today');
+    expect(dashboardCalls.some((u) => u.includes('period=30d'))).toBe(true);
+    await waitFor(() => expect(calledUrls(spy).filter((u) => u.includes('/admin/dashboard?')).length).toBeGreaterThanOrEqual(3));
+    expect(screen.getByRole('button', { name: '30 days' })).toBeSelected();
+  });
+
+  it('shows the error with a retry that loads the dashboard', async () => {
+    await signInAs('Admin');
+    let fail = true;
+    jest.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const { pathname } = new URL(String(input));
+      if (pathname === '/api/v1/admin/dashboard/recent-orders') return jsonResponse(200, makeRecentOrdersPage([]));
+      return fail ? problemResponse(500, { title: 'Server error' }) : jsonResponse(200, makeDashboard());
+    });
+    await render();
+
+    const retry = (await screen.findAllByRole('button', { name: 'Try again' }))[0];
+    fail = false;
+    await fireEvent.press(retry);
+
+    expect(await screen.findByText('Revenue: $1,234.50')).toBeOnTheScreen();
+  });
+
+  it('lists recent orders and pages through them', async () => {
+    await signInAs('Admin');
+    const spy = mockApi(makeDashboard(), makeRecentOrdersPage([makeRecentOrder({ status: 'PendingPayment' })], { totalCount: 25 }));
+    await render();
+
+    expect(await screen.findByText('ORD-2026-000001 · a@example.test · Nov 8, 2026 · $45.00 · PendingPayment')).toBeOnTheScreen();
+    expect(screen.getByText('Page 1 of 3')).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: 'Next orders' }));
+
+    await screen.findByText('Page 2 of 3');
+    expect(calledUrls(spy).some((u) => u.endsWith('/recent-orders?page=2&pageSize=10'))).toBe(true);
+  });
+
+  it('offers the quick actions', async () => {
+    await signInAs('Admin');
+    mockApi();
+
+    await render();
+
+    for (const label of ['Add product', 'Inventory', 'Orders', 'Returns']) {
+      expect(await screen.findByRole('link', { name: label })).toBeOnTheScreen();
+    }
+  });
+});

@@ -1,3 +1,4 @@
+using Ecommerce.Orders.Contracts;
 using Ecommerce.Orders.Domain;
 
 namespace Ecommerce.Orders.Application;
@@ -26,6 +27,10 @@ internal interface IOrderReadStore
 
     /// <summary>Any user's order by id; the caller decides ownership.</summary>
     Task<OrderDetailRow?> GetAsync(Guid orderId, CancellationToken ct);
+
+    Task<RecentOrderPage> ListRecentAsync(int page, int pageSize, CancellationToken ct);
+
+    Task<int> CountPendingReturnsAsync(CancellationToken ct);
 }
 
 internal sealed record ReturnItemRow(Guid VariantId, string Name, int Quantity);
@@ -58,4 +63,12 @@ internal interface IReturnStore
     Task<IReadOnlyList<ReturnRow>> ListForOrderAsync(Guid orderId, CancellationToken ct);
 
     Task<ReturnRow?> GetRowAsync(Guid id, CancellationToken ct);
+}
+
+internal interface IFulfillmentSagaStore
+{
+    /// <summary>The order's saga, tracked, or null. At most one exists (unique order id).</summary>
+    Task<FulfillmentSaga?> GetByOrderAsync(Guid orderId, CancellationToken ct);
+
+    void Add(FulfillmentSaga saga);
 }

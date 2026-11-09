@@ -42,13 +42,13 @@ Section numbers (`arch §8.2`) are cited everywhere. **Never renumber**; a new s
 | 7 | [07-data-model.md](architecture/07-data-model.md) | 10 | §7.1 tables · §7.2 indexes · §7.3 state machines · §7.4 configured values (stock threshold, shipping, tax, carriers, totals) |
 | 8 | [08-workflows.md](architecture/08-workflows.md) | 9 | §8.1 browse, cart · **§8.2 checkout, retry payment** · §8.3 race · §8.4 outbox |
 | 8.5 | [08.5-refund-fulfillment-admin.md](architecture/08.5-refund-fulfillment-admin.md) | 4 | §8.5 cancellation and refund · §8.6 fulfillment · §8.7 admin catalog and inventory |
-| 8.8 | [08.8-eventual-consistency.md](architecture/08.8-eventual-consistency.md) | 2 | §8.8 eventual consistency (Slice 6b) |
+| 8.8 | [08.8-eventual-consistency.md](architecture/08.8-eventual-consistency.md) | 3.5 | §8.8 eventual consistency (Slice 6b) |
 | 9 | [09-api.md](architecture/09-api.md) | 8 | Endpoints · catalog, auth, cart, checkout, orders, refund contracts |
 | 10 | [10-cross-cutting.md](architecture/10-cross-cutting.md) | 4 | §10.1 security · §10.2 caching · §10.3 observability · §10.4 scaling · §10.5 deploy |
 | 11 | [11-testing.md](architecture/11-testing.md) | 10 | §11.1 pyramid · §11.2 required tests · §11.3 frontend · §11.4 CI |
 | 12 | [12-process-slice-plan.md](architecture/12-process-slice-plan.md) | 6 | §12.1 ownership · §12.2 process · **§12.3 slice plan** |
 | 13 | [13-tradeoffs.md](architecture/13-tradeoffs.md) | 6 | §13.0 constraints · §13.1 stack tradeoffs |
-| 13.2 | [13.2-decision-log.md](architecture/13.2-decision-log.md) | 21 | Decision log — **append-only, search don't read** |
+| 13.2 | [13.2-decision-log.md](architecture/13.2-decision-log.md) | 39 | Decision log — **append-only, search don't read** |
 | 14 | [14-release-gate.md](architecture/14-release-gate.md) | 1 | Production readiness |
 | 15 | [15-next-steps.md](architecture/15-next-steps.md) | 0.4 | Next steps |
 

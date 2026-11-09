@@ -21,6 +21,7 @@ internal sealed class OrderFulfillmentService(
     IAuditLog audit,
     IOutbox outbox,
     IRefundState refunds,
+    IFulfillmentSagaStore sagas,
     IClock clock,
     ShippingCarriers carriers)
 {
@@ -68,6 +69,11 @@ internal sealed class OrderFulfillmentService(
         if (order is null)
         {
             return new FulfillmentResult(FulfillmentOutcome.NotFound);
+        }
+        if (action == "order.ship" && await sagas.GetByOrderAsync(orderId, ct) is not null)
+        {
+            // Marked unfulfillable: its refund is owed, so nothing may leave the building (Slice 6b D18).
+            return new FulfillmentResult(FulfillmentOutcome.Conflict, null, "order-unfulfillable: this order cannot be shipped; it is being refunded.");
         }
         if (refundGuard && await refunds.HasPendingFullRefundAsync(orderId, ct))
         {

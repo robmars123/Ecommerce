@@ -30,6 +30,7 @@ public sealed class ApiFactory(
         builder.UseSetting("Stripe:WebhookSecret", WebhookSecret);
         // The outbox worker is off in tests: they drive OutboxProcessor themselves so every run is deterministic.
         builder.UseSetting("Outbox:Worker:Enabled", "false");
+        builder.UseSetting("Projections:Worker:Enabled", "false");
         foreach ((string? key, string? value) in settings ?? new Dictionary<string, string>())
         {
             builder.UseSetting(key, value);

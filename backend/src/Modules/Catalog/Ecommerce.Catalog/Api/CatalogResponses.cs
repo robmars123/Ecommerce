@@ -49,7 +49,8 @@ internal sealed record ProductDetailResponse(
     string Description,
     CategoryRefResponse Category,
     IReadOnlyList<ImageResponse> Images,
-    IReadOnlyList<VariantResponse> Variants);
+    IReadOnlyList<VariantResponse> Variants,
+    IReadOnlyList<ProductListItemResponse> Related);
 
 internal sealed record CategoryResponse(string Slug, string Name, string? ParentSlug);
 
@@ -58,14 +59,15 @@ internal sealed record CategoryListResponse(IReadOnlyList<CategoryResponse> Item
 internal static class CatalogResponseMapping
 {
     public static ProductListResponse ToResponse(this ProductListPage page) =>
+        new(page.Items.Select(ToItem).ToList(), page.Page, page.PageSize, page.TotalCount, page.TotalPages);
+
+    private static ProductListItemResponse ToItem(ProductListItem i) =>
         new(
-            page.Items.Select(i => new ProductListItemResponse(
-                i.Id, i.Slug, i.Name, i.Category.ToResponse(),
-                MoneyResponse.From(i.Price, i.Currency),
-                i.CompareAtPrice is { } c ? MoneyResponse.From(c, i.Currency) : null,
-                i.PrimaryImage?.ToResponse(),
-                i.StockStatus)).ToList(),
-            page.Page, page.PageSize, page.TotalCount, page.TotalPages);
+            i.Id, i.Slug, i.Name, i.Category.ToResponse(),
+            MoneyResponse.From(i.Price, i.Currency),
+            i.CompareAtPrice is { } c ? MoneyResponse.From(c, i.Currency) : null,
+            i.PrimaryImage?.ToResponse(),
+            i.StockStatus);
 
     public static ProductDetailResponse ToResponse(this ProductDetail d) =>
         new(
@@ -75,7 +77,9 @@ internal static class CatalogResponseMapping
                 v.Id, v.Sku, v.Name, v.Size, v.Colour,
                 MoneyResponse.From(v.Price, v.Currency),
                 v.CompareAtPrice is { } c ? MoneyResponse.From(c, v.Currency) : null,
-                v.StockStatus)).ToList());
+                v.StockStatus)).ToList(),
+            d.Related.Select(ToItem).ToList());
+
 
     public static CategoryListResponse ToResponse(this IReadOnlyList<CategoryRow> rows) =>
         new(rows.Select(r => new CategoryResponse(r.Slug, r.Name, r.ParentSlug)).ToList());

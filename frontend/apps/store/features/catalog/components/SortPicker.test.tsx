@@ -33,3 +33,20 @@ describe('SortPicker', () => {
     expect(style).toMatchObject({ flexGrow: 0, flexShrink: 0 });
   });
 });
+
+describe('SortPicker best selling', () => {
+  it('offers best selling without a search and reports it', async () => {
+    const onSelect = jest.fn();
+    await render(<SortPicker hasSearch={false} onSelect={onSelect} />);
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Best selling' }));
+
+    expect(onSelect).toHaveBeenCalledWith('bestselling');
+  });
+
+  it('marks it as the active sort', async () => {
+    await render(<SortPicker sort="bestselling" hasSearch onSelect={jest.fn()} />);
+
+    expect(screen.getByRole('button', { name: 'Best selling' })).toBeSelected();
+  });
+});

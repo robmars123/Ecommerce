@@ -17,6 +17,9 @@ internal interface IUserRepository
     /// <summary>No tracking, no lock.</summary>
     Task<User?> FindByIdAsync(Guid id, CancellationToken ct);
 
+    /// <summary>No tracking, no lock. Unknown ids are absent.</summary>
+    Task<IReadOnlyList<User>> FindByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken ct);
+
     /// <summary>No tracking, no lock.</summary>
     Task<User?> FindByEmailAsync(string email, CancellationToken ct);
 }

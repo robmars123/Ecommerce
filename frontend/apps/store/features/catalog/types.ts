@@ -4,7 +4,7 @@ export type Money = { amount: string; currency: string };
 
 export type StockStatus = 'Unknown' | 'InStock' | 'Low' | 'Out';
 
-export type ProductSort = 'relevance' | 'price-asc' | 'price-desc' | 'newest';
+export type ProductSort = 'relevance' | 'price-asc' | 'price-desc' | 'newest' | 'bestselling';
 
 export type CategoryRef = { slug: string; name: string };
 
@@ -48,6 +48,8 @@ export type ProductDetail = {
   category: CategoryRef;
   images: ProductImage[];
   variants: ProductVariant[];
+  /** Up to four other products of the same category, best sellers first (Slice 6b). */
+  related: ProductListItem[];
 };
 
 export type Category = { slug: string; name: string; parentSlug: string | null };

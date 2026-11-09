@@ -6,6 +6,7 @@ using Ecommerce.Catalog.Infrastructure;
 using Ecommerce.Catalog.Infrastructure.DevSeed;
 using Ecommerce.Catalog.Infrastructure.Persistence;
 using Ecommerce.Persistence;
+using Ecommerce.SharedKernel.Projections;
 using FluentValidation;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -29,6 +30,9 @@ public static class CatalogModule
         services.AddScoped<ICatalogReadStore, CatalogReadStore>();
         services.AddScoped<IProductReader, ProductReader>();
         services.AddScoped<CatalogBrowseService>();
+        services.AddScoped<CatalogSalesProjector>();
+        services.AddScoped<IProjector>(sp => sp.GetRequiredService<CatalogSalesProjector>());
+        services.AddScoped<IProductSalesReader>(sp => sp.GetRequiredService<CatalogSalesProjector>());
         services.AddScoped<CatalogDevSeeder>();
 
         // Admin catalog (Slice 1b).

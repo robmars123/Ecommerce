@@ -21,4 +21,8 @@ internal sealed class OrderReader(IOrderReadStore store, ShippingCarriers carrie
                 ? null
                 : new OrderNotificationShipment(carriers.NameOf(latest.Carrier), latest.TrackingNumber, carriers.BuildTrackingUrl(latest.Carrier, latest.TrackingNumber)));
     }
+
+    public Task<RecentOrderPage> ListRecentAsync(int page, int pageSize, CancellationToken ct) => store.ListRecentAsync(page, pageSize, ct);
+
+    public Task<int> CountPendingReturnsAsync(CancellationToken ct) => store.CountPendingReturnsAsync(ct);
 }

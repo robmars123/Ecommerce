@@ -50,7 +50,7 @@ Enforced in the API per endpoint **and** per resource (architecture §3.4 rule 1
 
 Each feature splits into deliverables that each touch **one** backend module (`backend/src/Modules/<M>`) or **one** frontend feature folder (`frontend/apps/store/features/<f>`). A deliverable ships with its own tests (arch §11) and adds no scope beyond its feature line. Backend before the screen that uses it. Slice = the arch §12.3 row whose numbered tests it carries.
 
-Status as of 2026-11-07: **Done** (Rob PASS) · **Review open** (code done, Slice 4 waiver pending) · **In progress** (Slice 6, Marco) · **Not started** · **Unverified** (exists in part; scope not confirmed).
+Status as of 2026-11-08: **Done** (Rob PASS) · **In progress** · **Not started** · **Unverified** (exists in part; scope not confirmed).
 
 | ID | Deliverable | Module / folder | Slice | Status |
 |---|---|---|---|---|
@@ -75,20 +75,20 @@ Status as of 2026-11-07: **Done** (Rob PASS) · **Review open** (code done, Slic
 | 4.5 | Checkout screen: address, shipping, total, Stripe payment | `checkout` | 4 | Done |
 | **5** | **Payments** | | | |
 | 5.1 | Signed webhook confirms payment; dedupe by event ID | Payments | 4 | Done |
-| 5.2 | Retry payment on the same order | Orders | 4 | Review open |
-| 5.3 | Admin refund API: ceiling, idempotency, audit | Payments | 6 | In progress |
-| 5.4 | Stripe refund consumer and refund webhook | Payments | 6 | In progress |
-| 5.5 | Admin refund form | `admin-orders` | 6 | In progress |
+| 5.2 | Retry payment on the same order | Orders | 4 | Done |
+| 5.3 | Admin refund API: ceiling, idempotency, audit | Payments | 6 | Done |
+| 5.4 | Stripe refund consumer and refund webhook | Payments | 6 | Done |
+| 5.5 | Admin refund form | `admin-orders` | 6 | Done |
 | **6** | **Orders** | | | |
 | 6.1 | Order history and detail API (owner only) | Orders | 5 | Done |
 | 6.2 | Status timeline and tracking number in detail | Orders | 5 | Done |
 | 6.3 | Order history and detail screens | `orders` | 5 | Done |
-| 6.4 | Refund rows in order detail (API + screen) | Orders, `orders` | 6 | In progress |
+| 6.4 | Refund rows in order detail (API + screen) | Orders, `orders` | 6 | Done |
 | **7** | **Returns** | | | |
-| 7.1 | Return request API (customer) | Orders | 6 | In progress |
-| 7.2 | Admin returns API: list, approve, decline (audited) | Orders | 6 | In progress |
-| 7.3 | Return request form | `orders` | 6 | In progress |
-| 7.4 | Admin returns screen | `admin-orders` | 6 | In progress |
+| 7.1 | Return request API (customer) | Orders | 6 | Done |
+| 7.2 | Admin returns API: list, approve, decline (audited) | Orders | 6 | Done |
+| 7.3 | Return request form | `orders` | 6 | Done |
+| 7.4 | Admin returns screen | `admin-orders` | 6 | Done |
 | — | Refund of a return: uses 5.3–5.5 | | | |
 | **8** | **Admin dashboard** | | | |
 | 8.1 | Projector runtime: consumer checkpoints, gap handling, replay | Persistence | 6b | Not started |
@@ -112,24 +112,24 @@ Status as of 2026-11-07: **Done** (Rob PASS) · **Review open** (code done, Slic
 | **11** | **Admin orders** | | | |
 | 11.1 | Process, ship with tracking, deliver, audited override APIs | Orders | 5 | Done |
 | 11.2 | Admin order list API with filter | Orders | — | Not started |
-| 11.3 | Admin order detail API | Orders | 6 | In progress |
+| 11.3 | Admin order detail API | Orders | 6 | Done |
 | 11.4 | Admin order list screen with filter | `admin-orders` | — | Not started |
 | 11.5 | Order action buttons on the admin detail screen | `admin-orders` | — | Not started |
 | **12** | **Admin customers** | | | |
 | 12.1 | Customer list and detail API (read-only) | Identity | — | Not started |
 | 12.2 | Customer list and detail screens | `admin-customers` | — | Not started |
 | **13** | **Notifications** | | | |
-| 13.1 | Outbox runtime: retry, backoff, dead letter, alert | Persistence | 6 | In progress |
-| 13.2 | Order events: paid, shipped, status changed | Orders | 6 | In progress |
-| 13.3 | Email sender with placeholder senders | Notifications | 6 | In progress |
-| 13.4 | Confirmation and shipped emails | Notifications | 6 | In progress |
-| 13.5 | SignalR hub and live-status consumer | Notifications | 6 | In progress |
-| 13.6 | Live status on the order screens | `orders` | 6 | In progress |
+| 13.1 | Outbox runtime: retry, backoff, dead letter, alert | Persistence | 6 | Done |
+| 13.2 | Order events: paid, shipped, status changed | Orders | 6 | Done |
+| 13.3 | Email sender with placeholder senders | Notifications | 6 | Done |
+| 13.4 | Confirmation and shipped emails | Notifications | 6 | Done |
+| 13.5 | SignalR hub and live-status consumer | Notifications | 6 | Done |
+| 13.6 | Live status on the order screens | `orders` | 6 | Done |
 | 13.7 | Real email provider | — | — | Waiting on Nathaniel (arch §2) |
 | **14** | **Auth** | | | |
 | 14.1 | Register, login, logout, refresh rotation API | Identity | 1b | Done |
 | 14.2 | Password reset token and confirm API | Identity | 1b | Done |
-| 14.3 | Password-reset email through the outbox | Identity | 6 | In progress |
+| 14.3 | Password-reset email through the outbox | Identity | 6 | Done |
 | 14.4 | Auth screens | `auth` | 1b | Done |
 
 Rows with Slice "—" have no arch §12.3 row yet; Nathaniel assigns one before work starts.

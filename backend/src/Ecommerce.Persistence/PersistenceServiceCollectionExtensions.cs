@@ -3,9 +3,11 @@ using Ecommerce.Persistence.Audit;
 using Ecommerce.SharedKernel.Audit;
 using Ecommerce.SharedKernel.Outbox;
 using Ecommerce.SharedKernel.Persistence;
+using Ecommerce.SharedKernel.Projections;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 
@@ -28,6 +30,20 @@ public static class PersistenceServiceCollectionExtensions
         services.AddScoped<IIdempotencyStore, Idempotency.EfIdempotencyStore>();
         services.AddScoped<IOutbox, Outbox.EfOutbox>();
         services.AddScoped<Outbox.OutboxProcessor>();
+        services.AddOptions<Projections.ProjectionsOptions>()
+            .Configure<IConfiguration>((o, c) =>
+            {
+                o.SafetyWindowSeconds = int.TryParse(c["Projections:SafetyWindowSeconds"], out int window) ? window : o.SafetyWindowSeconds;
+                o.LagTargetSeconds = int.TryParse(c["Projections:LagTargetSeconds"], out int target) ? target : o.LagTargetSeconds;
+                o.PollIntervalMs = int.TryParse(c["Projections:PollIntervalMs"], out int poll) ? poll : o.PollIntervalMs;
+            })
+            .ValidateOnStart();
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IValidateOptions<Projections.ProjectionsOptions>, Projections.ProjectionsOptionsValidator>());
+        services.AddScoped<Projections.ProjectionProcessor>();
+        services.AddScoped<IProjectionReplayer, Projections.ProjectionReplayer>();
+        services.AddScoped<IConsumerHealthReader, Projections.ConsumerHealthReader>();
+        services.AddScoped<Projections.ProjectionLagMonitor>();
+        services.AddHostedService<Projections.ProjectionWorker>();
         services.AddHostedService<Outbox.OutboxWorker>();
 
         return services;

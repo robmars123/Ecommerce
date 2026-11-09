@@ -31,7 +31,7 @@ internal sealed class RetryPaymentService(
     {
         private Started() { }
 
-        public sealed record Attempt(Guid PaymentId) : Started;
+        public sealed record Attempt(Guid PaymentId, bool Replay = false) : Started;
 
         public sealed record Conflict : Started;
     }
@@ -61,12 +61,21 @@ internal sealed class RetryPaymentService(
         catch (UniqueConstraintViolationException ex) when (ex.ConstraintName == CheckoutService.KeyConstraint)
         {
             IdempotencyEntry? seen = await keys.FindAsync(Scope, idempotencyKey, ct);
-            started = Matches(seen, userId, hash, out Guid existing) ? new Started.Attempt(existing) : new Started.Conflict();
+            started = Matches(seen, userId, hash, out Guid existing) ? new Started.Attempt(existing, true) : new Started.Conflict();
         }
 
         if (started is not Started.Attempt attempt)
         {
             return new RetryResult.KeyConflict();
+        }
+        if (attempt.Replay)
+        {
+            // A replay re-checks the guards before it can create an intent. No order lock; the first call checked under it.
+            RetryResult? rejected = await unitOfWork.InTransactionAsync(token => ReplayGuardAsync(orderId, token), ct);
+            if (rejected is not null)
+            {
+                return rejected;
+            }
         }
         try
         {
@@ -79,13 +88,24 @@ internal sealed class RetryPaymentService(
         }
     }
 
+    private async Task<RetryResult?> ReplayGuardAsync(Guid orderId, CancellationToken ct)
+    {
+        Order? order = await orders.GetForUpdateAsync(orderId, ct);
+        if (order is null || order.Status != OrderStatus.PendingPayment)
+        {
+            return new RetryResult.NotPending();
+        }
+        DateTimeOffset? expiresAt = await reserver.GetActiveExpiryAsync(orderId, ct);
+        return expiresAt is null || expiresAt <= clock.UtcNow ? new RetryResult.ReservationExpired() : null;
+    }
+
     private async Task<Started> StartAsync(Guid userId, Guid orderId, string key, string hash, CancellationToken ct)
     {
         DateTimeOffset now = clock.UtcNow;
         IdempotencyEntry? seen = await keys.FindAsync(Scope, key, ct);
         if (seen is not null)
         {
-            return Matches(seen, userId, hash, out Guid existing) ? new Started.Attempt(existing) : new Started.Conflict();
+            return Matches(seen, userId, hash, out Guid existing) ? new Started.Attempt(existing, true) : new Started.Conflict();
         }
 
         Guid paymentId = Guid.CreateVersion7(now);
