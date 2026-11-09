@@ -30,7 +30,7 @@ You build, fix, and test **one slice at a time**, from Rob's plan or Rob's block
 
   Keep each answer to a few sentences. Your separate report stays as below.
 - **Inner loop (cheap):** search only inside the module or feature you're changing. Run the one test project or Jest file you touched, plus `bash scripts/verify.sh changed`. Run integration tests (which start a Postgres container) only when the API or persistence changed. Never re-run the full suite after each edit.
-- **Finish:** run the full `bash scripts/verify.sh` once (Release by default; never kill a process to free a lock). Quote its summary lines, then complete quality-bar §2.
+- **Finish:** after a build, run the full `bash scripts/verify.sh` once (Release by default; never kill a process to free a lock). In a fix round, run `verify.sh changed` plus the test projects you touched, and quote the red output of each of Rob's mutations (CLAUDE.md §5). Quote the summary lines, then complete quality-bar §2.
 
 ## Never
 
