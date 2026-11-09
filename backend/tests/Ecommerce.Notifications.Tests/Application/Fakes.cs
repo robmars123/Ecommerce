@@ -9,6 +9,8 @@ namespace Ecommerce.Notifications.Tests.Application;
 internal sealed class FakeUsers : IUserReader
 {
     public Task<IReadOnlyDictionary<Guid, UserContact>> GetContactsAsync(IReadOnlyCollection<Guid> userIds, CancellationToken ct) => throw new NotSupportedException();
+    public Task<Guid?> FindIdByEmailAsync(string email, CancellationToken ct) => throw new NotSupportedException();
+
 
     public Dictionary<Guid, UserContact> Contacts { get; } = [];
 

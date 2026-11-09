@@ -53,6 +53,11 @@ internal sealed record OrderListItem(
 
 internal sealed record OrderListPage(IReadOnlyList<OrderListItem> Items, int Page, int PageSize, int TotalCount, int TotalPages);
 
+internal sealed record AdminOrderListItem(
+    Guid Id, string OrderNumber, string? CustomerEmail, DateTimeOffset CreatedAt, string Status, decimal GrandTotal, string Currency);
+
+internal sealed record AdminOrderListPage(IReadOnlyList<AdminOrderListItem> Items, int Page, int PageSize, int TotalCount, int TotalPages);
+
 internal sealed record ShipmentView(string CarrierName, string TrackingNumber, string? TrackingUrl, DateTimeOffset ShippedAt, DateTimeOffset? DeliveredAt);
 
 /// <summary>PaymentStatus is the latest attempt (arch 9 orders contract), or null before any attempt.</summary>

@@ -30,8 +30,14 @@ internal interface IOrderReadStore
 
     Task<RecentOrderPage> ListRecentAsync(int page, int pageSize, CancellationToken ct);
 
+    /// <summary>Any user's orders, newest first (created_at, then id), every non-null filter ANDed.</summary>
+    Task<RecentOrderPage> ListForAdminAsync(AdminOrderFilter filter, int page, int pageSize, CancellationToken ct);
+
     Task<int> CountPendingReturnsAsync(CancellationToken ct);
 }
+
+/// <summary>From and To are inclusive UTC days.</summary>
+internal sealed record AdminOrderFilter(OrderStatus? Status, DateOnly? From, DateOnly? To, Guid? UserId, string? OrderNumber);
 
 internal sealed record ReturnItemRow(Guid VariantId, string Name, int Quantity);
 

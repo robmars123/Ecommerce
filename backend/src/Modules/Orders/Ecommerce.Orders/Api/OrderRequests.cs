@@ -85,3 +85,33 @@ internal sealed class UnfulfillableRequestValidator : AbstractValidator<Unfulfil
             .Must(r => r is not null && r.Trim().Length is >= 1 and <= Order.MaxReasonLength)
             .WithMessage($"Enter a reason of 1 to {Order.MaxReasonLength} characters.");
 }
+
+/// <summary>Query of GET /admin/orders (arch 13.2 "Admin order list and actions"). Every member is optional.</summary>
+internal sealed record AdminOrderListQuery(
+    int? Page, int? PageSize, string? Status, DateOnly? From, DateOnly? To, string? Customer, string? OrderNumber);
+
+internal sealed class AdminOrderListQueryValidator : AbstractValidator<AdminOrderListQuery>
+{
+    public const int DefaultPageSize = 20;
+    public const int MaxPageSize = 100;
+    public const int MaxCustomerLength = 254;
+    public const int MaxOrderNumberLength = 32;
+
+    public AdminOrderListQueryValidator()
+    {
+        RuleFor(q => q.Page).Must(p => p is null or >= 1).WithMessage("Page must be 1 or more.");
+        RuleFor(q => q.PageSize).Must(s => s is null or (>= 1 and <= MaxPageSize)).WithMessage($"Page size must be 1 to {MaxPageSize}.");
+        RuleFor(q => q.Status)
+            .Must(s => s is null || StatusOverrideRequestValidator.TryParseStatus(s, out _))
+            .WithMessage("Choose a valid order status.");
+        RuleFor(q => q.Customer)
+            .Must(c => c is null || c.Trim().Length is >= 1 and <= MaxCustomerLength)
+            .WithMessage($"Customer email must be 1 to {MaxCustomerLength} characters.");
+        RuleFor(q => q.OrderNumber)
+            .Must(n => n is null || n.Trim().Length is >= 1 and <= MaxOrderNumberLength)
+            .WithMessage($"Order number must be 1 to {MaxOrderNumberLength} characters.");
+        RuleFor(q => q.From)
+            .Must((q, from) => from is null || q.To is null || from <= q.To)
+            .WithMessage("From must be on or before To.");
+    }
+}

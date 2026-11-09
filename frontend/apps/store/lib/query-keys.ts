@@ -1,3 +1,4 @@
+import type { AdminOrderFilters } from '@/features/admin-orders/types';
 import type { AdminProductListParams } from '@/features/admin-catalog/types';
 import type { ProductListParams } from '@/features/catalog/types';
 
@@ -22,6 +23,16 @@ function normalizeAdmin(p: AdminProductListParams) {
   };
 }
 
+function normalizeAdminOrders(f: AdminOrderFilters) {
+  return {
+    ...(f.status !== 'all' ? { status: f.status } : {}),
+    ...(f.from.trim() ? { from: f.from.trim() } : {}),
+    ...(f.to.trim() ? { to: f.to.trim() } : {}),
+    ...(f.customer.trim() ? { customer: f.customer.trim() } : {}),
+    ...(f.orderNumber.trim() ? { orderNumber: f.orderNumber.trim() } : {}),
+  };
+}
+
 export const queryKeys = {
   products: {
     all: ['products'] as const,
@@ -39,6 +50,8 @@ export const queryKeys = {
       preview: (id: string) => ['admin', 'products', 'preview', id] as const,
     },
     orders: {
+      all: ['admin', 'orders'] as const,
+      list: (f: AdminOrderFilters, page: number) => ['admin', 'orders', 'list', normalizeAdminOrders(f), page] as const,
       detail: (id: string) => ['admin', 'orders', 'detail', id] as const,
     },
     dashboard: (period: string) => ['admin', 'dashboard', period] as const,

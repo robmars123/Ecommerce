@@ -208,17 +208,18 @@ public sealed class ProjectionProcessor(
         DateTimeOffset now = clock.UtcNow;
         DateTimeOffset cutoff = now - TimeSpan.FromSeconds(options.Value.SafetyWindowSeconds);
         long checkpoint = await CheckpointAsync(name, ct);
-        long blocker = (await db.Database.SqlQuery<long>($"""
-            SELECT COALESCE(min(e.sequence), 0) AS "Value"
-            FROM outbox_events e
-            LEFT JOIN processed_events p ON p.consumer = {name} AND p.event_id = e.event_id
-            WHERE e.sequence > {checkpoint}
-              AND (e.occurred_at > {cutoff}
-                   OR (e.event_type = ANY({types}) AND (p.event_id IS NULL OR p.status = 'Retrying')))
-            """).ToListAsync(ct)).Single();
+        // One statement, one snapshot: a commit cannot land between finding the blocker and choosing the target.
         long target = (await db.Database.SqlQuery<long>($"""
-            SELECT COALESCE(max(sequence), 0) AS "Value" FROM outbox_events
-            WHERE sequence > {checkpoint} AND ({blocker} = 0 OR sequence < {blocker})
+            WITH blocker AS (
+                SELECT COALESCE(min(e.sequence), 0) AS seq
+                FROM outbox_events e
+                LEFT JOIN processed_events p ON p.consumer = {name} AND p.event_id = e.event_id
+                WHERE e.sequence > {checkpoint}
+                  AND (e.occurred_at > {cutoff}
+                       OR (e.event_type = ANY({types}) AND (p.event_id IS NULL OR p.status = 'Retrying')))
+            )
+            SELECT COALESCE(max(o.sequence), 0) AS "Value" FROM outbox_events o, blocker b
+            WHERE o.sequence > {checkpoint} AND (b.seq = 0 OR o.sequence < b.seq)
             """).ToListAsync(ct)).Single();
         if (target <= checkpoint)
         {

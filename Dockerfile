@@ -17,6 +17,8 @@ COPY backend/src/Modules/Orders/Ecommerce.Orders.Contracts/Ecommerce.Orders.Cont
 COPY backend/src/Modules/Orders/Ecommerce.Orders/Ecommerce.Orders.csproj backend/src/Modules/Orders/Ecommerce.Orders/
 COPY backend/src/Modules/Payments/Ecommerce.Payments.Contracts/Ecommerce.Payments.Contracts.csproj backend/src/Modules/Payments/Ecommerce.Payments.Contracts/
 COPY backend/src/Modules/Payments/Ecommerce.Payments/Ecommerce.Payments.csproj backend/src/Modules/Payments/Ecommerce.Payments/
+COPY backend/src/Modules/Admin/Ecommerce.Admin.Contracts/Ecommerce.Admin.Contracts.csproj backend/src/Modules/Admin/Ecommerce.Admin.Contracts/
+COPY backend/src/Modules/Admin/Ecommerce.Admin/Ecommerce.Admin.csproj backend/src/Modules/Admin/Ecommerce.Admin/
 COPY backend/src/Ecommerce.Api/Ecommerce.Api.csproj backend/src/Ecommerce.Api/
 RUN dotnet restore backend/src/Ecommerce.Api/Ecommerce.Api.csproj
 COPY backend/src/ backend/src/

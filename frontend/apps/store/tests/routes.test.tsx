@@ -7,7 +7,7 @@ import { resetSession } from '@/features/auth/session';
 import type { UserRole } from '@/features/auth/types';
 import { makeDashboard, makeRecentOrdersPage } from '@/tests/admin-dashboard-fixtures';
 import { makeAdminPage, makeAdminProduct } from '@/tests/admin-fixtures';
-import { makeAdminOrderDetail, makeReturnPage } from '@/tests/admin-order-fixtures';
+import { makeAdminListPage, makeAdminOrderDetail, makeReturnPage } from '@/tests/admin-order-fixtures';
 import { jsonResponse } from '@/tests/fetch-mock';
 import { categories, makeDetail, makePage } from '@/tests/fixtures';
 import { makeOrderDetail, makeOrderPage } from '@/tests/order-fixtures';
@@ -35,7 +35,7 @@ const ROUTES: ReadonlyArray<readonly [file: string, url: string, title: string, 
   ['admin/products/[id].tsx', '/admin/products/7', 'Admin · Product', true, 'Admin'],
   ['admin/products/new.tsx', '/admin/products/new', 'Admin · New product', true, 'Admin'],
   ['admin/inventory.tsx', '/admin/inventory', 'Admin · Inventory', false, 'Admin'],
-  ['admin/orders/index.tsx', '/admin/orders', 'Admin · Orders', false, 'Admin'],
+  ['admin/orders/index.tsx', '/admin/orders', 'Orders', true, 'Admin'],
   ['admin/orders/[id].tsx', '/admin/orders/9', 'Order', true, 'Admin'],
   ['admin/returns.tsx', '/admin/returns', 'Returns', true, 'Admin'],
   ['admin/customers/index.tsx', '/admin/customers', 'Admin · Customers', false, 'Admin'],
@@ -50,6 +50,7 @@ function mockCatalogApi() {
     if (pathname === '/api/v1/products') return jsonResponse(200, makePage([]));
     if (pathname === '/api/v1/orders') return jsonResponse(200, makeOrderPage([]));
     if (pathname === '/api/v1/orders/42') return jsonResponse(200, makeOrderDetail());
+    if (pathname === '/api/v1/admin/orders') return jsonResponse(200, makeAdminListPage([]));
     if (pathname === '/api/v1/admin/orders/9') return jsonResponse(200, makeAdminOrderDetail());
     if (pathname === '/api/v1/admin/returns') return jsonResponse(200, makeReturnPage([]));
     if (pathname === '/api/v1/admin/dashboard') return jsonResponse(200, makeDashboard());

@@ -91,11 +91,11 @@ Status as of 2026-11-08: **Done** (Rob PASS) · **In progress** · **Not started
 | 7.4 | Admin returns screen | `admin-orders` | 6 | Done |
 | — | Refund of a return: uses 5.3–5.5 | | | |
 | **8** | **Admin dashboard** | | | |
-| 8.1 | Projector runtime: consumer checkpoints, gap handling, replay | Persistence | 6b | Not started |
-| 8.2 | KPIs and orders-by-status projection | per arch §6.1 | 6b | Not started |
-| 8.3 | Recent orders, low stock, needs-attention reads | per arch §6.1 | 6b | Not started |
-| 8.4 | Top products projection | per arch §6.1 | 6b | Not started |
-| 8.5 | Dashboard screen | `admin-dashboard` | 6b | Not started |
+| 8.1 | Projector runtime: consumer checkpoints, gap handling, replay | Persistence | 6b | Done |
+| 8.2 | KPIs and orders-by-status projection | per arch §6.1 | 6b | Done |
+| 8.3 | Recent orders, low stock, needs-attention reads | per arch §6.1 | 6b | Done |
+| 8.4 | Top products projection | per arch §6.1 | 6b | Done |
+| 8.5 | Dashboard screen | `admin-dashboard` | 6b | Done |
 | **9** | **Admin catalog** | | | |
 | 9.1 | Product create and edit API, with variants and image keys | Catalog | 1b | Done |
 | 9.2 | Publish and unpublish API | Catalog | 1b | Done |
@@ -111,10 +111,10 @@ Status as of 2026-11-08: **Done** (Rob PASS) · **In progress** · **Not started
 | 10.4 | Inventory screen: levels, adjust, low stock | `admin-inventory` | — | Not started |
 | **11** | **Admin orders** | | | |
 | 11.1 | Process, ship with tracking, deliver, audited override APIs | Orders | 5 | Done |
-| 11.2 | Admin order list API with filter | Orders | — | Not started |
+| 11.2 | Admin order list API with filter | Orders | 5 | Done |
 | 11.3 | Admin order detail API | Orders | 6 | Done |
-| 11.4 | Admin order list screen with filter | `admin-orders` | — | Not started |
-| 11.5 | Order action buttons on the admin detail screen | `admin-orders` | — | Not started |
+| 11.4 | Admin order list screen with filter | `admin-orders` | 5 | Done |
+| 11.5 | Order action buttons on the admin detail screen | `admin-orders` | 5 | Done |
 | **12** | **Admin customers** | | | |
 | 12.1 | Customer list and detail API (read-only) | Identity | — | Not started |
 | 12.2 | Customer list and detail screens | `admin-customers` | — | Not started |

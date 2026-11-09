@@ -1,10 +1,35 @@
+using Ecommerce.Identity.Contracts;
+using Ecommerce.Orders.Contracts;
 using Ecommerce.Payments.Contracts;
 
 namespace Ecommerce.Orders.Application;
 
 internal sealed class OrderQueryService(
-    IOrderReadStore store, IReturnStore returns, ShippingCarriers carriers, IPaymentAttempts payments, IRefundState refunds)
+    IOrderReadStore store, IReturnStore returns, ShippingCarriers carriers, IPaymentAttempts payments, IRefundState refunds, IUserReader users)
 {
+    /// <summary>The admin list (arch 13.2). A customer email that matches no user is an empty page and no Orders query (rule 8).</summary>
+    public async Task<AdminOrderListPage> ListForAdminAsync(AdminOrderFilter filter, string? customerEmail, int page, int pageSize, CancellationToken ct)
+    {
+        AdminOrderFilter effective = filter;
+        if (customerEmail is not null)
+        {
+            Guid? userId = await users.FindIdByEmailAsync(customerEmail, ct);
+            if (userId is null)
+            {
+                return new AdminOrderListPage([], page, pageSize, 0, 0);
+            }
+            effective = filter with { UserId = userId };
+        }
+
+        RecentOrderPage rows = await store.ListForAdminAsync(effective, page, pageSize, ct);
+        IReadOnlyDictionary<Guid, UserContact> contacts = await users.GetContactsAsync(rows.Items.Select(r => r.UserId).Distinct().ToList(), ct);
+        List<AdminOrderListItem> items = rows.Items
+            .Select(r => new AdminOrderListItem(
+                r.Id, r.OrderNumber, contacts.TryGetValue(r.UserId, out UserContact? c) ? c.Email : null, r.CreatedAt, r.Status, r.GrandTotal, r.Currency))
+            .ToList();
+        return new AdminOrderListPage(items, page, pageSize, rows.TotalCount, (rows.TotalCount + pageSize - 1) / pageSize);
+    }
+
     public async Task<OrderListPage> ListAsync(Guid userId, int page, int pageSize, CancellationToken ct)
     {
         OrderListRows rows = await store.ListAsync(userId, page, pageSize, ct);

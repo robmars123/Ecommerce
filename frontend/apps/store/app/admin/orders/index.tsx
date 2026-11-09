@@ -1,5 +1,8 @@
-import { ScreenStub } from '@/components/ScreenStub';
+import { useLocalSearchParams } from 'expo-router';
+
+import { AdminOrderListView } from '@/features/admin-orders/components/AdminOrderListView';
 
 export default function AdminOrderListScreen() {
-  return <ScreenStub title="Admin · Orders" />;
+  const { status } = useLocalSearchParams<{ status?: string }>();
+  return <AdminOrderListView initialStatus={status} />;
 }

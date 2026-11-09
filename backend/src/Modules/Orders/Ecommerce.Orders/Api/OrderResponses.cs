@@ -16,6 +16,11 @@ internal sealed record OrderListItemResponse(
 
 internal sealed record OrderListResponse(IReadOnlyList<OrderListItemResponse> Items, int Page, int PageSize, int TotalCount, int TotalPages);
 
+internal sealed record AdminOrderListItemResponse(
+    Guid Id, string OrderNumber, string? CustomerEmail, DateTimeOffset CreatedAt, string Status, MoneyResponse GrandTotal);
+
+internal sealed record AdminOrderListResponse(IReadOnlyList<AdminOrderListItemResponse> Items, int Page, int PageSize, int TotalCount, int TotalPages);
+
 internal sealed record OrderItemResponse(
     Guid VariantId, string Sku, string Name, MoneyResponse UnitPrice, int Quantity, MoneyResponse LineTotal);
 
@@ -52,6 +57,12 @@ internal static class OrderResponseMapping
         new OrderListResponse(
             page.Items.Select(i => new OrderListItemResponse(
                 i.Id, i.OrderNumber, i.CreatedAt, i.Status.ToString(), MoneyResponse.From(i.GrandTotal, i.Currency), i.TrackingUrl)).ToList(),
+            page.Page, page.PageSize, page.TotalCount, page.TotalPages);
+
+    public static AdminOrderListResponse ToResponse(this AdminOrderListPage page) =>
+        new AdminOrderListResponse(
+            page.Items.Select(i => new AdminOrderListItemResponse(
+                i.Id, i.OrderNumber, i.CustomerEmail, i.CreatedAt, i.Status, MoneyResponse.From(i.GrandTotal, i.Currency))).ToList(),
             page.Page, page.PageSize, page.TotalCount, page.TotalPages);
 
     public static OrderDetailResponse ToResponse(this OrderDetailView view)

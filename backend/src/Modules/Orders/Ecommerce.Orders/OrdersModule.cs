@@ -67,6 +67,7 @@ public static class OrdersModule
         services.AddScoped<IValidator<ShipOrderRequest>, ShipOrderRequestValidator>();
         services.AddScoped<IValidator<StatusOverrideRequest>, StatusOverrideRequestValidator>();
         services.AddScoped<IValidator<UnfulfillableRequest>, UnfulfillableRequestValidator>();
+        services.AddScoped<IValidator<AdminOrderListQuery>, AdminOrderListQueryValidator>();
         services.AddScoped<IValidator<ReturnRequestBody>, ReturnRequestBodyValidator>();
         services.AddScoped<IValidator<DecisionRequest>, DecisionRequestValidator>();
         return services;

@@ -81,9 +81,34 @@ internal sealed class OrderReadStore(EcommerceDbContext db) : IOrderReadStore
                     .ToList()))
             .FirstOrDefaultAsync(ct);
 
-    public async Task<RecentOrderPage> ListRecentAsync(int page, int pageSize, CancellationToken ct)
+    public Task<RecentOrderPage> ListRecentAsync(int page, int pageSize, CancellationToken ct) =>
+        ListForAdminAsync(new AdminOrderFilter(null, null, null, null, null), page, pageSize, ct);
+
+    public async Task<RecentOrderPage> ListForAdminAsync(AdminOrderFilter filter, int page, int pageSize, CancellationToken ct)
     {
         IQueryable<Order> all = db.Set<Order>().AsNoTracking();
+        if (filter.Status is OrderStatus status)
+        {
+            all = all.Where(o => o.Status == status);
+        }
+        if (filter.UserId is Guid userId)
+        {
+            all = all.Where(o => o.UserId == userId);
+        }
+        if (filter.OrderNumber is string number)
+        {
+            all = all.Where(o => o.OrderNumber == number);
+        }
+        if (filter.From is DateOnly from)
+        {
+            DateTimeOffset start = new DateTimeOffset(from.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+            all = all.Where(o => o.CreatedAt >= start);
+        }
+        if (filter.To is DateOnly to)
+        {
+            DateTimeOffset end = new DateTimeOffset(to.AddDays(1).ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+            all = all.Where(o => o.CreatedAt < end);
+        }
         int total = await all.CountAsync(ct);
         List<Order> rows = await all.OrderByDescending(o => o.CreatedAt).ThenByDescending(o => o.Id)
             .Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(ct);

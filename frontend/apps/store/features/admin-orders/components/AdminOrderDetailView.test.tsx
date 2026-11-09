@@ -103,4 +103,13 @@ describe('AdminOrderDetailView', () => {
 
     expect(await screen.findByText('ORD-2026-000001')).toBeOnTheScreen();
   });
+
+  it('shows the fulfillment actions to an Admin', async () => {
+    await signInAs('Admin');
+    jest.spyOn(globalThis, 'fetch').mockImplementation(async () => jsonResponse(200, makeAdminOrderDetail()));
+
+    await render();
+
+    expect(await screen.findByRole('button', { name: 'Process' })).toBeOnTheScreen();
+  });
 });

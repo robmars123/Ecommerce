@@ -47,6 +47,7 @@ internal sealed class FakeOutbox : IOutbox
 internal sealed class FakeOrderReadStore : IOrderReadStore
 {
     public Task<RecentOrderPage> ListRecentAsync(int page, int pageSize, CancellationToken ct) => throw new NotSupportedException();
+    public Task<RecentOrderPage> ListForAdminAsync(AdminOrderFilter filter, int page, int pageSize, CancellationToken ct) => throw new NotSupportedException();
 
     public Task<int> CountPendingReturnsAsync(CancellationToken ct) => throw new NotSupportedException();
 
