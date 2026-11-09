@@ -92,3 +92,22 @@ First run: `VERIFY FAIL: test`. One integration test (T27 duplicate webhook) fai
 - Slice 4 PASS: Nathaniel ratifies the §8 waiver line.
 - Test-first for T26–T28 and the outbox processor: a Slice 6 waiver or a redo.
 - Non-blocking notes N1–N5 stand. N2, the `verify.sh` hygiene awk error, is for Nathaniel.
+
+## Round 3 — Rob
+Verdict: PASS (ACCEPT) · verify.sh: VERIFY PASS (secrets hygiene build test drift expo-check tsc jest export)
+
+**Ruling.** Marco's redo meets quality-bar §3 "test-first ones shown failing first". Each guard was stubbed, the test was red, the guard was restored (cmp OK) and the test was green. No Nathaniel waiver is needed.
+
+- **Layered guards:** "parallel same key" and "duplicate event id" stay green when only one layer is stubbed. That is correct, because the second layer backs the first. Showing red with both layers stubbed is the right evidence.
+- **T28 totals unchanged:** a negative assertion with no guard to stub. Accepted as is.
+- **Backup:** I did not need Marco's backups. I copied each file to the scratchpad before stubbing.
+
+**Spot-checks, re-applied by me:**
+1. Both layers of T27 parallel same key stubbed (RefundService in-lock replay and unique-key catch). Red: Expected Accepted, Actual InternalServerError. Restored from a scratch copy, `cmp` OK.
+2. Outbox type filter stubbed (OutboxProcessor `e.event_type = ANY`). Red: Expected 0, Actual 1. Restored, `cmp` OK.
+
+**Scope:** `git diff --stat -- backend/src` shows only RetryPaymentService.cs (5.2, already PASS).
+
+**Gate:** no other run was using Postgres when I ran the full verify.sh. It passed, so I set 5.3, 5.4 and 5.5 to Done in `docs/ecommerce-app-context.md`.
+
+**NOTE:** the "~" line numbers in Marco's table are approximate and have drifted by a few lines. That is not blocking.

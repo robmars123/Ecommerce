@@ -5,9 +5,9 @@ Agents update this at the **start and end of every task**.
 
 | Agent | Status | Slice | Task | Fix round | Updated |
 |---|---|---|---|---|---|
-| Marco (developer) | 🟢 AVAILABLE | 4 | Deliverable 5.1 fix round 2 done, verify PASS | 2 | 2026-11-08 22:50 |
+| Marco (developer) | 🟢 AVAILABLE | 6 | Test-first redo done, verify changed PASS | 0 | 2026-11-08 22:00 |
 | Shin (developer 2) | 🟢 AVAILABLE | — | Ready | 0 | 2026-11-08 18:45 |
-| Rob (architect, on demand) | 🟢 AVAILABLE | 4 | Deliverable 5.1 review round 3: PASS; verify PASS | 3 | 2026-11-08 23:15 |
+| Rob (architect, on demand) | 🟢 AVAILABLE | 4 | Deliverable 5.2 review round 2: PASS, Done | 1 | 2026-11-08 23:55 |
 
 **Rules**
 
@@ -19,4 +19,4 @@ Agents update this at the **start and end of every task**.
 
 - Marco: slice-plans/slice-6-marco-report.md (previous: slice-plans/slice-4-marco-report.md)
 - Shin: none yet
-- Rob: slice-plans/deliverable-5.1-rob-review.md (previous: slice-plans/deliverable-4.4-rob-review.md, slice-plans/deliverable-4.5-rob-review.md)
+- Rob: slice-plans/deliverable-5.2-rob-review.md (previous: slice-plans/deliverable-5.1-rob-review.md, slice-plans/deliverable-4.4-rob-review.md, slice-plans/deliverable-4.5-rob-review.md)

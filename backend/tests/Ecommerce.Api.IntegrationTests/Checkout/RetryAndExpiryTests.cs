@@ -66,6 +66,70 @@ public class RetryAndExpiryTests(PostgresFixture postgres)
     }
 
     [Fact]
+    public async Task T24_concurrent_retries_with_one_key_all_return_the_same_attempt_and_secret_and_make_one_attempt()
+    {
+        (CheckoutEnv f, _, Guid orderId) = await PlacedAsync("RETRY-9");
+        await using CheckoutEnv owner = f;
+        string key = Key();
+        const int callers = 6;
+        using Barrier barrier = new(callers);
+
+        IdentityTestEnv.Api[] results = await Task.WhenAll(Enumerable.Range(0, callers).Select(_ => Task.Run(() =>
+        {
+            barrier.SignalAndWait();
+            return f.RetryAsync(f.TokenA, orderId, key);
+        })));
+
+        Assert.All(results, r => Assert.Equal(HttpStatusCode.OK, r.Status));
+        Assert.Single(results.Select(r => r.Text).Distinct());
+        Assert.Equal(2, results[0].Json.GetProperty("attempt").GetInt32());
+        Assert.Equal(2, await f.CountAsync("SELECT count(*) FROM payments WHERE order_id = @o", ("o", orderId)));
+        Assert.Equal(1, await f.OutboxCountAsync("PaymentIntentCancelRequested"));
+        Assert.Equal(2, f.Gateway.Intents.Count);
+    }
+
+    [Fact]
+    public async Task T24_a_replayed_key_after_the_reservation_expired_is_a_409_and_creates_no_intent()
+    {
+        (CheckoutEnv f, _, Guid orderId) = await PlacedAsync("RETRY-10");
+        await using CheckoutEnv owner = f;
+        string key = Key();
+        f.Gateway.Unavailable = true;
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, (await f.RetryAsync(f.TokenA, orderId, key)).Status);
+        f.Gateway.Unavailable = false;
+        int intents = f.Gateway.Intents.Count;
+        f.Env.Clock.UtcNow = f.Env.Clock.UtcNow.AddMinutes(16);
+        string token = await f.Env.AccessTokenAsync("a@example.test");
+
+        IdentityTestEnv.Api r = await f.RetryAsync(token, orderId, key);
+
+        Assert.Equal(HttpStatusCode.Conflict, r.Status);
+        Assert.Equal("reservation-expired", r.Str("type"));
+        Assert.Equal(intents, f.Gateway.Intents.Count);
+    }
+
+    [Fact]
+    public async Task T24_a_replayed_key_after_the_order_was_cancelled_is_a_409_and_creates_no_intent()
+    {
+        (CheckoutEnv f, _, Guid orderId) = await PlacedAsync("RETRY-11");
+        await using CheckoutEnv owner = f;
+        string key = Key();
+        f.Gateway.Unavailable = true;
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, (await f.RetryAsync(f.TokenA, orderId, key)).Status);
+        f.Gateway.Unavailable = false;
+        int intents = f.Gateway.Intents.Count;
+        f.Env.Clock.UtcNow = f.Env.Clock.UtcNow.AddMinutes(16);
+        Assert.Equal(1, await f.SweepAsync());
+        string token = await f.Env.AccessTokenAsync("a@example.test");
+
+        IdentityTestEnv.Api r = await f.RetryAsync(token, orderId, key);
+
+        Assert.Equal(HttpStatusCode.Conflict, r.Status);
+        Assert.Equal("not-pending-payment", r.Str("type"));
+        Assert.Equal(intents, f.Gateway.Intents.Count);
+    }
+
+    [Fact]
     public async Task T24_the_same_key_for_another_order_or_user_is_a_409()
     {
         (CheckoutEnv f, _, Guid orderId) = await PlacedAsync("RETRY-3");
