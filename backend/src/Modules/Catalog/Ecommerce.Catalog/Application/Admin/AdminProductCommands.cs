@@ -38,3 +38,5 @@ internal sealed record UpdateProductCommand(
 internal sealed record CreateCategoryCommand(string Slug, string Name, string? ParentSlug);
 
 internal sealed record UpdateCategoryCommand(string CurrentSlug, string Slug, string Name);
+
+internal sealed record UploadImageCommand(Stream Content, long Length);

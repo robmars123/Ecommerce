@@ -1,4 +1,5 @@
 using Ecommerce.Catalog.Application.Admin;
+using Ecommerce.Catalog.Domain;
 using Ecommerce.Identity.Contracts;
 using FluentValidation;
 using FluentValidation.Results;
@@ -14,6 +15,7 @@ namespace Ecommerce.Catalog.Api.Admin;
 [Authorize(Policy = AuthorizationPolicies.Admin)]
 internal sealed class AdminProductsController(
     AdminProductService products,
+    AdminProductImageService images,
     IValidator<CreateProductRequest> createValidator,
     IValidator<UpdateProductRequest> updateValidator) : ControllerBase
 {
@@ -97,6 +99,17 @@ internal sealed class AdminProductsController(
     public async Task<IActionResult> Unpublish(Guid id, CancellationToken ct) =>
         Map(await products.UnpublishAsync(id, ct), v => Ok(v.ToResponse()));
 
+    /// <summary>Stores one image and returns its key only; attaching it is the next product update (D2).</summary>
+    [HttpPost("{id:guid}/images")]
+    [Consumes("multipart/form-data")]
+    [RequestFormLimits(MultipartBodyLengthLimit = ImageFormat.MaxBytes + 1)]
+    [RequestSizeLimit(ImageFormat.MaxBytes + 64 * 1024)]
+    public async Task<IActionResult> Upload(Guid id, IFormFile file, CancellationToken ct)
+    {
+        await using Stream content = file.OpenReadStream();
+        return Map(await images.UploadAsync(id, new UploadImageCommand(content, file.Length), ct), v => Ok(v.ToResponse()));
+    }
+
     private IActionResult Map<T>(AdminResult<T> result, Func<T, IActionResult> ok) =>
         result switch
         {
@@ -104,6 +117,7 @@ internal sealed class AdminProductsController(
             AdminResult<T>.NotFound => Problem(statusCode: StatusCodes.Status404NotFound, title: "Product not found"),
             AdminResult<T>.Invalid invalid => InvalidProblem(invalid.Errors),
             AdminResult<T>.Conflict conflict => ConflictProblem(conflict.Field, conflict.Message),
+            AdminResult<T>.Unavailable u => Problem(statusCode: StatusCodes.Status503ServiceUnavailable, title: "Image storage is not configured", detail: u.Message),
             _ => throw new InvalidOperationException("Unhandled admin result."),
         };
 

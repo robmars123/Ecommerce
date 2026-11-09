@@ -74,3 +74,10 @@ internal static class AdminResponseMapping
 
     public static CategoryResponse ToResponse(this CategoryView c) => new(c.Slug, c.Name, c.ParentSlug);
 }
+
+internal sealed record UploadedImageResponse(string StorageKey);
+
+internal static class UploadedImageMapping
+{
+    public static UploadedImageResponse ToResponse(this UploadedImageView v) => new(v.StorageKey);
+}

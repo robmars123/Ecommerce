@@ -45,4 +45,6 @@ internal interface IAdminCatalogReadStore
 
     /// <summary>The public detail shape (active variants only) for a product regardless of is_active.</summary>
     Task<AdminPreviewRow?> GetPreviewAsync(Guid id, CancellationToken ct);
+
+    Task<bool> ProductExistsAsync(Guid id, CancellationToken ct);
 }
