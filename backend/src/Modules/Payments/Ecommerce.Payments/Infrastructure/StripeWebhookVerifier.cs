@@ -6,7 +6,7 @@ using Stripe;
 namespace Ecommerce.Payments.Infrastructure;
 
 /// <summary>
-/// Checks the signature with the SDK, then reads only <c>id</c>, <c>type</c> and <c>data.object.id</c> (D7). Nothing here
+/// Checks the signature with the SDK, then reads only <c>id</c>, <c>type</c>, <c>data.object.id</c> and, for a success, <c>amount_received</c> and <c>currency</c> (D7). Nothing here
 /// deserializes into SDK event types, so another API version on the sending account cannot make verification throw.
 /// </summary>
 internal sealed class StripeWebhookVerifier(IOptions<StripeOptions> options) : IWebhookVerifier
@@ -47,13 +47,28 @@ internal sealed class StripeWebhookVerifier(IOptions<StripeOptions> options) : I
                 "payment_intent.canceled" => PaymentEventKind.Canceled,
                 _ => PaymentEventKind.Other,
             };
-            string? intentId = kind == PaymentEventKind.Other ? null : root.GetProperty("data").GetProperty("object").GetProperty("id").GetString();
+            JsonElement intent = kind == PaymentEventKind.Other ? default : root.GetProperty("data").GetProperty("object");
+            string? intentId = kind == PaymentEventKind.Other ? null : intent.GetProperty("id").GetString();
             if (kind != PaymentEventKind.Other && string.IsNullOrEmpty(intentId))
             {
                 return false;
             }
 
-            paymentEvent = new PaymentEvent(eventId, type, kind, intentId);
+            // A success is checked against the order's money (rules 1 and 5), so both fields must be there.
+            long? amountReceived = null;
+            string? currency = null;
+            if (kind == PaymentEventKind.Succeeded)
+            {
+                if (!intent.TryGetProperty("amount_received", out JsonElement amount) || !amount.TryGetInt64(out long minor)
+                    || !intent.TryGetProperty("currency", out JsonElement cur) || cur.ValueKind != JsonValueKind.String || string.IsNullOrEmpty(cur.GetString()))
+                {
+                    return false;
+                }
+                amountReceived = minor;
+                currency = cur.GetString();
+            }
+
+            paymentEvent = new PaymentEvent(eventId, type, kind, intentId, null, amountReceived, currency);
             return true;
         }
         catch (Exception ex) when (ex is StripeException or JsonException or KeyNotFoundException or InvalidOperationException)

@@ -90,8 +90,28 @@ internal sealed class CheckoutEnv : IAsyncDisposable
 
     // ---- webhook ----
 
-    public static string EventBody(string eventId, string type, string intentId) =>
-        $"{{\"id\":\"{eventId}\",\"type\":\"{type}\",\"data\":{{\"object\":{{\"id\":\"{intentId}\"}}}}}}";
+    public static string EventBody(string eventId, string type, string intentId, long amountReceived, string currency) =>
+        $"{{\"id\":\"{eventId}\",\"type\":\"{type}\",\"data\":{{\"object\":{{\"id\":\"{intentId}\",\"amount_received\":{amountReceived},\"currency\":\"{currency}\"}}}}}}";
+
+    /// <summary>The event body; amount and currency default to the payment row of that intent (what a faithful provider reports).</summary>
+    public async Task<string> BodyAsync(string eventId, string type, string intentId, long? amountReceived = null, string? currency = null)
+    {
+        long amount = amountReceived ?? await ScalarOrAsync("SELECT (amount * 100)::bigint FROM payments WHERE provider_payment_id = @i", 0L, ("i", intentId));
+        string cur = currency ?? (await ScalarOrAsync("SELECT lower(currency) FROM payments WHERE provider_payment_id = @i", "usd", ("i", intentId)));
+        return EventBody(eventId, type, intentId, amount, cur);
+    }
+
+    private async Task<T> ScalarOrAsync<T>(string sql, T fallback, params (string Name, object Value)[] parameters)
+    {
+        await using NpgsqlDataSource source = NpgsqlDataSource.Create(InventoryEnv.Cs(Env));
+        await using NpgsqlCommand cmd = source.CreateCommand(sql);
+        foreach ((string name, object value) in parameters)
+        {
+            cmd.Parameters.AddWithValue(name, value);
+        }
+        object? scalar = await cmd.ExecuteScalarAsync(TestContext.Current.CancellationToken);
+        return scalar is null ? fallback : (T)scalar;
+    }
 
     /// <summary>The provider's scheme: <c>t=timestamp,v1=hex(HMAC-SHA256(secret, "t.body"))</c>, signed with this host's random secret.</summary>
     public string Sign(string body, DateTimeOffset at, string? secret = null)
@@ -107,10 +127,11 @@ internal sealed class CheckoutEnv : IAsyncDisposable
             ? Env.SendAsync(HttpMethod.Post, "/api/v1/webhooks/stripe", body)
             : Env.SendAsync(HttpMethod.Post, "/api/v1/webhooks/stripe", body, null, ("Stripe-Signature", signature));
 
-    public Task<IdentityTestEnv.Api> WebhookAsync(string eventId, string intentId, string type = "payment_intent.succeeded")
+    public async Task<IdentityTestEnv.Api> WebhookAsync(
+        string eventId, string intentId, string type = "payment_intent.succeeded", long? amountReceived = null, string? currency = null)
     {
-        string body = EventBody(eventId, type, intentId);
-        return WebhookRawAsync(body, Sign(body, Env.Clock.UtcNow));
+        string body = await BodyAsync(eventId, type, intentId, amountReceived, currency);
+        return await WebhookRawAsync(body, Sign(body, Env.Clock.UtcNow));
     }
 
     public async Task<string> IntentOfAsync(Guid orderId, int attempt = 0) =>

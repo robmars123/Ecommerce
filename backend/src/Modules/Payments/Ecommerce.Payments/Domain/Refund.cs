@@ -5,6 +5,7 @@ internal sealed class Refund
 {
     public const string LateSuccess = "late-success";
     public const string ExtraSuccess = "extra-success";
+    public const string AmountMismatch = "amount-mismatch";
 
     private Refund() { }
 
@@ -60,11 +61,14 @@ internal sealed class Refund
         return true;
     }
 
-    /// <summary>The whole payment, Pending, no actor, key <c>auto:{paymentId}</c> (unique, so a payment is refunded automatically once).</summary>
-    public static Refund CreateAutomatic(Guid id, Payment payment, string reason, DateTimeOffset now) =>
+    /// <summary>
+    /// Pending, no actor, key <c>auto:{paymentId}</c> (unique, so a payment is refunded automatically once). The whole payment,
+    /// or, when the provider reported a different amount or currency, exactly what it received.
+    /// </summary>
+    public static Refund CreateAutomatic(Guid id, Payment payment, string reason, DateTimeOffset now, decimal? receivedAmount = null, string? receivedCurrency = null) =>
         new()
         {
-            Id = id, PaymentId = payment.Id, Amount = payment.Amount, Currency = payment.Currency, Status = RefundStatus.Pending,
+            Id = id, PaymentId = payment.Id, Amount = receivedAmount ?? payment.Amount, Currency = receivedCurrency ?? payment.Currency, Status = RefundStatus.Pending,
             Reason = reason, ActorId = null, IdempotencyKey = AutomaticKey(payment.Id), CreatedAt = now,
         };
 }

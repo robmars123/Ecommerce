@@ -88,9 +88,10 @@ internal enum RefundNoticeStatus
 /// <summary>One refund a refund event reports: our id (metadata.refund_id) and/or the provider refund id, and its state.</summary>
 internal sealed record RefundNotice(Guid? RefundId, string? ProviderRefundId, RefundNoticeStatus Status);
 
-/// <summary>The fields the webhook reads (D7). <see cref="ProviderPaymentId"/> is null for refund and other events.</summary>
+/// <summary>The fields the webhook reads (D7). <see cref="ProviderPaymentId"/> is null for refund and other events; amount received (minor units) and currency are read for a success only.</summary>
 internal sealed record PaymentEvent(
-    string EventId, string EventType, PaymentEventKind Kind, string? ProviderPaymentId, IReadOnlyList<RefundNotice>? Refunds = null);
+    string EventId, string EventType, PaymentEventKind Kind, string? ProviderPaymentId, IReadOnlyList<RefundNotice>? Refunds = null,
+    long? AmountReceived = null, string? Currency = null);
 
 internal interface IWebhookVerifier
 {

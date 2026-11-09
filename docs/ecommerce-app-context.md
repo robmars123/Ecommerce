@@ -74,7 +74,7 @@ Status as of 2026-11-07: **Done** (Rob PASS) · **Review open** (code done, Slic
 | 4.4 | PaymentIntent creation | Payments | 4 | Done |
 | 4.5 | Checkout screen: address, shipping, total, Stripe payment | `checkout` | 4 | Done |
 | **5** | **Payments** | | | |
-| 5.1 | Signed webhook confirms payment; dedupe by event ID | Payments | 4 | Review open |
+| 5.1 | Signed webhook confirms payment; dedupe by event ID | Payments | 4 | Done |
 | 5.2 | Retry payment on the same order | Orders | 4 | Review open |
 | 5.3 | Admin refund API: ceiling, idempotency, audit | Payments | 6 | In progress |
 | 5.4 | Stripe refund consumer and refund webhook | Payments | 6 | In progress |
