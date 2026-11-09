@@ -59,7 +59,7 @@ describe('admin area gate (F7b)', () => {
     await renderRouter('./app', { initialUrl: '/admin/orders' });
 
     expect(screen).toHavePathname('/admin/orders');
-    expect(screen.getAllByRole('header', { name: 'Admin · Orders' }).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByRole('header', { name: 'Orders' }).length).toBeGreaterThanOrEqual(1);
   });
 
   it('Support: /admin/products redirects to /admin and makes no admin API call', async () => {

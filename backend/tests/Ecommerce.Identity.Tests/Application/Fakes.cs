@@ -64,6 +64,7 @@ internal sealed class FakeUserRepository : IUserRepository
     public Task<User?> FindByIdAsync(Guid id, CancellationToken ct) => FindByIdForUpdateAsync(id, ct);
 
     public Task<User?> FindByEmailAsync(string email, CancellationToken ct) => FindByEmailForUpdateAsync(email, ct);
+    public Task<Guid?> FindIdByEmailAsync(string normalizedEmail, CancellationToken ct) => throw new NotSupportedException();
 }
 
 internal sealed class FakeRefreshTokenRepository : IRefreshTokenRepository

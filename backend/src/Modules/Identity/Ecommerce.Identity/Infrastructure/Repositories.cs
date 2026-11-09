@@ -49,6 +49,12 @@ internal sealed class UserRepository(EcommerceDbContext db) : IUserRepository
 
     public Task<User?> FindByEmailAsync(string email, CancellationToken ct) =>
         db.Set<User>().AsNoTracking().FirstOrDefaultAsync(u => u.Email == email, ct);
+
+    public async Task<Guid?> FindIdByEmailAsync(string normalizedEmail, CancellationToken ct)
+    {
+        List<Guid> ids = await db.Set<User>().AsNoTracking().Where(u => u.Email == normalizedEmail).Select(u => u.Id).Take(1).ToListAsync(ct);
+        return ids.Count == 0 ? null : ids[0];
+    }
 }
 
 internal sealed class RefreshTokenRepository(EcommerceDbContext db) : IRefreshTokenRepository

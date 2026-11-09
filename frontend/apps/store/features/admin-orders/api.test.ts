@@ -1,8 +1,8 @@
 import { calledUrls, jsonResponse, mockFetchRoutes } from '@/tests/fetch-mock';
-import { makeAdminOrderDetail, makeReturnPage, usd } from '@/tests/admin-order-fixtures';
+import { makeAdminListPage, makeAdminOrderDetail, makeReturnPage, usd } from '@/tests/admin-order-fixtures';
 import { queryKeys } from '@/lib/query-keys';
 
-import { decideReturn, fetchAdminOrder, fetchReturns, submitRefund } from './api';
+import { decideReturn, fetchAdminOrder, fetchAdminOrders, fetchReturns, runOrderAction, submitRefund } from './api';
 
 beforeEach(() => {
   process.env.EXPO_PUBLIC_API_BASE_URL = 'http://api.test.invalid:5080';
@@ -54,6 +54,43 @@ describe('admin orders api', () => {
     const [url, init] = spy.mock.calls[0] as [string, RequestInit];
     expect(url).toBe('http://api.test.invalid:5080/api/v1/admin/returns/r-1/approve');
     expect(JSON.parse(init.body as string)).toEqual({ reason: 'fine' });
+  });
+});
+
+describe('admin order list and actions api', () => {
+  it('lists orders with trimmed filters and leaves out empty values and "all"', async () => {
+    const spy = mockFetchRoutes({ '/api/v1/admin/orders': () => jsonResponse(200, makeAdminListPage([])) });
+
+    await fetchAdminOrders({ status: 'all', from: '', to: ' 2026-03-31 ', customer: ' a@example.test ', orderNumber: '  ' }, 2);
+
+    const url = new URL(calledUrls(spy)[0]);
+    expect(url.pathname).toBe('/api/v1/admin/orders');
+    expect(Object.fromEntries(url.searchParams)).toEqual({ to: '2026-03-31', customer: 'a@example.test', page: '2', pageSize: '20' });
+  });
+
+  it('sends a status filter by name', async () => {
+    const spy = mockFetchRoutes({ '/api/v1/admin/orders': () => jsonResponse(200, makeAdminListPage([])) });
+
+    await fetchAdminOrders({ status: 'Paid', from: '', to: '', customer: '', orderNumber: '' }, 1);
+
+    expect(new URL(calledUrls(spy)[0]).searchParams.get('status')).toBe('Paid');
+  });
+
+  it.each([
+    [{ kind: 'process' }, 'process', undefined],
+    [{ kind: 'deliver' }, 'deliver', undefined],
+    [{ kind: 'ship', carrierCode: 'example-post', trackingNumber: 'T1' }, 'ship', { carrierCode: 'example-post', trackingNumber: 'T1' }],
+    [{ kind: 'override', toStatus: 'Delivered', reason: 'Lost' }, 'status-override', { toStatus: 'Delivered', reason: 'Lost' }],
+  ] as const)('runs the %j action against the right path with no Idempotency-Key', async (action, path, body) => {
+    const spy = mockFetchRoutes({ '/api/v1/admin/orders/o-9/': () => new Response(null, { status: 204 }) });
+
+    await runOrderAction('o-9', action);
+
+    const [url, init] = spy.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(`http://api.test.invalid:5080/api/v1/admin/orders/o-9/${path}`);
+    expect(init.method).toBe('POST');
+    expect(init.body === undefined ? undefined : JSON.parse(init.body as string)).toEqual(body);
+    expect((init.headers as Record<string, string>)['Idempotency-Key']).toBeUndefined();
   });
 });
 

@@ -22,6 +22,9 @@ internal interface IUserRepository
 
     /// <summary>No tracking, no lock.</summary>
     Task<User?> FindByEmailAsync(string email, CancellationToken ct);
+
+    /// <summary>The id of the user with this normalised email, or null. No tracking, no lock (a read path, never the ForUpdate variant).</summary>
+    Task<Guid?> FindIdByEmailAsync(string normalizedEmail, CancellationToken ct);
 }
 
 internal interface IRefreshTokenRepository

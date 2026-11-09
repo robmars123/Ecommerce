@@ -10,6 +10,7 @@ import { formatMoney } from '@/lib/money';
 
 import { useAdminOrderQuery } from '../hooks/hooks';
 import type { AdminOrderDetail } from '../types';
+import { OrderActions } from './OrderActions';
 import { RefundForm } from './RefundForm';
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
@@ -63,6 +64,8 @@ function Content({ detail }: { detail: AdminOrderDetail }) {
           ))}
         </Section>
       ) : null}
+
+      <OrderActions detail={detail} />
 
       <RefundForm detail={detail} />
     </View>

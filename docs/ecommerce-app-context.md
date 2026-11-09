@@ -111,10 +111,10 @@ Status as of 2026-11-08: **Done** (Rob PASS) · **In progress** · **Not started
 | 10.4 | Inventory screen: levels, adjust, low stock | `admin-inventory` | — | Not started |
 | **11** | **Admin orders** | | | |
 | 11.1 | Process, ship with tracking, deliver, audited override APIs | Orders | 5 | Done |
-| 11.2 | Admin order list API with filter | Orders | — | Not started |
+| 11.2 | Admin order list API with filter | Orders | 5 | Done |
 | 11.3 | Admin order detail API | Orders | 6 | Done |
-| 11.4 | Admin order list screen with filter | `admin-orders` | — | Not started |
-| 11.5 | Order action buttons on the admin detail screen | `admin-orders` | — | Not started |
+| 11.4 | Admin order list screen with filter | `admin-orders` | 5 | Done |
+| 11.5 | Order action buttons on the admin detail screen | `admin-orders` | 5 | Done |
 | **12** | **Admin customers** | | | |
 | 12.1 | Customer list and detail API (read-only) | Identity | — | Not started |
 | 12.2 | Customer list and detail screens | `admin-customers` | — | Not started |

@@ -3,8 +3,8 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import { isDefinitiveFailure, useAttemptKey } from '@/features/checkout/hooks/useAttemptKey';
 import { queryKeys } from '@/lib/query-keys';
 
-import { decideReturn, fetchAdminOrder, fetchReturns, submitRefund } from '../api';
-import type { RefundAccepted, RefundBody, ReturnStatus } from '../types';
+import { decideReturn, fetchAdminOrder, fetchAdminOrders, fetchReturns, runOrderAction, submitRefund } from '../api';
+import type { AdminOrderAction, AdminOrderFilters, RefundAccepted, RefundBody, ReturnStatus } from '../types';
 
 export function useAdminOrderQuery(id: string) {
   return useQuery({ queryKey: queryKeys.admin.orders.detail(id), queryFn: ({ signal }) => fetchAdminOrder(id, signal) });
@@ -46,5 +46,22 @@ export function useDecideReturnMutation() {
   return useMutation<void, Error, { id: string; decision: 'approve' | 'decline'; reason: string }>({
     mutationFn: ({ id, decision, reason }) => decideReturn(id, decision, reason),
     onSettled: () => client.invalidateQueries({ queryKey: queryKeys.admin.returns.all }),
+  });
+}
+
+export function useAdminOrdersQuery(filters: AdminOrderFilters, page: number) {
+  return useQuery({
+    queryKey: queryKeys.admin.orders.list(filters, page),
+    queryFn: ({ signal }) => fetchAdminOrders(filters, page, signal),
+    placeholderData: keepPreviousData,
+  });
+}
+
+/** No optimistic status (D10): once the call settles, the order and the list are refetched and show the server's status. */
+export function useOrderActionMutation(orderId: string) {
+  const client = useQueryClient();
+  return useMutation<void, Error, AdminOrderAction>({
+    mutationFn: (action) => runOrderAction(orderId, action),
+    onSettled: () => client.invalidateQueries({ queryKey: queryKeys.admin.orders.all }),
   });
 }

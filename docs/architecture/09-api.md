@@ -22,7 +22,7 @@ Base `/api/v1`. Errors are Problem Details (`application/problem+json`). Lists a
 | `GET/POST /admin/products` · `GET/PUT /admin/products/{id}` · `GET /admin/products/{id}/preview` · `POST /admin/products/{id}/images` · `POST /admin/products/{id}/publish` · `…/unpublish` | Admin | `PUT` carries `version` (optimistic, stale → 409). `images` upload waits for the bucket decision (§2); until then image keys go in the create/update body |
 | `POST /admin/categories` | Admin | One level of nesting; duplicate slug → 409 |
 | `GET /admin/inventory` · `POST /admin/inventory/adjust` | Admin | Adjust requires a reason; audited |
-| `GET /admin/orders` · `GET /admin/orders/{id}` | Admin, Support | |
+| `GET /admin/orders` · `GET /admin/orders/{id}` | Admin, Support | List filters and shape: §13.2 "Admin order list" |
 | `POST /admin/orders/{id}/process` · `ship` · `deliver` · `refund` · `status-override` | Admin | Audited. Override requires a reason. `ship` body `{ carrierCode, trackingNumber }`. `refund`: refund contract below |
 | `GET /admin/returns` · `POST /admin/returns/{id}/approve` · `decline` | Admin | Reason required |
 | `GET /admin/customers` · `GET /admin/customers/{id}` | Admin, Support | Read-only. Support sees no revenue KPIs |
