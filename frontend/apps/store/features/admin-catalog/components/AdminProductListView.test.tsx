@@ -86,6 +86,14 @@ describe('AdminProductListView', () => {
     expect(screen).toHavePathname('/admin/products/new');
   });
 
+  it('links to the categories screen and no longer carries the create-category form', async () => {
+    mockApi();
+    await render();
+
+    expect(await screen.findByRole('link', { name: 'Categories' })).toHaveProp('href', '/admin/categories');
+    expect(screen.queryByRole('button', { name: 'Add category' })).toBeNull();
+  });
+
   it('shows an empty state when nothing matches', async () => {
     mockApi(makeAdminPage([]));
     await render();

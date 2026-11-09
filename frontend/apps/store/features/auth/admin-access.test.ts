@@ -1,13 +1,13 @@
 import { adminRouteDecision } from './admin-access';
 import type { UserRole } from './types';
 
-const PATHS = ['/admin', '/admin/products', '/admin/products/7', '/admin/inventory', '/admin/orders/9', '/admin/returns', '/admin/customers/3'];
+const PATHS = ['/admin', '/admin/products', '/admin/products/7', '/admin/categories', '/admin/inventory', '/admin/orders/9', '/admin/returns', '/admin/customers/3'];
 
 // null = show the page; a string = redirect there.
 const EXPECTED: Record<string, Array<string | null>> = {
   none: PATHS.map((p) => `/login?returnTo=${encodeURIComponent(p)}`),
   Customer: PATHS.map(() => '/'),
-  Support: [null, '/admin', '/admin', '/admin', null, '/admin', null],
+  Support: [null, '/admin', '/admin', '/admin', '/admin', null, '/admin', null],
   Admin: PATHS.map(() => null),
 };
 

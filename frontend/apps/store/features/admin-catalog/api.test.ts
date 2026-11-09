@@ -1,7 +1,7 @@
 import { jsonResponse } from '@/tests/fetch-mock';
 import { makeAdminProduct } from '@/tests/admin-fixtures';
 
-import { createCategory, createProduct, fetchAdminPreview, fetchAdminProduct, fetchAdminProducts, publishProduct, updateProduct } from './api';
+import { createCategory, createProduct, deleteCategory, fetchAdminPreview, fetchAdminProduct, fetchAdminProducts, publishProduct, updateCategory, updateProduct } from './api';
 
 beforeEach(() => {
   process.env.EXPO_PUBLIC_API_BASE_URL = 'http://api.test.invalid:5080';
@@ -39,5 +39,23 @@ describe('admin catalog api', () => {
     expect(lastCall(spy).url).toContain('/p1/unpublish');
     await createCategory({ slug: 'a', name: 'A', parentSlug: null });
     expect(lastCall(spy)).toMatchObject({ method: 'POST', url: expect.stringContaining('/api/v1/admin/categories') });
+  });
+
+  it('updates a category with exactly { slug, name } and encodes the current slug', async () => {
+    const spy = jest.spyOn(globalThis, 'fetch').mockImplementation(async () => jsonResponse(200, { slug: 'shirts', name: 'Shirts', parentSlug: 'clothing' }));
+    await updateCategory('tops', { slug: 'shirts', name: 'Shirts' });
+    const first = lastCall(spy);
+    expect(first).toMatchObject({ method: 'PUT', url: expect.stringMatching(/\/api\/v1\/admin\/categories\/tops$/) });
+    expect(JSON.parse(first.body as string)).toEqual({ slug: 'shirts', name: 'Shirts' });
+    expect(first.body).not.toContain('parentSlug');
+
+    await updateCategory('a b/c', { slug: 'x', name: 'X' });
+    expect(lastCall(spy).url).toMatch(/\/categories\/a%20b%2Fc$/);
+  });
+
+  it('deletes a category and resolves on 204', async () => {
+    const spy = jest.spyOn(globalThis, 'fetch').mockImplementation(async () => new Response(null, { status: 204 }));
+    await expect(deleteCategory('tops')).resolves.toBeDefined();
+    expect(lastCall(spy)).toMatchObject({ method: 'DELETE', url: expect.stringMatching(/\/api\/v1\/admin\/categories\/tops$/) });
   });
 });

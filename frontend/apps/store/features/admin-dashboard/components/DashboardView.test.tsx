@@ -175,7 +175,7 @@ describe('DashboardView', () => {
 
     await render();
 
-    for (const label of ['Add product', 'Inventory', 'Orders', 'Returns']) {
+    for (const label of ['Add product', 'Categories', 'Inventory', 'Orders', 'Returns']) {
       expect(await screen.findByRole('link', { name: label })).toBeOnTheScreen();
     }
   });
