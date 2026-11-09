@@ -12,6 +12,7 @@ namespace Ecommerce.Persistence;
 internal sealed class EfUnitOfWork(EcommerceDbContext db) : IUnitOfWork
 {
     private const string UniqueViolation = "23505";
+    private const string ForeignKeyViolation = "23503";
 
     public async Task SaveChangesAsync(CancellationToken ct)
     {
@@ -72,6 +73,9 @@ internal sealed class EfUnitOfWork(EcommerceDbContext db) : IUnitOfWork
         DbUpdateException { InnerException: PostgresException { SqlState: UniqueViolation } pg } u =>
             new UniqueConstraintViolationException(pg.ConstraintName ?? "", u),
         PostgresException { SqlState: UniqueViolation } pg2 => new UniqueConstraintViolationException(pg2.ConstraintName ?? "", pg2),
+        DbUpdateException { InnerException: PostgresException { SqlState: ForeignKeyViolation } pg } f =>
+            new ForeignKeyViolationException(pg.ConstraintName ?? "", f),
+        PostgresException { SqlState: ForeignKeyViolation } pg3 => new ForeignKeyViolationException(pg3.ConstraintName ?? "", pg3),
         _ => null,
     };
 }

@@ -15,6 +15,31 @@ public class CategoryTests
     }
 
     [Fact]
+    public void Rename_sets_slug_and_name_and_keeps_the_parent()
+    {
+        Guid parentId = Guid.NewGuid();
+        Category category = Category.Create(Guid.NewGuid(), "tops", "Tops", parentId);
+
+        category.Rename("shirts", "Shirts");
+
+        Assert.Equal("shirts", category.Slug);
+        Assert.Equal("Shirts", category.Name);
+        Assert.Equal(parentId, category.ParentId);
+    }
+
+    [Fact]
+    public void Rename_rejects_invalid_slug_and_blank_or_long_name_without_changing_anything()
+    {
+        Category category = Category.Create(Guid.NewGuid(), "tops", "Tops", null);
+
+        Assert.Equal("Category slug is invalid.", Assert.Throws<DomainException>(() => category.Rename("Bad Slug", "Name")).Message);
+        Assert.Throws<DomainException>(() => category.Rename("ok", " "));
+        Assert.Throws<DomainException>(() => category.Rename("ok", new string('n', 101)));
+        Assert.Equal("tops", category.Slug);
+        Assert.Equal("Tops", category.Name);
+    }
+
+    [Fact]
     public void Create_rejects_invalid_slug_empty_name_and_self_parent()
     {
         Guid id = Guid.NewGuid();

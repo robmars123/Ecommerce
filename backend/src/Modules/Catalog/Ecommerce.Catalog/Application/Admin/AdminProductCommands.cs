@@ -36,3 +36,5 @@ internal sealed record UpdateProductCommand(
     IReadOnlyList<ImageInput> Images);
 
 internal sealed record CreateCategoryCommand(string Slug, string Name, string? ParentSlug);
+
+internal sealed record UpdateCategoryCommand(string CurrentSlug, string Slug, string Name);

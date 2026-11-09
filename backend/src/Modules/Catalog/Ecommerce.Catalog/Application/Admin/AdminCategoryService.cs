@@ -8,6 +8,8 @@ namespace Ecommerce.Catalog.Application.Admin;
 internal sealed class AdminCategoryService(ICategoryWriteStore categories, IUnitOfWork unitOfWork, IClock clock)
 {
     public const string SlugConstraint = "ux_categories_slug";
+    public const string ParentForeignKey = "fk_categories_parent_id";
+    public const string ProductsForeignKey = "fk_products_category_id";
 
     public async Task<AdminResult<CategoryView>> CreateAsync(CreateCategoryCommand command, CancellationToken ct)
     {
@@ -49,6 +51,74 @@ internal sealed class AdminCategoryService(ICategoryWriteStore categories, IUnit
         {
             return new AdminResult<CategoryView>.Conflict("slug", "A category with this slug already exists.");
         }
+        catch (ForeignKeyViolationException ex) when (ex.ConstraintName == ParentForeignKey)
+        {
+            return AdminResult<CategoryView>.Invalid.For("parentSlug", "That parent category does not exist.");
+        }
         return new AdminResult<CategoryView>.Ok(new CategoryView(category.Slug, category.Name, parentSlug));
+    }
+
+    public async Task<AdminResult<CategoryView>> UpdateAsync(UpdateCategoryCommand command, CancellationToken ct)
+    {
+        string slug = command.Slug.Trim();
+        string name = command.Name.Trim();
+
+        Category? category = await categories.GetForUpdateAsync(command.CurrentSlug, ct);
+        if (category is null)
+        {
+            return new AdminResult<CategoryView>.NotFound();
+        }
+
+        try
+        {
+            category.Rename(slug, name);
+        }
+        catch (DomainException ex)
+        {
+            return AdminResult<CategoryView>.Invalid.For("category", ex.Message);
+        }
+
+        try
+        {
+            await unitOfWork.SaveChangesAsync(ct);
+        }
+        catch (UniqueConstraintViolationException ex) when (ex.ConstraintName == SlugConstraint)
+        {
+            return new AdminResult<CategoryView>.Conflict("slug", "A category with this slug already exists.");
+        }
+        catch (ConcurrencyConflictException)
+        {
+            return new AdminResult<CategoryView>.NotFound();
+        }
+        string? parentSlug = category.ParentId is null ? null : await categories.FindSlugByIdAsync(category.ParentId.Value, ct);
+        return new AdminResult<CategoryView>.Ok(new CategoryView(category.Slug, category.Name, parentSlug));
+    }
+
+    public async Task<AdminResult<CategoryView>> DeleteAsync(string slug, CancellationToken ct)
+    {
+        Category? category = await categories.GetForUpdateAsync(slug, ct);
+        if (category is null)
+        {
+            return new AdminResult<CategoryView>.NotFound();
+        }
+
+        categories.Remove(category);
+        try
+        {
+            await unitOfWork.SaveChangesAsync(ct);
+        }
+        catch (ForeignKeyViolationException ex) when (ex.ConstraintName == ProductsForeignKey)
+        {
+            return new AdminResult<CategoryView>.Conflict("products", "This category still has products. Move them to another category first.");
+        }
+        catch (ForeignKeyViolationException ex) when (ex.ConstraintName == ParentForeignKey)
+        {
+            return new AdminResult<CategoryView>.Conflict("subcategories", "This category has subcategories. Delete them first.");
+        }
+        catch (ConcurrencyConflictException)
+        {
+            return new AdminResult<CategoryView>.NotFound();
+        }
+        return new AdminResult<CategoryView>.Ok(new CategoryView(category.Slug, category.Name, null));
     }
 }

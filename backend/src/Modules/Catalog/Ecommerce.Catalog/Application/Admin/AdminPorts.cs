@@ -29,6 +29,12 @@ internal interface ICategoryWriteStore
     Task<(Guid Id, Guid? ParentId)?> FindBySlugAsync(string slug, CancellationToken ct);
 
     void Add(Category category);
+
+    Task<Category?> GetForUpdateAsync(string slug, CancellationToken ct);
+
+    Task<string?> FindSlugByIdAsync(Guid id, CancellationToken ct);
+
+    void Remove(Category category);
 }
 
 internal interface IAdminCatalogReadStore

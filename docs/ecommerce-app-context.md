@@ -100,7 +100,7 @@ Status as of 2026-11-08: **Done** (Rob PASS) · **In progress** · **Not started
 | 9.1 | Product create and edit API, with variants and image keys | Catalog | 1b | Done |
 | 9.2 | Publish and unpublish API | Catalog | 1b | Done |
 | 9.3 | Category create API | Catalog | 1b | Done |
-| 9.4 | Category edit and delete | Catalog | — | Unverified |
+| 9.4 | Category edit and delete | Catalog | gap-fill | Done |
 | 9.5 | Image upload to storage (API returns a key only) | Catalog | — | Unverified |
 | 9.6 | Admin product list, create and edit screens | `admin-catalog` | 1b | Done |
 | 9.7 | Admin categories screen | `admin-catalog` | — | Unverified |

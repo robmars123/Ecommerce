@@ -44,6 +44,7 @@ public static class CatalogModule
         services.AddScoped<IValidator<CreateProductRequest>, CreateProductRequestValidator>();
         services.AddScoped<IValidator<UpdateProductRequest>, UpdateProductRequestValidator>();
         services.AddScoped<IValidator<CreateCategoryRequest>, CreateCategoryRequestValidator>();
+        services.AddScoped<IValidator<UpdateCategoryRequest>, UpdateCategoryRequestValidator>();
         return services;
     }
 

@@ -13,3 +13,5 @@
 - 5 gap-fill (Rob, plan): no "Unfulfillable" (6b saga) button on the admin order detail; the endpoint exists, the button is unscheduled.
 - 5 gap-fill R1 (Rob): every list endpoint computes `Skip((page - 1) * pageSize)` in `int` with no upper bound on `page` (admin orders, catalog, admin products, returns); `page=2147483647` overflows to a negative OFFSET and answers 500. Fix once for all lists (cap `page`, or compute the offset in `long` and return an empty page past the end).
 - 5 gap-fill R1 (Rob): `AdminOrderListView` shows the previous page's rows when a later fetch fails (`keepPreviousData` hides `isError` while `data` exists), and a page past the end shows "No orders match." with no pager to go back. Show an inline error with retry, and keep the pager when `totalPages > 0`.
+- 9.4 gap-fill R1 (Rob): no unit test drives `AdminCategoryService.DeleteAsync` to `Ok`; the fake store's `Removed` list is never asserted (IC7 covers it over HTTP). Add one happy-delete unit test asserting `Removed` and one save.
+- 9.4 gap-fill R1 (Rob): IC5 asserts only the 404 status, not the ProblemDetails body the plan named; assert `type`/`status` in the body.
