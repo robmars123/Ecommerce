@@ -89,3 +89,6 @@ export type CreateProductRequest = {
 export type UpdateProductRequest = CreateProductRequest & { version: number };
 
 export type CreateCategoryRequest = { slug: string; name: string; parentSlug: string | null };
+
+/** Parent is fixed at create: the server answers 400 if a PUT carries parentSlug. */
+export type UpdateCategoryRequest = { slug: string; name: string };

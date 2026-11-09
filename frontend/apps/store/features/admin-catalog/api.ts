@@ -8,10 +8,12 @@ import type {
   AdminProductListParams,
   CreateCategoryRequest,
   CreateProductRequest,
+  UpdateCategoryRequest,
   UpdateProductRequest,
 } from './types';
 
 const BASE = '/api/v1/admin/products';
+const CATEGORIES = '/api/v1/admin/categories';
 
 export function fetchAdminProducts(params: AdminProductListParams, signal?: AbortSignal): Promise<AdminProductListPage> {
   return apiGet<AdminProductListPage>(BASE, {
@@ -47,5 +49,13 @@ export function publishProduct(id: string, publish: boolean): Promise<AdminProdu
 }
 
 export function createCategory(body: CreateCategoryRequest): Promise<Category> {
-  return apiSend<Category>('POST', '/api/v1/admin/categories', { body });
+  return apiSend<Category>('POST', CATEGORIES, { body });
+}
+
+export function updateCategory(currentSlug: string, body: UpdateCategoryRequest): Promise<Category> {
+  return apiSend<Category>('PUT', `${CATEGORIES}/${encodeURIComponent(currentSlug)}`, { body });
+}
+
+export function deleteCategory(slug: string): Promise<void> {
+  return apiSend<void>('DELETE', `${CATEGORIES}/${encodeURIComponent(slug)}`);
 }

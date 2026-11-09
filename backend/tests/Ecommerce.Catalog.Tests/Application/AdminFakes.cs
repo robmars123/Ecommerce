@@ -53,6 +53,8 @@ internal sealed class FakeAdminReadStore(FakeProductWriteStore source) : IAdminC
     public Task<AdminProductPageRows> ListAsync(AdminProductListCriteria criteria, CancellationToken ct) =>
         Task.FromResult(new AdminProductPageRows([], 0));
 
+    public Task<bool> ProductExistsAsync(Guid id, CancellationToken ct) => Task.FromResult(source.Products.ContainsKey(id));
+
     public Task<AdminProductRow?> GetAsync(Guid id, CancellationToken ct)
     {
         if (!source.Products.TryGetValue(id, out Product? p))

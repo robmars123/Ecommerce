@@ -14,7 +14,6 @@ import { formatMoney } from '@/lib/money';
 
 import { useAdminProductsQuery } from '../hooks/useAdminProductsQuery';
 import type { AdminProductListParams, AdminStatus } from '../types';
-import { CategoryCreateForm } from './CategoryCreateForm';
 
 const PAGE_SIZE = 20;
 const STATUSES: ReadonlyArray<{ value: AdminStatus; label: string }> = [
@@ -64,6 +63,9 @@ export function AdminProductListView() {
       <ScreenTitle title="Admin · Products" />
       <Link href="/admin/products/new" accessibilityRole="link" asChild>
         <Text className="min-h-touch py-md text-body text-foreground">Add product</Text>
+      </Link>
+      <Link href="/admin/categories" accessibilityRole="link" asChild>
+        <Text className="min-h-touch py-md text-body text-foreground">Categories</Text>
       </Link>
 
       <SearchBar value={params.search ?? ''} onSearch={(text) => change({ search: text || undefined })} />
@@ -125,7 +127,6 @@ export function AdminProductListView() {
         />
       ) : null}
 
-      <CategoryCreateForm />
     </ScrollView>
   );
 }

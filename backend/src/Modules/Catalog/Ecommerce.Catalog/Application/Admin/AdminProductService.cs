@@ -243,6 +243,10 @@ internal sealed class AdminProductService(
         {
             return new AdminResult<AdminProductView>.Conflict("variants", "One of these SKUs is already used by another product.");
         }
+        catch (ForeignKeyViolationException ex) when (ex.ConstraintName == AdminCategoryService.ProductsForeignKey)
+        {
+            return AdminResult<AdminProductView>.Invalid.For("categorySlug", "That category does not exist.");
+        }
     }
 
     private sealed record VariantPlan(

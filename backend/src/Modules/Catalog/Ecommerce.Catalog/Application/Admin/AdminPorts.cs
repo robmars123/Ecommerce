@@ -29,6 +29,12 @@ internal interface ICategoryWriteStore
     Task<(Guid Id, Guid? ParentId)?> FindBySlugAsync(string slug, CancellationToken ct);
 
     void Add(Category category);
+
+    Task<Category?> GetForUpdateAsync(string slug, CancellationToken ct);
+
+    Task<string?> FindSlugByIdAsync(Guid id, CancellationToken ct);
+
+    void Remove(Category category);
 }
 
 internal interface IAdminCatalogReadStore
@@ -39,4 +45,6 @@ internal interface IAdminCatalogReadStore
 
     /// <summary>The public detail shape (active variants only) for a product regardless of is_active.</summary>
     Task<AdminPreviewRow?> GetPreviewAsync(Guid id, CancellationToken ct);
+
+    Task<bool> ProductExistsAsync(Guid id, CancellationToken ct);
 }

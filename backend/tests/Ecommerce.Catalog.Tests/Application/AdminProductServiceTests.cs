@@ -71,6 +71,29 @@ public class AdminProductServiceTests
     }
 
     [Fact]
+    public async Task Create_with_a_category_deleted_mid_request_is_Invalid_on_categorySlug()
+    {
+        AdminEnv env = new AdminEnv();
+        env.UnitOfWork.FailOnSave = new ForeignKeyViolationException("fk_products_category_id");
+
+        AdminResult<AdminProductView> result = await env.Service.CreateAsync(AdminEnv.CreateCommand(), Ct);
+
+        Assert.Contains("categorySlug", Is<AdminResult<AdminProductView>.Invalid>(result).Errors.Keys);
+    }
+
+    [Fact]
+    public async Task Update_with_a_category_deleted_mid_request_is_Invalid_on_categorySlug()
+    {
+        AdminEnv env = new AdminEnv();
+        Product product = env.SeedProduct();
+        env.UnitOfWork.FailOnSave = new ForeignKeyViolationException("fk_products_category_id");
+
+        AdminResult<AdminProductView> result = await env.Service.UpdateAsync(product.Id, AdminEnv.UpdateCommand(product), Ct);
+
+        Assert.Contains("categorySlug", Is<AdminResult<AdminProductView>.Invalid>(result).Errors.Keys);
+    }
+
+    [Fact]
     public async Task Create_maps_a_duplicate_sku_to_Conflict_on_variants()
     {
         AdminEnv env = new AdminEnv();

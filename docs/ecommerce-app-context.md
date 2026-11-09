@@ -100,10 +100,10 @@ Status as of 2026-11-08: **Done** (Rob PASS) · **In progress** · **Not started
 | 9.1 | Product create and edit API, with variants and image keys | Catalog | 1b | Done |
 | 9.2 | Publish and unpublish API | Catalog | 1b | Done |
 | 9.3 | Category create API | Catalog | 1b | Done |
-| 9.4 | Category edit and delete | Catalog | — | Unverified |
-| 9.5 | Image upload to storage (API returns a key only) | Catalog | — | Unverified |
+| 9.4 | Category edit and delete | Catalog | gap-fill | Done |
+| 9.5 | Image upload to storage (API returns a key only) | Catalog | gap-fill | Done |
 | 9.6 | Admin product list, create and edit screens | `admin-catalog` | 1b | Done |
-| 9.7 | Admin categories screen | `admin-catalog` | — | Unverified |
+| 9.7 | Admin categories screen | `admin-catalog` | gap-fill | Done |
 | **10** | **Admin inventory** | | | |
 | 10.1 | Stock levels API | Inventory | 2 | Done |
 | 10.2 | Audited adjustment API | Inventory | 2 | Done |
@@ -257,6 +257,7 @@ List with search by name or email. Detail: profile, orders, total spent (Paid mi
 | `/login`, `/register`, `/reset-password` | Public | Auth, returning to checkout when applicable |
 | `/admin` | Admin, Support | Dashboard |
 | `/admin/products`, `/admin/products/new`, `/admin/products/[id]` | Admin | Catalog: list, create, and edit with a customer preview |
+| `/admin/categories` | Admin | Categories: list with parent, create, edit slug and name, delete |
 | `/admin/inventory` | Admin | Stock and adjustments |
 | `/admin/orders`, `/admin/orders/[id]` | Admin, Support | Orders and fulfillment |
 | `/admin/returns` | Admin | Return requests |

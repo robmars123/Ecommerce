@@ -50,4 +50,12 @@ internal sealed class CategoryWriteStore(EcommerceDbContext db) : ICategoryWrite
     }
 
     public void Add(Category category) => db.Set<Category>().Add(category);
+
+    public Task<Category?> GetForUpdateAsync(string slug, CancellationToken ct) =>
+        db.Set<Category>().FirstOrDefaultAsync(c => c.Slug == slug, ct);
+
+    public Task<string?> FindSlugByIdAsync(Guid id, CancellationToken ct) =>
+        db.Set<Category>().AsNoTracking().Where(c => c.Id == id).Select(c => (string?)c.Slug).FirstOrDefaultAsync(ct);
+
+    public void Remove(Category category) => db.Set<Category>().Remove(category);
 }

@@ -130,12 +130,25 @@ internal sealed class CreateCategoryRequestValidator : AbstractValidator<CreateC
 {
     public CreateCategoryRequestValidator()
     {
-        RuleFor(r => r.Slug).Must(Slug.IsValid)
-            .WithMessage("Slug must be lower-case letters, digits and single hyphens, up to 100 characters.");
-        RuleFor(r => r.Name).Must(n => !string.IsNullOrWhiteSpace(n) && n.Length <= Category.MaxNameLength)
-            .WithMessage($"Name must be 1 to {Category.MaxNameLength} characters.");
+        CategoryFieldRules.Add(this, r => r.Slug, r => r.Name);
         RuleFor(r => r.ParentSlug).Must(s => s is null || s.Length == 0 || Slug.IsValid(s))
             .WithMessage("Parent must be a valid category slug.");
+    }
+}
+
+internal sealed class UpdateCategoryRequestValidator : AbstractValidator<UpdateCategoryRequest>
+{
+    public UpdateCategoryRequestValidator() => CategoryFieldRules.Add(this, r => r.Slug, r => r.Name);
+}
+
+internal static class CategoryFieldRules
+{
+    public static void Add<T>(AbstractValidator<T> validator, System.Linq.Expressions.Expression<Func<T, string>> slug, System.Linq.Expressions.Expression<Func<T, string>> name)
+    {
+        validator.RuleFor(slug).Must(Slug.IsValid)
+            .WithMessage("Slug must be lower-case letters, digits and single hyphens, up to 100 characters.");
+        validator.RuleFor(name).Must(n => !string.IsNullOrWhiteSpace(n) && n.Length <= Category.MaxNameLength)
+            .WithMessage($"Name must be 1 to {Category.MaxNameLength} characters.");
     }
 }
 

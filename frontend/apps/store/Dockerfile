@@ -7,6 +7,9 @@ COPY . .
 # Expo inlines EXPO_PUBLIC_* at build time.
 ARG EXPO_PUBLIC_API_BASE_URL=http://localhost:5081
 ENV EXPO_PUBLIC_API_BASE_URL=$EXPO_PUBLIC_API_BASE_URL
+# Publishable key only (public by design). Empty = the payment step shows a configuration error.
+ARG EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY=
+ENV EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY=$EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY
 RUN npx expo export --platform web
 
 FROM nginx:1.27-alpine

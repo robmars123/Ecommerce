@@ -27,4 +27,8 @@ internal static class StorageKey
         }
         return true;
     }
+
+    /// <summary>products/{product}/{image}.{ext}, server-made and lower case: no client path, no file name, never overwritten.</summary>
+    public static string ForProductImage(Guid productId, Guid imageId, string extension) =>
+        $"products/{productId:D}/{imageId:D}.{extension}".ToLowerInvariant();
 }

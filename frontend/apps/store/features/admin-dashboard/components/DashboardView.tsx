@@ -110,8 +110,9 @@ function RecentOrders() {
   );
 }
 
-const QUICK_ACTIONS: { href: '/admin/products/new' | '/admin/inventory' | '/admin/orders' | '/admin/returns'; label: string }[] = [
+const QUICK_ACTIONS: { href: '/admin/products/new' | '/admin/categories' | '/admin/inventory' | '/admin/orders' | '/admin/returns'; label: string }[] = [
   { href: '/admin/products/new', label: 'Add product' },
+  { href: '/admin/categories', label: 'Categories' },
   { href: '/admin/inventory', label: 'Inventory' },
   { href: '/admin/orders', label: 'Orders' },
   { href: '/admin/returns', label: 'Returns' },

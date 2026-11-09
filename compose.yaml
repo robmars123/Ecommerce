@@ -30,6 +30,8 @@ services:
       Identity__Bootstrap__AdminPassword: ${ADMIN_BOOTSTRAP_PASSWORD:-}
       Identity__PasswordReset__LinkBaseUrl: http://localhost:8082/reset-password
       Notifications__DevPickupDirectory: /tmp/dev-mail
+      Stripe__SecretKey: ${STRIPE_SECRET_KEY:-}
+      Stripe__WebhookSecret: ${STRIPE_WEBHOOK_SECRET:-}
     ports:
       - "127.0.0.1:5081:8080"
   web:
@@ -37,6 +39,7 @@ services:
       context: frontend/apps/store
       args:
         EXPO_PUBLIC_API_BASE_URL: http://localhost:5081
+        EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY:-}
     ports:
       - "127.0.0.1:8082:80"
 volumes:

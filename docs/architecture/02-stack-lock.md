@@ -26,6 +26,6 @@ Only Nathaniel changes the stack. Agents never do — a slice that would need a 
 **Frontend delivery:** web via `expo export --platform web` → CDN. Android and iOS via **cloud EAS Build** → signed AAB / IPA. No Android Studio, local Android SDK, Xcode, or Mac. No committed `android/` or `ios/` folders. No Kotlin, Java, Swift, Capacitor, or separate React DOM app. Local testing: Expo Go on a physical phone + web export.
 
 **Open decisions — left blank on purpose. Never invent these; use config placeholders.**
-Stripe keys and webhook secret · production domain · email provider and sender · Spaces bucket / CDN domain.
+Stripe keys and webhook secret · production domain · email provider and sender · Spaces bucket, endpoint, region, access keys / CDN domain (config `Catalog:Images:Storage:*` and `Catalog:Images:BaseUrl`, blank).
 
 

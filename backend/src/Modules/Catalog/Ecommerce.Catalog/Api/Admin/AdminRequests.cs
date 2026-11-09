@@ -58,3 +58,5 @@ internal sealed record UpdateProductRequest(
     IReadOnlyList<ImageRequest> Images);
 
 internal sealed record CreateCategoryRequest(string Slug, string Name, string? ParentSlug);
+
+internal sealed record UpdateCategoryRequest(string Slug, string Name);

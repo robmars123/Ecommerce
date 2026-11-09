@@ -26,7 +26,9 @@ internal sealed record AdminPreview(ProductDetail Product, bool IsActive, bool I
 
 internal sealed record CategoryView(string Slug, string Name, string? ParentSlug);
 
-/// <summary>Ok | NotFound | Invalid (field to messages) | Conflict (optional field plus a message).</summary>
+internal sealed record UploadedImageView(string StorageKey);
+
+/// <summary>Ok | NotFound | Invalid (field to messages) | Conflict (optional field plus a message) | Unavailable.</summary>
 internal abstract record AdminResult<T>
 {
     private AdminResult() { }
@@ -42,4 +44,6 @@ internal abstract record AdminResult<T>
     }
 
     public sealed record Conflict(string? Field, string Message) : AdminResult<T>;
+
+    public sealed record Unavailable(string Message) : AdminResult<T>;
 }

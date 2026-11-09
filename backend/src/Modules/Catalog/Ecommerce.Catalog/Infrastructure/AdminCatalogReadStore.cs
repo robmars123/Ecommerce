@@ -151,6 +151,9 @@ internal sealed class AdminCatalogReadStore(EcommerceDbContext db) : IAdminCatal
             row.Images.Select(i => new AdminImageRow(i.StorageKey, i.AltText, i.SortOrder)).ToList());
     }
 
+    public Task<bool> ProductExistsAsync(Guid id, CancellationToken ct) =>
+        db.Set<Product>().AsNoTracking().AnyAsync(p => p.Id == id, ct);
+
     public async Task<AdminPreviewRow?> GetPreviewAsync(Guid id, CancellationToken ct)
     {
         AdminPreviewShape? row = await (from p in db.Set<Product>().AsNoTracking()
