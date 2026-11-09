@@ -213,6 +213,52 @@ describe('CheckoutView: details', () => {
     expect(third).not.toBe(second);
   });
 
+  it('F4 after a network failure or a 503 the fields are locked and the next tap resends the identical body with the same key', async () => {
+    let attempt = 0;
+    const api = mockApi({
+      ...baseHandlers(),
+      'POST /api/v1/checkout': () => {
+        attempt += 1;
+        if (attempt === 1) throw new TypeError('Network request failed');
+        if (attempt === 2) return problemResponse(503, { type: 'payment-provider-unavailable', orderId: 'o-1' });
+        return jsonResponse(200, placed());
+      },
+      'GET /api/v1/orders/o-1': () => jsonResponse(200, makeOrderDetail({ status: 'PendingPayment' })),
+    });
+    await render();
+    await placeOrder();
+    await screen.findByText("Can't reach the store. Check your connection and try again.");
+
+    expect(screen.getByLabelText('City').props.editable).toBe(false);
+    expect(screen.getByLabelText('Postal code').props.editable).toBe(false);
+    await fireEvent.changeText(screen.getByLabelText('City'), 'Elsewhere');
+    await fireEvent.press(placeOrderButton());
+    await screen.findByText('Payment is temporarily unavailable. Please try again.');
+    expect(screen.getByLabelText('City').props.editable).toBe(false);
+    await fireEvent.press(placeOrderButton());
+    await screen.findByText('Payment form cs_1');
+
+    const calls = api.to('POST', '/api/v1/checkout');
+    expect(calls).toHaveLength(3);
+    expect(calls[1].body).toEqual(calls[0].body);
+    expect(calls[2].body).toEqual(calls[0].body);
+    expect(calls[1].headers['Idempotency-Key']).toBe(calls[0].headers['Idempotency-Key']);
+    expect(calls[2].headers['Idempotency-Key']).toBe(calls[0].headers['Idempotency-Key']);
+  });
+
+  it('F4 a definitive answer unlocks the fields again', async () => {
+    mockApi({
+      ...baseHandlers(),
+      'POST /api/v1/checkout': () => problemResponse(409, { type: 'cart-empty', title: 'Your cart is empty' }),
+    });
+    await render();
+
+    await placeOrder();
+    await screen.findByText('Your cart is empty.');
+
+    expect(screen.getByLabelText('City').props.editable).toBe(true);
+  });
+
   it('shows each rejected line by name, and "Accept new prices" re-prices the line at the same quantity and tries again with a new key', async () => {
     let attempt = 0;
     const api = mockApi({
@@ -400,7 +446,12 @@ describe('CheckoutView: payment', () => {
 
     await render('/checkout?orderId=o-1');
 
-    expect(await screen.findByText(/This order was cancelled/)).toBeOnTheScreen();
+    expect(
+      await screen.findByText(
+        'This order was cancelled because the payment was not completed in time. If a payment went through, it is refunded automatically.',
+      ),
+    ).toBeOnTheScreen();
+    expect(screen.queryByText(/Nothing was charged/)).toBeNull();
     expect(screen.getByRole('button', { name: 'Check out again' })).toBeOnTheScreen();
   });
 

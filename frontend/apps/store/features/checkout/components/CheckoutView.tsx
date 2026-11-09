@@ -90,6 +90,7 @@ function Details({ onPlaced }: DetailsProps) {
   const error = place.error;
   const fields = fieldMessages(error);
   const busy = place.isPending || accepting;
+  const frozen = place.locked !== null;
   const rejected = error instanceof ApiError && error.problemType === 'checkout-lines-rejected' ? (error.lines ?? []) : [];
   const priceChanged = rejected.filter((line) => line.reason === 'PriceChanged');
 
@@ -149,7 +150,7 @@ function Details({ onPlaced }: DetailsProps) {
         <Text accessibilityRole="header" className="text-title font-semibold text-foreground">
           Shipping address
         </Text>
-        <AddressForm value={address} onChange={setAddress} errors={fields} editable={!busy} />
+        <AddressForm value={address} onChange={setAddress} errors={fields} editable={!busy && !frozen} />
       </View>
 
       {methods.data.items.length === 0 ? (
@@ -162,7 +163,7 @@ function Details({ onPlaced }: DetailsProps) {
           selected={selectedCode}
           onSelect={setMethodCode}
           error={fields.shippingMethodCode}
-          editable={!busy}
+          editable={!busy && !frozen}
         />
       )}
 

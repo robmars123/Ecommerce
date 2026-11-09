@@ -103,6 +103,42 @@ public class CheckoutTests(PostgresFixture postgres)
         Assert.Equal(1, await f.CountAsync("SELECT count(*) FROM orders"));
     }
 
+    [Theory]
+    [InlineData("fullName", "Other Buyer")]
+    [InlineData("line1", "2 Other Street")]
+    [InlineData("line2", "Flat 9")]
+    [InlineData("city", "Otherville")]
+    [InlineData("region", "NY")]
+    [InlineData("postalCode", "99999")]
+    [InlineData("country", "CA")]
+    public async Task T2_the_same_key_with_one_changed_address_field_is_a_409_and_creates_nothing(string field, string changed)
+    {
+        await using CheckoutEnv f = await CheckoutEnv.StartAsync(postgres, new Dictionary<string, string> { ["Shipping:Countries:1"] = "CA" });
+        Guid variant = await f.Cart.VariantAsync("IDEM-ADDR");
+        Assert.Equal(HttpStatusCode.OK, (await f.Cart.AddAsync(f.TokenA, variant, 1)).Status);
+        string key = Key();
+        Dictionary<string, string> address = new()
+        {
+            ["fullName"] = "Test Buyer", ["line1"] = "1 Example Street", ["line2"] = "Flat 2", ["city"] = "Exampleville",
+            ["region"] = "CA", ["postalCode"] = "12345", ["country"] = "US",
+        };
+        Assert.Equal(HttpStatusCode.OK, (await f.CheckoutAsync(f.TokenA, key, AddressBody(address))).Status);
+
+        address[field] = changed;
+        IdentityTestEnv.Api resend = await f.CheckoutAsync(f.TokenA, key, AddressBody(address));
+
+        Assert.Equal(HttpStatusCode.Conflict, resend.Status);
+        Assert.Equal(1, await f.CountAsync("SELECT count(*) FROM orders"));
+        Assert.Equal(1, await f.CountAsync("SELECT count(*) FROM payments"));
+        Assert.Single(f.Gateway.Intents);
+    }
+
+    private static object AddressBody(Dictionary<string, string> address) => new Dictionary<string, object>
+    {
+        ["shippingAddress"] = address,
+        ["shippingMethodCode"] = CheckoutEnv.Method,
+    };
+
     [Fact]
     public async Task T5_a_body_carrying_a_price_total_tax_or_status_is_a_400_and_creates_nothing()
     {
@@ -190,16 +226,45 @@ public class CheckoutTests(PostgresFixture postgres)
     {
         await using CheckoutEnv f = await CheckoutEnv.StartAsync(postgres);
         Guid variant = await f.Cart.VariantAsync("SNAP-2");
-        Guid orderId = await f.PlaceOrderAsync(variant, 1, Key());
+        Assert.Equal(HttpStatusCode.OK, (await f.Cart.AddAsync(f.TokenA, variant, 1)).Status);
+        Dictionary<string, string> sent = new()
+        {
+            ["fullName"] = "Test Buyer", ["line1"] = "1 Example Street", ["line2"] = "Flat 2", ["city"] = "Exampleville",
+            ["region"] = "CA", ["postalCode"] = "12345", ["country"] = "US",
+        };
+        IdentityTestEnv.Api placed = await f.CheckoutAsync(f.TokenA, Key(), AddressBody(sent));
+        Assert.Equal(HttpStatusCode.OK, placed.Status);
 
-        IdentityTestEnv.Api detail = await f.OrderAsync(f.TokenA, orderId);
+        IdentityTestEnv.Api detail = await f.OrderAsync(f.TokenA, placed.Json.GetProperty("order").GetProperty("id").GetGuid());
 
         Assert.Equal("standard", detail.Json.GetProperty("shippingMethod").GetProperty("code").GetString());
         Assert.Equal("Standard", detail.Json.GetProperty("shippingMethod").GetProperty("name").GetString());
         JsonElement address = detail.Json.GetProperty("shippingAddress");
-        Assert.Equal("Test Buyer", address.GetProperty("fullName").GetString());
-        Assert.Equal("1 Example Street", address.GetProperty("line1").GetString());
-        Assert.Equal("US", address.GetProperty("country").GetString());
+        foreach ((string field, string value) in sent)
+        {
+            Assert.Equal(value, address.GetProperty(field).GetString());
+        }
+    }
+
+    [Fact]
+    public async Task T2_fields_that_differ_only_by_where_a_newline_falls_are_another_body_and_a_409()
+    {
+        await using CheckoutEnv f = await CheckoutEnv.StartAsync(postgres);
+        Guid variant = await f.Cart.VariantAsync("IDEM-NL");
+        Assert.Equal(HttpStatusCode.OK, (await f.Cart.AddAsync(f.TokenA, variant, 1)).Status);
+        string key = Key();
+        Dictionary<string, string> address = new()
+        {
+            ["fullName"] = "A\nB", ["line1"] = "C", ["city"] = "Exampleville", ["postalCode"] = "12345", ["country"] = "US",
+        };
+        Assert.Equal(HttpStatusCode.OK, (await f.CheckoutAsync(f.TokenA, key, AddressBody(address))).Status);
+
+        address["fullName"] = "A";
+        address["line1"] = "B\nC";
+        IdentityTestEnv.Api resend = await f.CheckoutAsync(f.TokenA, key, AddressBody(address));
+
+        Assert.Equal(HttpStatusCode.Conflict, resend.Status);
+        Assert.Equal(1, await f.CountAsync("SELECT count(*) FROM orders"));
     }
 
     [Fact]
@@ -222,6 +287,32 @@ public class CheckoutTests(PostgresFixture postgres)
         Assert.Equal(0, await f.CountAsync("SELECT count(*) FROM orders"));
         Assert.Equal(0, await f.CountAsync("SELECT count(*) FROM inventory_reservations"));
         Assert.Empty(f.Gateway.Creates);
+    }
+
+    [Fact]
+    public async Task T23_the_chosen_method_sets_the_shipping_total_and_the_intent()
+    {
+        await using CheckoutEnv f = await CheckoutEnv.StartAsync(postgres, new Dictionary<string, string>
+        {
+            ["Shipping:Methods:1:Code"] = "express",
+            ["Shipping:Methods:1:Name"] = "Express",
+            ["Shipping:Methods:1:Amount"] = "12.00",
+            ["Shipping:Methods:1:EstimatedDays"] = "2",
+        });
+        Guid variant = await f.Cart.VariantAsync("METHOD-1"); // 10.00 each
+        Assert.Equal(HttpStatusCode.OK, (await f.Cart.AddAsync(f.TokenA, variant, 1)).Status);
+
+        IdentityTestEnv.Api r = await f.CheckoutAsync(f.TokenA, Key(), CheckoutEnv.Body(method: "express"));
+
+        Assert.Equal(HttpStatusCode.OK, r.Status);
+        JsonElement order = r.Json.GetProperty("order");
+        Assert.Equal("12.00", order.GetProperty("shippingTotal").GetProperty("amount").GetString());
+        Assert.Equal("22.00", order.GetProperty("grandTotal").GetProperty("amount").GetString());
+        Assert.Equal(2200, Assert.Single(f.Gateway.Intents).Request.AmountMinor);
+        Assert.Equal(22.00m, await f.ScalarAsync<decimal>("SELECT amount FROM payments"));
+        IdentityTestEnv.Api detail = await f.OrderAsync(f.TokenA, order.GetProperty("id").GetGuid());
+        Assert.Equal("express", detail.Json.GetProperty("shippingMethod").GetProperty("code").GetString());
+        Assert.Equal("Express", detail.Json.GetProperty("shippingMethod").GetProperty("name").GetString());
     }
 
     // ---- endpoint contract ----
@@ -250,6 +341,23 @@ public class CheckoutTests(PostgresFixture postgres)
         Assert.Equal("5.00", item.GetProperty("price").GetProperty("amount").GetString());
         Assert.Equal("USD", item.GetProperty("price").GetProperty("currency").GetString());
         Assert.Equal(5, item.GetProperty("estimatedDays").GetInt32());
+    }
+
+    [Fact]
+    public async Task Shipping_methods_come_back_in_configuration_order()
+    {
+        await using CheckoutEnv f = await CheckoutEnv.StartAsync(postgres, new Dictionary<string, string>
+        {
+            ["Shipping:Methods:1:Code"] = "express",
+            ["Shipping:Methods:1:Name"] = "Express",
+            ["Shipping:Methods:1:Amount"] = "12.00",
+            ["Shipping:Methods:1:EstimatedDays"] = "2",
+        });
+
+        IdentityTestEnv.Api r = await f.Env.GetAsync("/api/v1/shipping-methods", f.TokenA);
+
+        Assert.Equal(new[] { "standard", "express" }, r.Json.GetProperty("items").EnumerateArray().Select(i => i.GetProperty("code").GetString()).ToArray());
+        Assert.Equal("12.00", r.Json.GetProperty("items")[1].GetProperty("price").GetProperty("amount").GetString());
     }
 
     [Fact]
@@ -365,6 +473,31 @@ public class CheckoutTests(PostgresFixture postgres)
         Assert.Equal(orderId, healed.Json.GetProperty("order").GetProperty("id").GetGuid());
         Assert.Equal(1, await f.CountAsync("SELECT count(*) FROM orders"));
         Assert.Equal(1, await f.CountAsync("SELECT count(*) FROM payments WHERE provider_payment_id IS NOT NULL"));
+    }
+
+    [Fact]
+    public async Task A_response_lost_after_the_provider_made_the_intent_is_healed_by_the_same_key_with_the_same_intent()
+    {
+        await using CheckoutEnv f = await CheckoutEnv.StartAsync(postgres);
+        Guid variant = await f.Cart.VariantAsync("LOST-1");
+        Assert.Equal(HttpStatusCode.OK, (await f.Cart.AddAsync(f.TokenA, variant, 1)).Status);
+        string key = Key();
+        f.Gateway.FailAfterCreate = true;
+
+        IdentityTestEnv.Api lost = await f.CheckoutAsync(f.TokenA, key);
+
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, lost.Status);
+        Guid orderId = Guid.Parse(lost.Str("orderId"));
+        f.Gateway.FailAfterCreate = false;
+        IdentityTestEnv.Api healed = await f.CheckoutAsync(f.TokenA, key);
+
+        Assert.Equal(HttpStatusCode.OK, healed.Status);
+        Assert.Equal(2, f.Gateway.Creates.Count);
+        Assert.All(f.Gateway.Creates, c => Assert.Equal($"pi:{orderId}:1", c.IdempotencyKey));
+        FakeIntent intent = Assert.Single(f.Gateway.Intents);
+        Assert.Equal(intent.Id, await f.IntentOfAsync(orderId));
+        Assert.Equal(intent.Secret, healed.Str("clientSecret"));
+        Assert.Equal(1, await f.CountAsync("SELECT count(*) FROM orders"));
     }
 
     // ---- rule 6 ----

@@ -22,6 +22,9 @@ internal sealed class FakeGatewayState
     /// <summary>When true every call throws PaymentProviderUnavailableException, like an unreachable provider.</summary>
     public bool Unavailable { get; set; }
 
+    /// <summary>When true CreateIntentAsync records the intent and then throws, like a response lost after the provider acted.</summary>
+    public bool FailAfterCreate { get; set; }
+
     /// <summary>Every CreateIntentAsync call, repeats included.</summary>
     public IReadOnlyList<IntentRequest> Creates
     {
@@ -140,6 +143,10 @@ internal sealed class FakeGatewayState
             FakeIntent created = new("pi_fake_" + Guid.NewGuid().ToString("N"), "secret_fake_" + Guid.NewGuid().ToString("N"), request);
             _byKey[request.IdempotencyKey] = created;
             _byId[created.Id] = created;
+            if (FailAfterCreate)
+            {
+                throw new PaymentProviderUnavailableException("fake provider: response lost");
+            }
             return created;
         }
     }

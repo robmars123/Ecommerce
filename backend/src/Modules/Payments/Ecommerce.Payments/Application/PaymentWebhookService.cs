@@ -124,21 +124,26 @@ internal sealed class PaymentWebhookService(
             return new Applied(null, null);
         }
 
-        MarkPaidOutcome outcome = await orders.TryMarkPaidAsync(payment.OrderId, ct);
-        if (outcome.Paid)
+        // The money that actually moved must equal the payment row; otherwise it is not a valid payment (arch 8.2 rules 1, 5).
+        bool mismatch = evt.AmountReceived != MinorUnits.From(payment.Amount)
+                        || !string.Equals(evt.Currency, payment.Currency, StringComparison.OrdinalIgnoreCase);
+        MarkPaidOutcome? outcome = mismatch ? null : await orders.TryMarkPaidAsync(payment.OrderId, ct);
+        if (outcome is { Paid: true })
         {
             await RequestCancelOfOtherAttemptsAsync(payment, now, ct);
             return new Applied(null, null);
         }
 
-        string reason = outcome.OrderStatus == CancelledOrder ? Refund.LateSuccess : Refund.ExtraSuccess;
-        Refund refund = Refund.CreateAutomatic(Guid.CreateVersion7(now), payment, reason, now);
+        string reason = mismatch ? Refund.AmountMismatch : outcome!.OrderStatus == CancelledOrder ? Refund.LateSuccess : Refund.ExtraSuccess;
+        Refund refund = mismatch
+            ? Refund.CreateAutomatic(Guid.CreateVersion7(now), payment, reason, now, evt.AmountReceived!.Value / 100m, evt.Currency!.ToUpperInvariant())
+            : Refund.CreateAutomatic(Guid.CreateVersion7(now), payment, reason, now);
         store.AddRefund(refund);
         outbox.Add(PaymentOutbox.RefundRequest(refund, payment, now));
         audit.Add(new AuditEntry(
             null, "payment.auto-refund", "payment", payment.Id,
             JsonSerializer.Serialize(new PaymentAuditState(before)),
-            JsonSerializer.Serialize(new PaymentAuditState(payment.Status.ToString(), outcome.OrderStatus, refund.Id, refund.Amount)),
+            JsonSerializer.Serialize(new PaymentAuditState(payment.Status.ToString(), outcome?.OrderStatus, refund.Id, refund.Amount)),
             reason, now));
         return new Applied(new AutoRefund(payment.Id, payment.OrderId, refund.Id, reason), null);
     }
@@ -199,7 +204,7 @@ internal sealed class PaymentWebhookService(
         decimal succeededTotal = await store.SumRefundsAsync(payment.Id, [RefundStatus.Succeeded], touched, ct)
                                  + changed.Where(r => r.Status == RefundStatus.Succeeded).Sum(r => r.Amount);
         string paymentBefore = payment.Status.ToString();
-        payment.ApplyRefundedTotal(succeededTotal, now);
+        payment.ApplyRefundedTotal(succeededTotal, now, changed.Any(r => r.Status == RefundStatus.Succeeded && r.ActorId is null));
 
         List<RefundProblem> failed = changed
             .Where(r => r.Status == RefundStatus.Failed)

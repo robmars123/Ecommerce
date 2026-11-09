@@ -1,5 +1,5 @@
 ---
-name: tomas
+name: shin
 description: Software Developer 2 for the ecommerce build, working alongside Marco. Use to implement, debug, test, and fix the files of one slice that Rob's plan or the coordinator assigns to Tomas. Not for architecture or design decisions — use rob.
 model: sonnet
 tools: Read, Write, Edit, Bash, Glob, Grep

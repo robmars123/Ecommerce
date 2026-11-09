@@ -97,6 +97,41 @@ describe('usePlaceOrderMutation (F4, F5)', () => {
   });
 });
 
+describe('usePlaceOrderMutation body freeze (F4)', () => {
+  it('resends the first body with the same key after a network failure, and sends the new body with a new key after a definitive 409', async () => {
+    const bodyA: CheckoutBody = { ...body, shippingMethodCode: 'standard' };
+    const bodyB: CheckoutBody = { ...body, shippingMethodCode: 'express' };
+    const spy = jest
+      .spyOn(globalThis, 'fetch')
+      .mockRejectedValueOnce(new TypeError('Network request failed'))
+      .mockImplementationOnce(async () => problemResponse(503, { type: 'payment-provider-unavailable', orderId: 'o-1' }))
+      .mockImplementationOnce(async () => problemResponse(409, { type: 'cart-empty' }))
+      .mockImplementation(async () => jsonResponse(200, reply));
+    const { result } = await renderHook(() => usePlaceOrderMutation(), { wrapper: queryWrapper(createTestQueryClient()) });
+    const bodiesSent = () => spy.mock.calls.map((call) => JSON.parse((call[1] as RequestInit).body as string));
+
+    await act(async () => result.current.submit(bodyA));
+    await waitFor(() => expect(result.current.error).not.toBeNull());
+    await act(async () => result.current.submit(bodyB));
+    await waitFor(() => expect(spy).toHaveBeenCalledTimes(2));
+
+    expect(bodiesSent()[1]).toEqual(bodyA);
+    expect(keysSent(spy)[1]).toBe(keysSent(spy)[0]);
+    await waitFor(() => expect(result.current.isPending).toBe(false));
+    expect(result.current.locked).toEqual(bodyA);
+
+    await act(async () => result.current.submit(bodyB));
+    await waitFor(() => expect(spy).toHaveBeenCalledTimes(3));
+    expect(bodiesSent()[2]).toEqual(bodyA);
+    await waitFor(() => expect(result.current.locked).toBeNull());
+    await act(async () => result.current.submit(bodyB));
+    await waitFor(() => expect(spy).toHaveBeenCalledTimes(4));
+
+    expect(bodiesSent()[3]).toEqual(bodyB);
+    expect(keysSent(spy)[3]).not.toBe(keysSent(spy)[2]);
+  });
+});
+
 describe('useRetryPaymentMutation (F11)', () => {
   const render = () => renderHook(() => useRetryPaymentMutation('o-1'), { wrapper: queryWrapper(createTestQueryClient()) });
 

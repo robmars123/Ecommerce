@@ -23,7 +23,7 @@ public class PaymentsApplicationTests
     }
 
     private static string Body(string type, string intent = "pi_1") =>
-        $"{{\"id\":\"evt_1\",\"type\":\"{type}\",\"api_version\":\"2099-01-01\",\"data\":{{\"object\":{{\"id\":\"{intent}\",\"unknown_shape\":[1,2]}}}}}}";
+        $"{{\"id\":\"evt_1\",\"type\":\"{type}\",\"api_version\":\"2099-01-01\",\"data\":{{\"object\":{{\"id\":\"{intent}\",\"amount_received\":2500,\"currency\":\"usd\",\"unknown_shape\":[1,2]}}}}}}";
 
     [Theory]
     [InlineData("payment_intent.succeeded", "Succeeded")]
@@ -70,6 +70,38 @@ public class PaymentsApplicationTests
 
         Assert.False(Verifier().TryVerify(body, Sign(body, Now), Now, out PaymentEvent? evt));
         Assert.Null(evt);
+    }
+
+    [Theory]
+    [InlineData("{\"id\":\"evt_1\",\"type\":\"payment_intent.succeeded\",\"data\":{\"object\":{\"id\":\"pi_1\",\"currency\":\"usd\"}}}")]
+    [InlineData("{\"id\":\"evt_1\",\"type\":\"payment_intent.succeeded\",\"data\":{\"object\":{\"id\":\"pi_1\",\"amount_received\":2500}}}")]
+    [InlineData("{\"id\":\"evt_1\",\"type\":\"payment_intent.succeeded\",\"data\":{\"object\":{\"id\":\"pi_1\",\"amount_received\":\"2500\",\"currency\":\"usd\"}}}")]
+    public void A_success_without_a_numeric_amount_received_or_a_currency_is_rejected(string body)
+    {
+        Assert.False(Verifier().TryVerify(body, Sign(body, Now), Now, out PaymentEvent? evt));
+        Assert.Null(evt);
+    }
+
+    [Fact]
+    public void A_success_carries_the_amount_received_and_currency_a_failure_does_not_need_them()
+    {
+        string success = Body("payment_intent.succeeded");
+        string failure = "{\"id\":\"evt_2\",\"type\":\"payment_intent.payment_failed\",\"data\":{\"object\":{\"id\":\"pi_1\"}}}";
+
+        Assert.True(Verifier().TryVerify(success, Sign(success, Now), Now, out PaymentEvent? ok));
+        Assert.Equal((2500L, "usd"), (ok!.AmountReceived, ok.Currency));
+        Assert.True(Verifier().TryVerify(failure, Sign(failure, Now), Now, out PaymentEvent? failed));
+        Assert.Equal(PaymentEventKind.Failed, failed!.Kind);
+    }
+
+    [Fact]
+    public void An_automatic_refund_can_be_for_the_amount_and_currency_actually_received()
+    {
+        Payment payment = Payment.Create(Guid.NewGuid(), Guid.NewGuid(), 2, 25.00m, "USD", Now);
+
+        Refund refund = Refund.CreateAutomatic(Guid.NewGuid(), payment, Refund.AmountMismatch, Now, 24.99m, "EUR");
+
+        Assert.Equal((24.99m, "EUR", "amount-mismatch", $"auto:{payment.Id}"), (refund.Amount, refund.Currency, refund.Reason, refund.IdempotencyKey));
     }
 
     [Fact]

@@ -1,7 +1,7 @@
 ---
 name: rob
 description: System architect for the ecommerce build. Use to plan a slice (risks, gates, required tests) and to code-review Marco's or Nathaniel's diff against the quality bar. Not for implementation — use marco.
-model: fable
+model: opus
 tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 

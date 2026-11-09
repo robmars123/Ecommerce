@@ -3,6 +3,9 @@ using Testcontainers.PostgreSql;
 using Xunit;
 
 [assembly: AssemblyFixture(typeof(Ecommerce.Api.IntegrationTests.PostgresFixture))]
+// xunit v3 runs one test class per CPU in parallel (24 here). Each host's pool holds up to 8 connections, so the container's
+// 100-connection limit (and the Docker port proxy) was exhausted. 8 classes x 8 = 64 leaves room for lingering idle pools.
+[assembly: CollectionBehavior(MaxParallelThreads = 8)]
 
 namespace Ecommerce.Api.IntegrationTests;
 

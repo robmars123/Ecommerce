@@ -9,7 +9,7 @@ namespace Ecommerce.Payments.Application;
 /// The public side of Payments for checkout and retry (arch 8.2 rules 1, 4, 11). Start and cancel only stage rows in the
 /// caller transaction; <see cref="EnsureIntentAsync"/> is the one provider call and runs after commit (rule 6).
 /// </summary>
-internal sealed class PaymentAttempts(IPaymentStore store, IPaymentGateway gateway, IOutbox outbox, IClock clock) : IPaymentAttempts
+internal sealed class PaymentAttempts(IPaymentStore store, IPaymentGateway gateway, IOutbox outbox, IClock clock, IPaymentAlerts alerts) : IPaymentAttempts
 {
     public async Task<PaymentAttemptInfo> StartAttemptAsync(Guid paymentId, Guid orderId, decimal amount, string currency, CancellationToken ct)
     {
@@ -50,8 +50,18 @@ internal sealed class PaymentAttempts(IPaymentStore store, IPaymentGateway gatew
             return new PaymentIntentHandle(payment.ProviderPaymentId, secret, payment.Attempt);
         }
 
-        CreatedIntent created = await gateway.CreateIntentAsync(
-            new IntentRequest($"pi:{payment.OrderId}:{payment.Attempt}", MinorUnits.From(payment.Amount), payment.Currency, payment.OrderId, payment.Id), ct);
+        CreatedIntent created;
+        try
+        {
+            created = await gateway.CreateIntentAsync(
+                new IntentRequest($"pi:{payment.OrderId}:{payment.Attempt}", MinorUnits.From(payment.Amount), payment.Currency, payment.OrderId, payment.Id), ct);
+        }
+        catch (PaymentProviderUnavailableException ex)
+        {
+            // The caller answers 503 "retry"; this is the only place that records why (ids and the provider error type/code, no secrets).
+            alerts.IntentCreationFailed(payment.OrderId, payment.Id, payment.Attempt, ex.InnerException);
+            throw;
+        }
         // A concurrent repeat stores the same id (same provider key); the first write wins.
         string stored = await store.AttachProviderIdAsync(payment.Id, created.ProviderPaymentId, clock.UtcNow, ct) ?? created.ProviderPaymentId;
         return new PaymentIntentHandle(stored, created.ClientSecret, payment.Attempt);

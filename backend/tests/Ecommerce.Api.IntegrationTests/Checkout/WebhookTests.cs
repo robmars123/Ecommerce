@@ -2,6 +2,7 @@ using System.Net;
 using Ecommerce.Api.IntegrationTests.Identity;
 using Ecommerce.Api.IntegrationTests.Inventory;
 using Ecommerce.Orders.Contracts;
+using Ecommerce.SharedKernel.Persistence;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Serilog.Events;
@@ -11,6 +12,9 @@ namespace Ecommerce.Api.IntegrationTests.Checkout;
 /// <summary>The signed webhook (arch 8.2 rules 6, 8, 12): tests 3, 8, 19, 25, signature checks and test 29 (payment status).</summary>
 public class WebhookTests(PostgresFixture postgres)
 {
+    private const string CancelsOf =
+        "SELECT count(*) FROM outbox_events WHERE event_type = 'PaymentIntentCancelRequested' AND payload->>'paymentId' = @p";
+
     private static string Key() => "key-" + Guid.NewGuid().ToString("N");
 
     /// <summary>Runs the real handler, then throws once: the whole webhook transaction must roll back (Test 8).</summary>
@@ -134,7 +138,7 @@ public class WebhookTests(PostgresFixture postgres)
     {
         (CheckoutEnv f, Guid variant, Guid orderId) = await PlacedAsync("HOOK-SIG");
         await using CheckoutEnv owner = f;
-        string body = CheckoutEnv.EventBody("evt_sig", "payment_intent.succeeded", await f.IntentOfAsync(orderId));
+        string body = await f.BodyAsync("evt_sig", "payment_intent.succeeded", await f.IntentOfAsync(orderId));
         DateTimeOffset now = f.Env.Clock.UtcNow;
 
         IdentityTestEnv.Api missing = await f.WebhookRawAsync(body, null);
@@ -158,7 +162,7 @@ public class WebhookTests(PostgresFixture postgres)
     {
         (CheckoutEnv f, _, Guid orderId) = await PlacedAsync("HOOK-OK");
         await using CheckoutEnv owner = f;
-        string body = CheckoutEnv.EventBody("evt_ok", "payment_intent.succeeded", await f.IntentOfAsync(orderId));
+        string body = await f.BodyAsync("evt_ok", "payment_intent.succeeded", await f.IntentOfAsync(orderId));
 
         IdentityTestEnv.Api r = await f.WebhookRawAsync(body, f.Sign(body, f.Env.Clock.UtcNow.AddMinutes(-4)));
 
@@ -173,7 +177,7 @@ public class WebhookTests(PostgresFixture postgres)
         await using CheckoutEnv owner = f;
 
         IdentityTestEnv.Api unknown = await f.WebhookAsync("evt_unk", "pi_does_not_exist");
-        IdentityTestEnv.Api ignored = await f.WebhookAsync("evt_ign", await f.IntentOfAsync(orderId), "charge.refunded");
+        IdentityTestEnv.Api ignored = await f.WebhookAsync("evt_ign", await f.IntentOfAsync(orderId), "customer.created");
 
         Assert.Equal(HttpStatusCode.OK, unknown.Status);
         Assert.Equal(HttpStatusCode.OK, ignored.Status);
@@ -244,8 +248,17 @@ public class WebhookTests(PostgresFixture postgres)
         string attempt1 = await f.IntentOfAsync(orderId, 1);
         string attempt2 = await f.IntentOfAsync(orderId, 2);
         Assert.NotEqual(attempt1, attempt2);
+        Guid payment1 = await f.PaymentIdAsync(orderId, 1);
+        Guid payment2Id = await f.PaymentIdAsync(orderId, 2);
+        long cancelsBefore = await f.OutboxCountAsync("PaymentIntentCancelRequested");
+        long paidCancelsBefore = await f.CountAsync(CancelsOf, ("p", payment1.ToString()));
 
         Assert.Equal(HttpStatusCode.OK, (await f.WebhookAsync("evt_25a", attempt1)).Status);
+
+        // Paying attempt 1 stages exactly one cancel, for the other open attempt (2), none for the paid one (rule 12).
+        Assert.Equal(cancelsBefore + 1, await f.OutboxCountAsync("PaymentIntentCancelRequested"));
+        Assert.Equal(1, await f.CountAsync(CancelsOf, ("p", payment2Id.ToString())));
+        Assert.Equal(paidCancelsBefore, await f.CountAsync(CancelsOf, ("p", payment1.ToString())));
         Assert.Equal(HttpStatusCode.OK, (await f.WebhookAsync("evt_25b", attempt2)).Status);
         Assert.Equal(HttpStatusCode.OK, (await f.WebhookAsync("evt_25b", attempt2)).Status);
 
@@ -261,6 +274,131 @@ public class WebhookTests(PostgresFixture postgres)
         Assert.Equal(1, await f.OutboxCountAsync("RefundRequested"));
         Assert.Equal(1, await f.CountAsync("SELECT count(*) FROM audit_log WHERE action = 'payment.auto-refund'"));
         Assert.Contains(f.Env.Logs.Events, e => e.Level == LogEventLevel.Fatal);
+    }
+
+    [Theory]
+    [InlineData(-1, null)]
+    [InlineData(0, "eur")]
+    public async Task A_success_whose_amount_or_currency_differs_from_the_payment_is_not_Paid_and_is_refunded_once_for_what_was_received(long centsOff, string? currency)
+    {
+        (CheckoutEnv f, Guid variant, Guid orderId) = await PlacedAsync("HOOK-AMT");
+        await using CheckoutEnv owner = f;
+        string intent = await f.IntentOfAsync(orderId);
+        Guid paymentId = await f.PaymentIdAsync(orderId, 1);
+        long expected = await f.ScalarAsync<long>("SELECT (amount * 100)::bigint FROM payments WHERE id = @p", ("p", paymentId));
+        long received = expected + centsOff;
+
+        Assert.Equal(HttpStatusCode.OK, (await f.WebhookAsync("evt_amt", intent, amountReceived: received, currency: currency)).Status);
+        Assert.Equal(HttpStatusCode.OK, (await f.WebhookAsync("evt_amt", intent, amountReceived: received, currency: currency)).Status);
+
+        Assert.Equal("PendingPayment", await f.OrderStatusAsync(orderId));
+        Assert.Equal((10, 2), await InventoryEnv.ReadAsync(f.Env, variant));
+        Assert.Equal(0, await f.OutboxCountAsync("OrderPaid"));
+        Assert.Equal(1, await f.CountAsync("SELECT count(*) FROM refunds"));
+        Assert.Equal(1, await f.CountAsync(
+            "SELECT count(*) FROM refunds WHERE payment_id = @p AND idempotency_key = @k AND reason = 'amount-mismatch' AND status = 'Pending' AND actor_id IS NULL AND amount = @a AND currency = @c",
+            ("p", paymentId), ("k", $"auto:{paymentId}"), ("a", received / 100m), ("c", (currency ?? "usd").ToUpperInvariant())));
+        Assert.Equal(1, await f.OutboxCountAsync("RefundRequested"));
+        Assert.Equal(1, await f.CountAsync("SELECT count(*) FROM audit_log WHERE action = 'payment.auto-refund' AND entity_id = @p", ("p", paymentId)));
+        LogEvent alert = Assert.Single(f.Env.Logs.Events, e => e.Properties.TryGetValue("EventId", out LogEventPropertyValue? id)
+                                                            && id is StructureValue s && s.Properties.Any(p => p.Name == "Name" && p.Value.ToString() == "\"PaymentAlert\""));
+        Assert.Equal(LogEventLevel.Fatal, alert.Level);
+    }
+
+    [Fact]
+    public async Task The_refund_of_a_mismatched_success_leaves_the_payment_Refunded_and_the_order_untouched()
+    {
+        (CheckoutEnv f, _, Guid orderId) = await PlacedAsync("HOOK-AMTREF");
+        await using CheckoutEnv owner = f;
+        string intent = await f.IntentOfAsync(orderId);
+        Guid paymentId = await f.PaymentIdAsync(orderId, 1);
+        long expected = await f.ScalarAsync<long>("SELECT (amount * 100)::bigint FROM payments WHERE id = @p", ("p", paymentId));
+        Assert.Equal(HttpStatusCode.OK, (await f.WebhookAsync("evt_amtref", intent, amountReceived: expected - 1)).Status);
+        Guid refundId = await f.ScalarAsync<Guid>("SELECT id FROM refunds WHERE payment_id = @p", ("p", paymentId));
+        string body = "{\"id\":\"evt_amtref_done\",\"type\":\"charge.refunded\",\"data\":{\"object\":{\"id\":\"ch_1\",\"refunds\":{\"data\":["
+            + $"{{\"id\":\"re_auto\",\"status\":\"succeeded\",\"metadata\":{{\"refund_id\":\"{refundId}\"}}}}]}}}}}}}}";
+
+        Assert.Equal(HttpStatusCode.OK, (await f.WebhookRawAsync(body, f.Sign(body, f.Env.Clock.UtcNow))).Status);
+
+        Assert.Equal("Refunded", await f.ScalarAsync<string>("SELECT status FROM payments WHERE id = @p", ("p", paymentId)));
+        Assert.Equal("PendingPayment", await f.OrderStatusAsync(orderId));
+        Assert.Equal(0, await f.OutboxCountAsync("OrderStatusChanged"));
+    }
+
+    /// <summary>Holds one chosen delivery after it has locked and read the payment, until released (deterministic interleaving).</summary>
+    private sealed class GateState(string eventId)
+    {
+        public string EventId { get; } = eventId;
+
+        public TaskCompletionSource Reached { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public TaskCompletionSource Release { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    }
+
+    private sealed class GatedIdempotencyStore(IIdempotencyStore inner, GateState gate) : IIdempotencyStore
+    {
+        public async Task<IdempotencyEntry?> FindAsync(string scope, string key, CancellationToken ct)
+        {
+            IdempotencyEntry? found = await inner.FindAsync(scope, key, ct);
+            if (key == gate.EventId)
+            {
+                gate.Reached.TrySetResult();
+                await gate.Release.Task.WaitAsync(TimeSpan.FromSeconds(30), ct);
+            }
+            return found;
+        }
+
+        public void Add(IdempotencyEntry entry) => inner.Add(entry);
+    }
+
+    [Fact]
+    public async Task A_payment_failed_and_a_success_for_one_intent_in_flight_together_serialize_on_the_payment_row_and_end_Paid()
+    {
+        GateState gate = new("evt_gate_failed");
+        await using CheckoutEnv f = await CheckoutEnv.StartAsync(postgres, configure: services =>
+        {
+            Type implementation = services.Last(d => d.ServiceType == typeof(IIdempotencyStore)).ImplementationType!;
+            services.RemoveAll<IIdempotencyStore>();
+            services.AddScoped<IIdempotencyStore>(sp =>
+                new GatedIdempotencyStore((IIdempotencyStore)ActivatorUtilities.CreateInstance(sp, implementation), gate));
+        });
+        Guid variant = await f.Cart.VariantAsync("HOOK-LOCK", stock: 10);
+        Guid orderId = await f.PlaceOrderAsync(variant, 2, Key());
+        string intent = await f.IntentOfAsync(orderId);
+
+        // The failure locks the payment and reads it Pending, then waits at the gate.
+        Task<IdentityTestEnv.Api> failed = f.WebhookAsync("evt_gate_failed", intent, "payment_intent.payment_failed");
+        await gate.Reached.Task.WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+        Task<IdentityTestEnv.Api> succeeded = f.WebhookAsync("evt_gate_succeeded", intent);
+
+        // Either the success is stuck behind the row lock (what must happen), or, with the lock gone, it already finished.
+        for (int i = 0; i < 200 && !succeeded.IsCompleted && await f.CountAsync(
+                 "SELECT count(*) FROM pg_stat_activity WHERE datname = current_database() AND wait_event_type = 'Lock' AND query ILIKE '%FOR UPDATE%'") == 0; i++)
+        {
+            await Task.Delay(50, TestContext.Current.CancellationToken);
+        }
+        gate.Release.TrySetResult();
+
+        Assert.Equal(HttpStatusCode.OK, (await failed).Status);
+        Assert.Equal(HttpStatusCode.OK, (await succeeded).Status);
+        Assert.Equal("Succeeded", await f.ScalarAsync<string>("SELECT status FROM payments WHERE order_id = @o", ("o", orderId)));
+        Assert.Equal("Paid", await f.OrderStatusAsync(orderId));
+        Assert.Equal(1, await f.OutboxCountAsync("OrderPaid"));
+        Assert.Equal(2, await f.CountAsync("SELECT count(*) FROM idempotency_keys WHERE scope = 'stripe-event'"));
+    }
+
+    [Fact]
+    public async Task A_late_canceled_event_after_the_payment_succeeded_never_downgrades_it()
+    {
+        (CheckoutEnv f, _, Guid orderId) = await PlacedAsync("HOOK-LATE");
+        await using CheckoutEnv owner = f;
+        string intent = await f.IntentOfAsync(orderId);
+        await f.PayAsync(orderId, "evt_late_ok");
+
+        Assert.Equal(HttpStatusCode.OK, (await f.WebhookAsync("evt_late_cancel", intent, "payment_intent.canceled")).Status);
+
+        Assert.Equal("Succeeded", await f.ScalarAsync<string>("SELECT status FROM payments WHERE order_id = @o", ("o", orderId)));
+        Assert.Equal("Paid", await f.OrderStatusAsync(orderId));
     }
 
     [Fact]

@@ -49,10 +49,10 @@ internal sealed class Payment
     /// <summary>The refund ceiling (arch 8.5 step 1): Pending plus Succeeded refunds plus this one may not pass the captured amount.</summary>
     public bool CanCover(decimal committedRefunds, decimal amount) => amount > 0m && committedRefunds + amount <= Amount;
 
-    /// <summary>Sets PartiallyRefunded or Refunded from the Succeeded refund total. Nothing succeeded keeps the status.</summary>
-    public void ApplyRefundedTotal(decimal succeededTotal, DateTimeOffset now)
+    /// <summary>Sets PartiallyRefunded or Refunded from the Succeeded refund total; a succeeded automatic refund returned everything received, so Refunded. Nothing succeeded keeps the status.</summary>
+    public void ApplyRefundedTotal(decimal succeededTotal, DateTimeOffset now, bool automaticSucceeded = false)
     {
-        PaymentStatus next = succeededTotal >= Amount ? PaymentStatus.Refunded : succeededTotal > 0m ? PaymentStatus.PartiallyRefunded : Status;
+        PaymentStatus next = automaticSucceeded || succeededTotal >= Amount ? PaymentStatus.Refunded : succeededTotal > 0m ? PaymentStatus.PartiallyRefunded : Status;
         if (next != Status && Status is PaymentStatus.Succeeded or PaymentStatus.PartiallyRefunded)
         {
             Status = next;

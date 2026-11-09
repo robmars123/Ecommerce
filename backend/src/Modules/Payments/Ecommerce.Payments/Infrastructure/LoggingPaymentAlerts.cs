@@ -1,5 +1,6 @@
 using Ecommerce.Payments.Application;
 using Microsoft.Extensions.Logging;
+using Stripe;
 
 namespace Ecommerce.Payments.Infrastructure;
 
@@ -19,6 +20,15 @@ internal sealed class LoggingPaymentAlerts(ILogger<LoggingPaymentAlerts> logger)
 
     public void RefundOrderNotTransitioned(Guid refundId, Guid orderId) =>
         logger.LogCritical(PaymentAlert, "Refund {RefundId} reached the captured amount but order {OrderId} could not move; check the order", refundId, orderId);
+
+    public void IntentCreationFailed(Guid orderId, Guid paymentId, int attempt, Exception? providerError)
+    {
+        // Only the provider's error type and code: the exception message could echo request data, so it is not logged.
+        StripeError? error = (providerError as StripeException)?.StripeError;
+        logger.LogWarning(
+            "Creating the payment intent failed. OrderId={OrderId} PaymentId={PaymentId} Attempt={Attempt} StripeErrorType={StripeErrorType} StripeErrorCode={StripeErrorCode}",
+            orderId, paymentId, attempt, error?.Type, error?.Code);
+    }
 
     public void UnknownIntent(string eventId, string providerPaymentId) =>
         logger.LogWarning("Webhook event {EventId} names unknown payment intent {ProviderPaymentId}; ignored", eventId, providerPaymentId);

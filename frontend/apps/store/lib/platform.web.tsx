@@ -46,6 +46,10 @@ function PayButton({ returnPath, onResult }: Pick<PaymentFormProps, 'returnPath'
         confirmParams: { return_url: `${window.location.origin}${returnPath}` },
         redirect: 'if_required',
       });
+      if (error?.type === 'validation_error') {
+        // An incomplete field: nothing was sent to the provider, so this is not a payment attempt. The element shows the message.
+        return;
+      }
       if (error) {
         onResult({ status: 'failed', message: error.message });
       } else if (paymentIntent?.status === 'succeeded') {
