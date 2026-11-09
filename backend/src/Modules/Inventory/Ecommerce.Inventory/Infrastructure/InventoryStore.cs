@@ -1,3 +1,4 @@
+using Ecommerce.Inventory.Contracts;
 using Ecommerce.Inventory.Application;
 using Ecommerce.Inventory.Domain;
 using Ecommerce.Persistence;
@@ -34,6 +35,14 @@ internal sealed class InventoryStore(EcommerceDbContext db) : IInventoryStore
             .ToListAsync(ct);
         return rows.ToDictionary(s => s.ProductVariantId, s => new StockCounts(s.QuantityOnHand, s.QuantityReserved));
     }
+
+    public async Task<IReadOnlyList<LowStockItem>> ListLowAsync(int threshold, int max, CancellationToken ct) =>
+        await db.Set<InventoryStock>().AsNoTracking()
+            .Where(s => s.QuantityOnHand - s.QuantityReserved <= threshold)
+            .OrderBy(s => s.QuantityOnHand - s.QuantityReserved).ThenBy(s => s.ProductVariantId)
+            .Take(max)
+            .Select(s => new LowStockItem(s.ProductVariantId, s.QuantityOnHand - s.QuantityReserved))
+            .ToListAsync(ct);
 
     public async Task<IReadOnlyList<Guid>> FindExpiredOrderIdsAsync(DateTimeOffset now, int max, CancellationToken ct) =>
         await db.Set<InventoryReservation>().AsNoTracking()

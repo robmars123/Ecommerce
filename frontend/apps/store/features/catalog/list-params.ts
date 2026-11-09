@@ -3,7 +3,7 @@ import type { ProductListPage, ProductListParams, ProductSort } from './types';
 export const PRODUCT_PAGE_SIZE = 20;
 export const MAX_SEARCH_LENGTH = 100;
 
-const SORTS: readonly ProductSort[] = ['relevance', 'price-asc', 'price-desc', 'newest'];
+const SORTS: readonly ProductSort[] = ['relevance', 'price-asc', 'price-desc', 'newest', 'bestselling'];
 
 type RawParams = Record<string, string | string[] | undefined>;
 type ListChange = Partial<Pick<ProductListParams, 'search' | 'category' | 'sort' | 'page'>>;

@@ -41,4 +41,7 @@ internal sealed class InventoryStockReader(IInventoryStore store, StockSettings 
             return new StockAvailability(available, StockLevel.Classify(available, settings.LowStockThreshold));
         });
     }
+
+    public async Task<IReadOnlyList<LowStockItem>> ListLowStockAsync(int max, CancellationToken ct) =>
+        await store.ListLowAsync(settings.LowStockThreshold, max, ct);
 }

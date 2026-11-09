@@ -37,7 +37,7 @@ public sealed class OutboxProcessor(
     {
         await using NpgsqlConnection lockConnection = new(database.Value.ConnectionString);
         await lockConnection.OpenAsync(ct);
-        if (!await TryLockAsync(lockConnection, consumer.Name, ct))
+        if (!await AdvisoryLock.TryLockAsync(lockConnection, "outbox:" + consumer.Name, ct))
         {
             return 0;
         }
@@ -48,7 +48,7 @@ public sealed class OutboxProcessor(
         }
         finally
         {
-            await UnlockQuietlyAsync(lockConnection, consumer.Name);
+            await AdvisoryLock.UnlockQuietlyAsync(lockConnection, "outbox:" + consumer.Name);
         }
     }
 
@@ -127,26 +127,5 @@ public sealed class OutboxProcessor(
                 status = EXCLUDED.status, attempts = EXCLUDED.attempts, next_attempt_at = EXCLUDED.next_attempt_at,
                 last_error = EXCLUDED.last_error, processed_at = EXCLUDED.processed_at
             """, ct);
-    }
-
-    private static async Task<bool> TryLockAsync(NpgsqlConnection connection, string consumer, CancellationToken ct)
-    {
-        await using NpgsqlCommand cmd = new("SELECT pg_try_advisory_lock(hashtext(@key))", connection);
-        cmd.Parameters.AddWithValue("key", "outbox:" + consumer);
-        return (bool)(await cmd.ExecuteScalarAsync(ct))!;
-    }
-
-    private static async Task UnlockQuietlyAsync(NpgsqlConnection connection, string consumer)
-    {
-        try
-        {
-            await using NpgsqlCommand cmd = new("SELECT pg_advisory_unlock(hashtext(@key))", connection);
-            cmd.Parameters.AddWithValue("key", "outbox:" + consumer);
-            await cmd.ExecuteScalarAsync(CancellationToken.None);
-        }
-        catch (Exception)
-        {
-            // A broken connection drops its session locks anyway.
-        }
     }
 }

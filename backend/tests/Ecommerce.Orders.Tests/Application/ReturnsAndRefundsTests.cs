@@ -46,6 +46,10 @@ internal sealed class FakeOutbox : IOutbox
 
 internal sealed class FakeOrderReadStore : IOrderReadStore
 {
+    public Task<RecentOrderPage> ListRecentAsync(int page, int pageSize, CancellationToken ct) => throw new NotSupportedException();
+
+    public Task<int> CountPendingReturnsAsync(CancellationToken ct) => throw new NotSupportedException();
+
     public OrderDetailRow? Order { get; set; }
 
     public Task<OrderListRows> ListAsync(Guid userId, int page, int pageSize, CancellationToken ct) => Task.FromResult(new OrderListRows([], 0));
@@ -249,7 +253,7 @@ public class ReturnsAndRefundsTests
         FakeOrderStore orders = new() { Locked = order };
         FakeReturnStore returns = new();
         FakeOutbox outbox = new();
-        return new RefundRig(new OrderRefunds(orders, returns, outbox, new FakeClock(Now)), orders, returns, outbox);
+        return new RefundRig(new OrderRefunds(orders, returns, new FakeSagaStore(), outbox, new FakeClock(Now)), orders, returns, outbox);
     }
 
     [Fact]
@@ -476,4 +480,12 @@ public class ReturnsAndRefundsTests
 
         Assert.Null(view.LatestShipment);
     }
+}
+
+/// <summary>Slice 6b: OrderRefunds now also looks for the order's saga; these rigs have none.</summary>
+internal sealed class FakeSagaStore : IFulfillmentSagaStore
+{
+    public Task<FulfillmentSaga?> GetByOrderAsync(Guid orderId, CancellationToken ct) => Task.FromResult<FulfillmentSaga?>(null);
+
+    public void Add(FulfillmentSaga saga) { }
 }

@@ -103,3 +103,15 @@ describe('showingRange', () => {
     expect(showingRange(page(1, 1))).toEqual({ first: 1, last: 1 });
   });
 });
+
+describe('bestselling sort', () => {
+  it('is a valid sort without a search term', () => {
+    expect(parseListParams({ sort: 'bestselling' }).sort).toBe('bestselling');
+  });
+
+  it('resets to page 1 when chosen and survives clearing the search', () => {
+    const chosen = nextListParams({ ...base, page: 4 }, { sort: 'bestselling' });
+    expect(chosen).toEqual({ ...base, page: 1, sort: 'bestselling' });
+    expect(nextListParams({ ...chosen, search: 'shirt' }, { search: undefined }).sort).toBe('bestselling');
+  });
+});

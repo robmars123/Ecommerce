@@ -40,4 +40,5 @@ internal sealed record ProductDetail(
     string Description,
     CategoryRef Category,
     IReadOnlyList<ImageView> Images,
-    IReadOnlyList<VariantView> Variants);
+    IReadOnlyList<VariantView> Variants,
+    IReadOnlyList<ProductListItem> Related);

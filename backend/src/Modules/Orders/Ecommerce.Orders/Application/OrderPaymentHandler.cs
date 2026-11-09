@@ -23,11 +23,6 @@ internal sealed class OrderPaymentHandler(
 {
     public const string OrderPaid = OrderEventTypes.OrderPaid;
 
-    private sealed record OrderPaidLine(Guid VariantId, int Quantity);
-
-    private sealed record OrderPaidPayload(
-        Guid OrderId, string OrderNumber, Guid UserId, decimal GrandTotal, string Currency, IReadOnlyList<OrderPaidLine> Items,
-        string FromStatus, string ToStatus, DateTimeOffset OccurredAt);
 
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 

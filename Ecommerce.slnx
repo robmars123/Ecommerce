@@ -5,6 +5,10 @@
     <Project Path="backend/src/Ecommerce.SharedKernel/Ecommerce.SharedKernel.csproj" />
   </Folder>
   <Folder Name="/src/Modules/" />
+  <Folder Name="/src/Modules/Admin/">
+    <Project Path="backend/src/Modules/Admin/Ecommerce.Admin/Ecommerce.Admin.csproj" />
+    <Project Path="backend/src/Modules/Admin/Ecommerce.Admin.Contracts/Ecommerce.Admin.Contracts.csproj" />
+  </Folder>
   <Folder Name="/src/Modules/Cart/">
     <Project Path="backend/src/Modules/Cart/Ecommerce.Cart/Ecommerce.Cart.csproj" />
     <Project Path="backend/src/Modules/Cart/Ecommerce.Cart.Contracts/Ecommerce.Cart.Contracts.csproj" />
@@ -34,6 +38,7 @@
     <Project Path="backend/src/Modules/Payments/Ecommerce.Payments.Contracts/Ecommerce.Payments.Contracts.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="backend/tests/Ecommerce.Admin.Tests/Ecommerce.Admin.Tests.csproj" />
     <Project Path="backend/tests/Ecommerce.Api.IntegrationTests/Ecommerce.Api.IntegrationTests.csproj" />
     <Project Path="backend/tests/Ecommerce.ArchitectureTests/Ecommerce.ArchitectureTests.csproj" />
     <Project Path="backend/tests/Ecommerce.Cart.Tests/Ecommerce.Cart.Tests.csproj" />

@@ -12,6 +12,8 @@ public class CatalogStockAndImageTests(PostgresFixture postgres)
 {
     private sealed class FakeInventoryReader : IInventoryReader
     {
+        public Task<IReadOnlyList<LowStockItem>> ListLowStockAsync(int max, CancellationToken ct) => throw new NotSupportedException();
+
         public Dictionary<Guid, StockStatus> Statuses { get; } = [];
         public List<IReadOnlyCollection<Guid>> Calls { get; } = [];
 
@@ -77,7 +79,11 @@ public class CatalogStockAndImageTests(PostgresFixture postgres)
             .ToDictionary(v => v.GetProperty("sku").GetString()!, v => v.GetProperty("stockStatus").GetString());
         Assert.Equal("Out", statuses["M-1"]);
         Assert.Equal("InStock", statuses["M-2"]);
-        Assert.Equal(2, Assert.Single(fake.Calls).Count);
+        // One call serves the page (2 variants) and its related cards (the other two products, 1 variant each) - Slice 6b D16.
+        Assert.Equal(4, Assert.Single(fake.Calls).Count);
+        Dictionary<string, string?> related = detail.RootElement.GetProperty("related").EnumerateArray()
+            .ToDictionary(i => i.GetProperty("slug").GetString()!, i => i.GetProperty("stockStatus").GetString());
+        Assert.Equal(("Out", "Low"), (related["gone"], related["low"]));
     }
 
     [Fact]

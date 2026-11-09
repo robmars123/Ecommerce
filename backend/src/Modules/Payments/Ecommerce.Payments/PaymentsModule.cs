@@ -36,6 +36,7 @@ public static class PaymentsModule
         services.AddScoped<RefundService>();
         services.AddScoped<IOutboxConsumer, RefundRequestedConsumer>();
         services.AddScoped<IOutboxConsumer, IntentCancelConsumer>();
+        services.AddScoped<IOutboxConsumer, FulfillmentCompensationConsumer>();
         return services;
     }
 }

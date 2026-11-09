@@ -1,4 +1,5 @@
 using Ecommerce.Orders.Application;
+using Ecommerce.Orders.Contracts;
 using Ecommerce.Orders.Domain;
 using Ecommerce.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -79,6 +80,19 @@ internal sealed class OrderReadStore(EcommerceDbContext db) : IOrderReadStore
                     .Select(s => new ShipmentRow(s.Carrier, s.TrackingNumber, s.ShippedAt, s.DeliveredAt))
                     .ToList()))
             .FirstOrDefaultAsync(ct);
+
+    public async Task<RecentOrderPage> ListRecentAsync(int page, int pageSize, CancellationToken ct)
+    {
+        IQueryable<Order> all = db.Set<Order>().AsNoTracking();
+        int total = await all.CountAsync(ct);
+        List<Order> rows = await all.OrderByDescending(o => o.CreatedAt).ThenByDescending(o => o.Id)
+            .Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(ct);
+        return new RecentOrderPage(
+            rows.Select(o => new RecentOrder(o.Id, o.OrderNumber, o.UserId, o.CreatedAt, o.GrandTotal, o.Currency, o.Status.ToString())).ToList(), total);
+    }
+
+    public Task<int> CountPendingReturnsAsync(CancellationToken ct) =>
+        db.Set<ReturnRequest>().AsNoTracking().CountAsync(r => r.Status == ReturnStatus.Requested, ct);
 }
 
 internal sealed record LineName(Guid OrderId, Guid VariantId, string Name);
@@ -134,4 +148,12 @@ internal sealed class ReturnStore(EcommerceDbContext db) : IReturnStore
             r.Items.Select(i => new ReturnItemRow(i.VariantId, lines.FirstOrDefault(l => l.OrderId == r.OrderId && l.VariantId == i.VariantId)?.Name ?? "", i.Quantity)).ToList(),
             r.CreatedAt, r.DecidedAt)).ToList();
     }
+}
+
+internal sealed class FulfillmentSagaStore(EcommerceDbContext db) : IFulfillmentSagaStore
+{
+    public Task<FulfillmentSaga?> GetByOrderAsync(Guid orderId, CancellationToken ct) =>
+        db.Set<FulfillmentSaga>().FirstOrDefaultAsync(s => s.OrderId == orderId, ct);
+
+    public void Add(FulfillmentSaga saga) => db.Set<FulfillmentSaga>().Add(saga);
 }

@@ -157,3 +157,4 @@ internal static class AdminResponseMapping
             view.Returns.Select(r => r.ToResponse()).ToList());
     }
 }
+internal sealed record UnfulfillableResponse(Guid SagaId, string Status, MoneyResponse RefundAmount);

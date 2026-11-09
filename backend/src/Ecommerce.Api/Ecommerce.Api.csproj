@@ -5,6 +5,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Ecommerce.SharedKernel\Ecommerce.SharedKernel.csproj" />
     <ProjectReference Include="..\Ecommerce.Persistence\Ecommerce.Persistence.csproj" />
+    <ProjectReference Include="..\Modules\Admin\Ecommerce.Admin\Ecommerce.Admin.csproj" />
     <ProjectReference Include="..\Modules\Catalog\Ecommerce.Catalog\Ecommerce.Catalog.csproj" />
     <ProjectReference Include="..\Modules\Identity\Ecommerce.Identity\Ecommerce.Identity.csproj" />
     <ProjectReference Include="..\Modules\Inventory\Ecommerce.Inventory\Ecommerce.Inventory.csproj" />

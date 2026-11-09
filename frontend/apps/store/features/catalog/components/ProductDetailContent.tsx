@@ -6,6 +6,7 @@ import { AddToCartControl } from '@/features/cart/components/AddToCartControl';
 
 import type { ProductDetail } from '../types';
 import { PriceText } from './PriceText';
+import { ProductCard } from './ProductCard';
 import { ProductImageView } from './ProductImageView';
 import { StockBadge } from './StockBadge';
 import { VariantSelector } from './VariantSelector';
@@ -74,6 +75,21 @@ export function ProductDetailContent({ product, hideAddToCart }: ProductDetailCo
           ) : null}
         </View>
       </View>
+
+      {product.related.length > 0 ? (
+        <View className="gap-md">
+          <Text accessibilityRole="header" className="text-heading font-semibold text-foreground">
+            Related products
+          </Text>
+          <View className="gap-md lg:flex-row">
+            {product.related.map((item) => (
+              <View key={item.id} className="lg:flex-1">
+                <ProductCard item={item} />
+              </View>
+            ))}
+          </View>
+        </View>
+      ) : null}
     </ScrollView>
   );
 }

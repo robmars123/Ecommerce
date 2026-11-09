@@ -55,6 +55,8 @@ public static class OrdersModule
         services.AddScoped<IReturnStore, ReturnStore>();
         services.AddScoped<ReturnService>();
         services.AddScoped<IOrderRefunds, OrderRefunds>();
+        services.AddScoped<IFulfillmentSagaStore, FulfillmentSagaStore>();
+        services.AddScoped<FulfillmentSagaService>();
         services.AddScoped<IOrderReader, OrderReader>();
         services.AddScoped<CheckoutService>();
         services.AddScoped<RetryPaymentService>();
@@ -64,6 +66,7 @@ public static class OrdersModule
         services.AddScoped<IValidator<CheckoutRequest>, CheckoutRequestValidator>();
         services.AddScoped<IValidator<ShipOrderRequest>, ShipOrderRequestValidator>();
         services.AddScoped<IValidator<StatusOverrideRequest>, StatusOverrideRequestValidator>();
+        services.AddScoped<IValidator<UnfulfillableRequest>, UnfulfillableRequestValidator>();
         services.AddScoped<IValidator<ReturnRequestBody>, ReturnRequestBodyValidator>();
         services.AddScoped<IValidator<DecisionRequest>, DecisionRequestValidator>();
         return services;

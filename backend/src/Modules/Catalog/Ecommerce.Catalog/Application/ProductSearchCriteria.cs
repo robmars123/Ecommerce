@@ -33,7 +33,7 @@ internal sealed record ProductSearchCriteria(string? Search, string? CategorySlu
         {
             if (!ProductSortNames.TryParse(sort.Trim(), out resolvedSort))
             {
-                errors["sort"] = ["sort must be one of: relevance, price-asc, price-desc, newest."];
+                errors["sort"] = ["sort must be one of: relevance, price-asc, price-desc, newest, bestselling."];
             }
             else if (resolvedSort == ProductSort.Relevance && trimmedSearch is null)
             {

@@ -44,6 +44,9 @@ internal sealed class UserRepository(EcommerceDbContext db) : IUserRepository
     public Task<User?> FindByIdAsync(Guid id, CancellationToken ct) =>
         db.Set<User>().AsNoTracking().FirstOrDefaultAsync(u => u.Id == id, ct);
 
+    public async Task<IReadOnlyList<User>> FindByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken ct) =>
+        await db.Set<User>().AsNoTracking().Where(u => ids.Contains(u.Id)).ToListAsync(ct);
+
     public Task<User?> FindByEmailAsync(string email, CancellationToken ct) =>
         db.Set<User>().AsNoTracking().FirstOrDefaultAsync(u => u.Email == email, ct);
 }

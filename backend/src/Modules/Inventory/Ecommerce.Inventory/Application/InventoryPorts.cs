@@ -1,3 +1,4 @@
+using Ecommerce.Inventory.Contracts;
 using Ecommerce.Inventory.Domain;
 
 namespace Ecommerce.Inventory.Application;
@@ -24,6 +25,9 @@ internal interface IInventoryStore
 
     /// <summary>No-tracking read; a variant without a row is absent from the map.</summary>
     Task<IReadOnlyDictionary<Guid, StockCounts>> GetAsync(IReadOnlyCollection<Guid> variantIds, CancellationToken ct);
+
+    /// <summary>No-tracking: variants with available at or below the threshold, lowest first.</summary>
+    Task<IReadOnlyList<LowStockItem>> ListLowAsync(int threshold, int max, CancellationToken ct);
 
     Task<IReadOnlyList<Guid>> FindExpiredOrderIdsAsync(DateTimeOffset now, int max, CancellationToken ct);
 

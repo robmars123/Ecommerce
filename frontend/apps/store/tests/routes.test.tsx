@@ -5,6 +5,7 @@ import { fireEvent, renderRouter, screen } from 'expo-router/testing-library';
 
 import { resetSession } from '@/features/auth/session';
 import type { UserRole } from '@/features/auth/types';
+import { makeDashboard, makeRecentOrdersPage } from '@/tests/admin-dashboard-fixtures';
 import { makeAdminPage, makeAdminProduct } from '@/tests/admin-fixtures';
 import { makeAdminOrderDetail, makeReturnPage } from '@/tests/admin-order-fixtures';
 import { jsonResponse } from '@/tests/fetch-mock';
@@ -29,7 +30,7 @@ const ROUTES: ReadonlyArray<readonly [file: string, url: string, title: string, 
   ['login.tsx', '/login', 'Sign in', true, null],
   ['register.tsx', '/register', 'Register', true, null],
   ['reset-password.tsx', '/reset-password', 'Reset password', true, null],
-  ['admin/index.tsx', '/admin', 'Admin dashboard', false, 'Admin'],
+  ['admin/index.tsx', '/admin', 'Admin dashboard', true, 'Admin'],
   ['admin/products/index.tsx', '/admin/products', 'Admin · Products', true, 'Admin'],
   ['admin/products/[id].tsx', '/admin/products/7', 'Admin · Product', true, 'Admin'],
   ['admin/products/new.tsx', '/admin/products/new', 'Admin · New product', true, 'Admin'],
@@ -51,6 +52,8 @@ function mockCatalogApi() {
     if (pathname === '/api/v1/orders/42') return jsonResponse(200, makeOrderDetail());
     if (pathname === '/api/v1/admin/orders/9') return jsonResponse(200, makeAdminOrderDetail());
     if (pathname === '/api/v1/admin/returns') return jsonResponse(200, makeReturnPage([]));
+    if (pathname === '/api/v1/admin/dashboard') return jsonResponse(200, makeDashboard());
+    if (pathname === '/api/v1/admin/dashboard/recent-orders') return jsonResponse(200, makeRecentOrdersPage([]));
     if (pathname === '/api/v1/admin/products') return jsonResponse(200, makeAdminPage([]));
     if (pathname.startsWith('/api/v1/admin/products/')) return jsonResponse(200, makeAdminProduct());
     return new Response('not mocked', { status: 599 });

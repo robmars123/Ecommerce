@@ -16,8 +16,10 @@ namespace Ecommerce.Orders.Api;
 [Authorize(Policy = AuthorizationPolicies.Admin)]
 internal sealed class AdminOrdersController(
     OrderFulfillmentService fulfillment,
+    FulfillmentSagaService sagas,
     IValidator<ShipOrderRequest> shipValidator,
     IValidator<StatusOverrideRequest> overrideValidator,
+    IValidator<UnfulfillableRequest> unfulfillableValidator,
     ILogger<AdminOrdersController> logger) : ControllerBase
 {
     [HttpPost("{id:guid}/process")]
@@ -49,6 +51,27 @@ internal sealed class AdminOrdersController(
         }
         StatusOverrideRequestValidator.TryParseStatus(request.ToStatus, out OrderStatus to);
         return Map("status-override", id, await fulfillment.OverrideAsync(ActorId(), id, to, request.Reason!.Trim(), ct));
+    }
+
+    /// <summary>Slice 6b D17: the v1 trigger of the fulfillment saga. A repeat answers 200 with the same saga.</summary>
+    [HttpPost("{id:guid}/unfulfillable")]
+    public async Task<IActionResult> Unfulfillable(Guid id, UnfulfillableRequest request, CancellationToken ct)
+    {
+        ValidationResult validation = await unfulfillableValidator.ValidateAsync(request, ct);
+        if (!validation.IsValid)
+        {
+            return InvalidProblem(validation);
+        }
+
+        SagaResult result = await sagas.StartAsync(ActorId(), id, request.Reason!.Trim(), ct);
+        using IDisposable? scope = logger.BeginScope(new Dictionary<string, object> { ["OrderId"] = id });
+        logger.LogInformation("Admin order unfulfillable finished with {Outcome}", result.GetType().Name);
+        return result switch
+        {
+            SagaResult.Ok ok => Ok(new UnfulfillableResponse(ok.Value.SagaId, ok.Value.Status, MoneyResponse.From(ok.Value.RefundAmount, ok.Value.Currency))),
+            SagaResult.Conflict conflict => Problem(statusCode: StatusCodes.Status409Conflict, title: "Conflict", detail: conflict.Message),
+            _ => Problem(statusCode: StatusCodes.Status404NotFound, title: "Order not found"),
+        };
     }
 
     // The policy guarantees an authenticated admin, so the token has a valid sub.

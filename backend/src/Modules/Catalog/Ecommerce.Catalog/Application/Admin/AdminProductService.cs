@@ -176,7 +176,8 @@ internal sealed class AdminProductService(
             row.Images.Select(i => new ImageView(images.Resolve(i.StorageKey), i.AltText)).ToList(),
             row.Variants.Select(v => new VariantView(
                 v.Id, v.Sku, v.Name, v.Size, v.Colour, v.Price, v.CompareAtPrice, v.Currency,
-                statuses.GetValueOrDefault(v.Id, StockStatus.Out))).ToList());
+                statuses.GetValueOrDefault(v.Id, StockStatus.Out))).ToList(),
+            []);
         return new AdminResult<AdminPreview>.Ok(
             new AdminPreview(detail, preview.IsActive, preview.IsActive && row.Variants.Count > 0));
     }
