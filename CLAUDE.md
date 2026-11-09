@@ -12,7 +12,7 @@ Single-store ecommerce app (web, Android, iOS). **Depth over breadth:** checkout
 - **Ranges:** `grep -n`, then `offset`/`limit` or `sed -n a,bp`; no `cat` of several files or one over ~150 lines, nor of a file you just edited.
 - **Cap output:** `verify.sh 2>&1 | tail -n 30` (quote the `VERIFY` line); build/test/jest/tsc `| tail -n 20`; Grep `head_limit`.
 - **Banned:** repo-wide globs/greps; all of `docs/` · `bin/`, `obj/`, `node_modules/`, `dist/`, `artifacts/`, `.expo/` · lock files, migration `*.Designer.cs`/snapshots, `slice-plans/archive/` unless the task or plan is about them. **Widen** only with a one-line reason.
-- **Caps:** plan ≤ 20 KB, written to size once · review round ≤ 10 KB · Marco report ≤ 6 KB. Cite sections (`arch §8.2`), never copy. Quality bar: Marco §1, §2, §4 · Rob §1, §3, §4.
+- **Caps:** plan ≤ 20 KB, written to size once · first review ≤ 10 KB, re-review round ≤ 3 KB · Marco report ≤ 6 KB · an agent's hand-back to the coordinator ≤ 1.5 KB (verdict, blocking items, `VERIFY` line, files; detail stays in the file). Cite sections (`arch §8.2`), never copy. Quality bar: Marco §1, §2, §4 · Rob §1, §3, §4.
 
 ## Guardrails
 
@@ -44,7 +44,7 @@ Single-store ecommerce app (web, Android, iOS). **Depth over breadth:** checkout
 - **Same slice:** every money or stock movement, state transition and auth rule is tested in the slice that adds it.
 - **New endpoint:** integration tests for the happy path, 401/403 and 400. **Frontend:** Jest for logic and screens.
 - **Numbered tests:** §11.2 and F tests belong to the slice whose §12.3 row names them. No PASS without them.
-- **Mutation check:** per security or money test, break the guard (lock, ownership, dedupe), see red, restore, report.
+- **Mutation check:** one per money or security guard named in the plan's required tests (lock, ownership, dedupe): break it, see red, restore, report. No extra mutations beyond that list.
 - **Changed or deleted tests** are listed and reviewed as a weakened invariant.
 - **Coverage:** collected, no percentage gate (§11.4).
 
@@ -55,9 +55,21 @@ Single-store ecommerce app (web, Android, iOS). **Depth over breadth:** checkout
 **Autonomous (default)** — "Slice [N]", don't ask:
 1. Rob → `slice-plans/slice-N-plan.md`.
 2. Marco builds, runs the full `verify.sh` → `slice-N-marco-report.md`.
-3. Rob reviews `git diff` + untracked against quality-bar §3, re-runs `verify.sh` → `slice-N-rob-review.md`.
-4. On BLOCKED or an open bug: resume the same agents with only the blocking items. **Max 3 rounds.**
+3. Rob reviews `git diff` + untracked against quality-bar §3, by risk tier (below) → `slice-N-rob-review.md`.
+4. On BLOCKED or an open bug: a fresh Marco, then a fresh Rob, each given only the blocking items and the file paths. **Max 3 rounds.**
 5. Final report (below); both agents AVAILABLE in `AGENT_STATUS.md`.
+
+**Token budget for reviews:**
+- **One review per slice:** Rob reviews the whole slice diff once and gives Marco one list. Existing code at "Review open" is reviewed per slice, never per deliverable row.
+- **Risk tiers:**
+  - **High:** money, stock, payment, idempotency, auth and state transitions. Full review, plus the mutation checks in TDD.
+  - **Low:** read-only endpoints, copy, layout and docs. Marco's tests plus `verify.sh`; Rob reads the diff, with no mutations.
+- **Re-reviews:**
+  - Marco quotes the red output for each of Rob's mutations. Rob re-runs at most 2 of them and checks the diff of the blocking items only, with no re-review from scratch.
+  - In fix rounds Marco runs `verify.sh changed` plus the affected test projects. The full `verify.sh` runs once, by Rob, in the round he gives PASS.
+- **Blocking only:** fix rounds fix BLOCKING items. NOTEs go to `slice-plans/backlog.md`, never "optional if trivial".
+- **No resumes:** never resume a finished agent, nor one from an earlier round or task. Nathaniel sends follow-ups to the coordinator, who starts a fresh agent with only the items it needs.
+- **Models:** Rob's first review uses his default (opus). Rob's re-reviews are spawned with `model: sonnet`, unless a re-check finds a new BLOCKING issue. Marco and Shin use sonnet (agent files).
 
 **Learning mode** (only when Nathaniel says so):
 - He writes `slice-N-nathaniel-plan.md`; Rob completes it and names the gaps (2, 4, 6, 6b: also plans independently, lists differences).
