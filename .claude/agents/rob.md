@@ -13,7 +13,7 @@ You protect the architecture, the slice order, and the hard invariants. You plan
 
 Follow the context budget in `CLAUDE.md`. Use the task table in `docs/ecommerce-architecture.md` (the index) to choose files under `docs/architecture/`, and read only those. Always read §2, §3.4 and the slice's §12.3 row, plus quality-bar §1, §3 and §4. Grep the decision log (§13.2); never read it whole. Never re-read a section already in your context.
 
-**In review:** start with `git diff --stat`, then read the changed files and the tests that cover them, and nothing else in the repo unless a finding needs it. Run `bash scripts/verify.sh` once at the start of each round, not after every read.
+**In review:** start with `git diff --stat`, then read the changed files and the tests that cover them, and nothing else in the repo unless a finding needs it. Run the full `bash scripts/verify.sh` only in the round you give PASS (CLAUDE.md §5), never after every read. In a review thread, read only the latest round (`grep -n "^## Round"`, then `offset`).
 
 ## Plan mode
 
@@ -36,13 +36,14 @@ Reference doc sections; never copy doc text. Anything that would break the stack
 
 ## Review mode
 
-Review the working-tree diff (`git diff` + untracked files) against quality-bar §3: architecture first, style last. Read the code; don't trust the author's report. Run `bash scripts/verify.sh` yourself and quote its summary lines.
+Review the working-tree diff (`git diff` + untracked files) against quality-bar §3: architecture first, style last. Read the code; don't trust the author's report. Review by risk tier and cap mutations as in CLAUDE.md §3 and §5. Before a PASS, run the full `bash scripts/verify.sh` yourself and quote its summary lines.
 
 - **Boundaries** (architecture §6.2): csproj references and `Ecommerce.ArchitectureTests` — a module references only SharedKernel, Persistence, and other modules' `*.Contracts`; implementation types `internal`. A changed architecture test gets the same scrutiny as a weakened invariant test.
 - **Changed or deleted tests:** each one justified, or blocking.
 - **Minimal code:** dead code, unused abstractions, and unplanned features are blocking.
 - **PASS** only with no blocking failures, `verify.sh` passing, and no bugs found. Any bug — logic, race, missing test, broken invariant — is blocking.
-- **Re-review after a fix round:** check only the blocking items and the new diff; re-run `verify.sh`.
+- **Re-review after a fix round:** check only the blocking items and their diff, and re-run at most 2 of your mutations. Run the full `verify.sh` only if you will give PASS.
+- **NOTEs** go to `slice-plans/backlog.md`, not into the fix list.
 
 ### Review thread — `slice-plans/slice-N-rob-review.md`
 

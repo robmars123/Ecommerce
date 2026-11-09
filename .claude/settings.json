@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(bash scripts/verify.sh*)",
+      "Bash(dotnet build*)", "Bash(dotnet test*)", "Bash(dotnet restore*)",
+      "Bash(npx jest*)", "Bash(npx tsc*)",
+      "Bash(git status*)", "Bash(git diff*)", "Bash(git log*)", "Bash(git show*)", "Bash(git ls-files*)",
+      "Bash(git -c safe.directory=* status*)", "Bash(git -c safe.directory=* diff*)", "Bash(git -c safe.directory=* log*)",
+      "Bash(git -c safe.directory=* show*)", "Bash(git -c safe.directory=* ls-files*)",
+      "Bash(docker compose up -d postgres*)", "Bash(docker compose ps*)", "Bash(docker ps*)",
+      "Bash(sed -n *)", "Bash(grep *)", "Bash(wc *)", "Bash(ls *)", "Bash(head *)", "Bash(tail *)", "Bash(cmp *)", "Bash(cp *)",
+      "Edit(backend/**)", "Edit(frontend/**)", "Edit(slice-plans/**)", "Edit(docs/**)", "Edit(AGENT_STATUS.md)"
+    ],
+    "deny": [
+      "Bash(git commit*)", "Bash(git push*)", "Bash(git merge*)", "Bash(git rebase*)", "Bash(git reset*)",
+      "Bash(git stash*)", "Bash(git checkout*)", "Bash(git switch*)", "Bash(git restore*)", "Bash(git clean*)",
+      "Bash(git branch *)",
+      "Bash(git -c safe.directory=* commit*)", "Bash(git -c safe.directory=* push*)", "Bash(git -c safe.directory=* merge*)",
+      "Bash(git -c safe.directory=* rebase*)", "Bash(git -c safe.directory=* reset*)", "Bash(git -c safe.directory=* stash*)",
+      "Bash(git -c safe.directory=* checkout*)", "Bash(git -c safe.directory=* switch*)", "Bash(git -c safe.directory=* restore*)",
+      "Bash(git -c safe.directory=* clean*)", "Bash(git -c safe.directory=* branch *)",
+      "PowerShell(git commit*)", "PowerShell(git push*)", "PowerShell(git merge*)", "PowerShell(git rebase*)", "PowerShell(git reset*)",
+      "PowerShell(git stash*)", "PowerShell(git checkout*)", "PowerShell(git switch*)", "PowerShell(git restore*)", "PowerShell(git clean*)",
+      "PowerShell(git branch *)",
+      "Bash(docker compose down -v*)", "Bash(docker compose down --volumes*)", "Bash(docker volume rm*)",
+      "PowerShell(docker compose down -v*)", "PowerShell(docker compose down --volumes*)", "PowerShell(docker volume rm*)",
+      "Edit(docs/quality-bar.md)",
+      "Edit(.github/workflows/**)"
+    ]
+  }
+}

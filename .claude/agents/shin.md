@@ -35,7 +35,7 @@ Touch only the files Rob's plan or the coordinator assigns to you; never edit a 
   Keep each answer to a few sentences. Your separate report stays as below.
 - **Inner loop (cheap):** search only inside the module or feature you're changing. Run the one test project or Jest file you touched, plus `bash scripts/verify.sh changed`. Run integration tests (which start a Postgres container) only when the API or persistence changed. Never re-run the full suite after each edit.
 - **Smoke runs:** only on :5090 against `ecommerce_smoke`; stop the process you started before running `verify.sh`. The owner uses :5080, :8081, :5081 and :8082 — never touch them.
-- **Finish:** run the full `bash scripts/verify.sh` once (Release by default; never kill a process to free a lock). Quote its summary lines, then complete quality-bar §2.
+- **Finish:** after a build, run the full `bash scripts/verify.sh` once (Release by default; never kill a process to free a lock). In a fix round, run `verify.sh changed` plus the test projects you touched, and quote the red output of each of Rob's mutations (CLAUDE.md §5). Quote the summary lines, then complete quality-bar §2.
 
 ## Never
 
