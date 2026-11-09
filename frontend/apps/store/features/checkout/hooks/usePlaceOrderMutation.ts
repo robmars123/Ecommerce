@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 
 import { placeOrder } from '../api';
 import type { CheckoutBody, CheckoutResponse } from '../types';
@@ -13,12 +13,24 @@ import { isDefinitiveFailure, useAttemptKey } from './useAttemptKey';
 export function usePlaceOrderMutation() {
   const key = useAttemptKey();
   const inFlight = useRef(false);
+  // The body is frozen together with the key: a key means "this exact request", so after an unresolved answer
+  // (network failure, 503) the next submit resends the first body and the screen locks its fields.
+  const [locked, setLocked] = useState<CheckoutBody | null>(null);
+  const lockedRef = useRef<CheckoutBody | null>(null);
+  function unlock() {
+    lockedRef.current = null;
+    setLocked(null);
+  }
   const mutation = useMutation<CheckoutResponse, Error, CheckoutBody>({
     mutationFn: (body) => placeOrder(body, key.current()),
-    onSuccess: () => key.renew(),
+    onSuccess: () => {
+      key.renew();
+      unlock();
+    },
     onError: (error) => {
       if (isDefinitiveFailure(error)) {
         key.renew();
+        unlock();
       }
     },
   });
@@ -28,7 +40,10 @@ export function usePlaceOrderMutation() {
       return;
     }
     inFlight.current = true;
-    mutation.mutate(body, {
+    const sent = lockedRef.current ?? body;
+    lockedRef.current = sent;
+    setLocked(sent);
+    mutation.mutate(sent, {
       onSuccess: onPlaced,
       onSettled: () => {
         inFlight.current = false;
@@ -36,5 +51,5 @@ export function usePlaceOrderMutation() {
     });
   }
 
-  return { submit, isPending: mutation.isPending, error: mutation.error, reset: mutation.reset };
+  return { submit, locked, isPending: mutation.isPending, error: mutation.error, reset: mutation.reset };
 }

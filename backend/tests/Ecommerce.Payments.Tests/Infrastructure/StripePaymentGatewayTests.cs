@@ -46,6 +46,29 @@ public class StripePaymentGatewayTests
     }
 
     [Fact]
+    public async Task A_create_posts_the_minor_unit_amount_lower_case_currency_metadata_card_only_and_the_idempotency_key()
+    {
+        StubHandler handler = new(HttpStatusCode.OK, "{\"id\":\"pi_9\",\"object\":\"payment_intent\",\"client_secret\":\"pi_9_secret_x\",\"status\":\"requires_payment_method\"}");
+        Guid orderId = Guid.NewGuid();
+        Guid paymentId = Guid.NewGuid();
+
+        CreatedIntent created = await Gateway(handler).CreateIntentAsync(new IntentRequest($"pi:{orderId}:1", 4567, "USD", orderId, paymentId), Ct);
+
+        Assert.Equal(new CreatedIntent("pi_9", "pi_9_secret_x"), created);
+        (HttpRequestMessage request, string body) = Assert.Single(handler.Seen);
+        Assert.Equal(HttpMethod.Post, request.Method);
+        Assert.Equal("/v1/payment_intents", request.RequestUri!.AbsolutePath);
+        Assert.Equal($"pi:{orderId}:1", Assert.Single(request.Headers.GetValues("Idempotency-Key")));
+        string decoded = Uri.UnescapeDataString(body);
+        Assert.Contains("amount=4567", decoded);
+        Assert.Contains("currency=usd", decoded);
+        Assert.Contains($"metadata[order_id]={orderId}", decoded);
+        Assert.Contains($"metadata[payment_id]={paymentId}", decoded);
+        Assert.Contains("payment_method_types[0]=card", decoded);
+        Assert.DoesNotContain("payment_method_types[1]", decoded);
+    }
+
+    [Fact]
     public async Task A_cancel_posts_to_the_intent_cancel_endpoint()
     {
         StubHandler handler = new(HttpStatusCode.OK, "{\"id\":\"pi_5\",\"object\":\"payment_intent\",\"status\":\"canceled\"}");
@@ -70,12 +93,14 @@ public class StripePaymentGatewayTests
     }
 
     [Fact]
-    public async Task Any_other_provider_error_on_cancel_or_refund_is_ProviderUnavailable_so_the_outbox_retries()
+    public async Task Any_other_provider_error_on_create_cancel_or_refund_is_ProviderUnavailable_so_the_outbox_retries()
     {
         StubHandler handler = new(HttpStatusCode.BadRequest, "{\"error\":{\"type\":\"invalid_request_error\",\"code\":\"resource_missing\",\"message\":\"no such intent\"}}");
         StripePaymentGateway gateway = Gateway(handler);
 
         await Assert.ThrowsAsync<PaymentProviderUnavailableException>(() => gateway.CancelIntentAsync("pi_5", Ct));
+        await Assert.ThrowsAsync<PaymentProviderUnavailableException>(
+            () => gateway.CreateIntentAsync(new IntentRequest("pi:x:1", 100, "USD", Guid.NewGuid(), Guid.NewGuid()), Ct));
         await Assert.ThrowsAsync<PaymentProviderUnavailableException>(
             () => gateway.CreateRefundAsync(new RefundCall("pi_5", 100, "USD", Guid.NewGuid(), "re:x"), Ct));
     }
@@ -87,6 +112,9 @@ public class StripePaymentGatewayTests
 
         await Assert.ThrowsAsync<PaymentProviderUnavailableException>(
             () => Gateway(handler, key: "").CreateRefundAsync(new RefundCall("pi_5", 100, "USD", Guid.NewGuid(), "re:x"), Ct));
+
+        await Assert.ThrowsAsync<PaymentProviderUnavailableException>(
+            () => Gateway(handler, key: "").CreateIntentAsync(new IntentRequest("pi:x:1", 100, "USD", Guid.NewGuid(), Guid.NewGuid()), Ct));
 
         Assert.Empty(handler.Seen);
     }

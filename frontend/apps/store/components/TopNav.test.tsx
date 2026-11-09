@@ -5,6 +5,7 @@ import { Text } from 'react-native';
 
 import { endSession, resetSession } from '@/features/auth/session';
 import { createTestQueryClient } from '@/tests/render-with-query';
+import { useGuestCartStore } from '@/features/cart/guest-cart-store';
 import { signInAs } from '@/tests/session';
 
 import { TopNav } from './TopNav';
@@ -16,6 +17,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  useGuestCartStore.setState({ lines: [] });
   resetSession();
   jest.restoreAllMocks();
   delete process.env.EXPO_PUBLIC_API_BASE_URL;
@@ -90,5 +92,41 @@ describe('TopNav', () => {
     await renderRouter(routes(), { initialUrl: '/' });
 
     expect(screen.queryByRole('link', { name: 'Orders' })).toBeNull();
+  });
+
+  describe('cart badge', () => {
+    function guestLine(variantId: string, quantity: number) {
+      return {
+        variantId,
+        productSlug: 'tee',
+        quantity,
+        snapshot: { productName: 'Tee', variantName: 'M', price: { amount: '10.00', currency: 'USD' }, image: null },
+      };
+    }
+
+    it('is hidden when the cart is empty', async () => {
+      await renderRouter(routes(), { initialUrl: '/' });
+      await endSession();
+
+      expect(await screen.findAllByRole('link', { name: 'Log in' })).toHaveLength(1);
+      expect(screen.getByRole('link', { name: 'Cart' })).toBeOnTheScreen();
+    });
+
+    it('shows the total quantity of the cart lines', async () => {
+      useGuestCartStore.setState({ lines: [guestLine('v1', 2), guestLine('v2', 1)] });
+      await renderRouter(routes(), { initialUrl: '/' });
+      await endSession();
+
+      expect(await screen.findByRole('link', { name: 'Cart, 3 items' })).toBeOnTheScreen();
+      expect(screen.getByText('3')).toBeOnTheScreen();
+    });
+
+    it('shows 99+ above 99', async () => {
+      useGuestCartStore.setState({ lines: [guestLine('v1', 99), guestLine('v2', 5)] });
+      await renderRouter(routes(), { initialUrl: '/' });
+      await endSession();
+
+      expect(await screen.findByText('99+')).toBeOnTheScreen();
+    });
   });
 });

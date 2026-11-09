@@ -114,6 +114,12 @@ describe('PaymentForm (web payment element)', () => {
     expect(await pay()).toHaveBeenCalledWith({ status: 'failed', message: 'Your card was declined.' });
   });
 
+  it('keeps the form and reports nothing when the card fields are incomplete (validation_error, no payment attempt was made)', async () => {
+    mockConfirmPayment.mockResolvedValue({ error: { type: 'validation_error', message: 'Your card number is incomplete.' } });
+
+    expect(await pay()).not.toHaveBeenCalled();
+  });
+
   it('reports an intent that wants another payment method as failed', async () => {
     mockConfirmPayment.mockResolvedValue({ paymentIntent: { status: 'requires_payment_method' } });
 

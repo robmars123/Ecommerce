@@ -66,7 +66,7 @@ export function PaymentStep({ orderId, initialSecret, placedTotal, startConfirmi
     return (
       <View className="gap-md">
         <Text accessibilityRole="alert" className="text-body text-danger">
-          This order was cancelled because the payment was not completed in time. Nothing was charged.
+          This order was cancelled because the payment was not completed in time. If a payment went through, it is refunded automatically.
         </Text>
         <ActionButton label="Check out again" onPress={onCheckoutAgain} />
       </View>

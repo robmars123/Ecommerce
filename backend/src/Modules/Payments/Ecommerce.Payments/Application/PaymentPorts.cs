@@ -106,6 +106,9 @@ internal interface IPaymentAlerts
 
     void UnknownIntent(string eventId, string providerPaymentId);
 
+    /// <summary>Creating the provider intent failed (the caller answers 503 and the client retries). Ids and the provider error type/code only, never a secret or an amount.</summary>
+    void IntentCreationFailed(Guid orderId, Guid paymentId, int attempt, Exception? providerError);
+
     /// <summary>A refund failed at the provider; its amount is free again. Critical: someone must look.</summary>
     void RefundFailed(Guid refundId, Guid paymentId);
 

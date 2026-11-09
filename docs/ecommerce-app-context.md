@@ -68,11 +68,11 @@ Status as of 2026-11-07: **Done** (Rob PASS) · **Review open** (code done, Slic
 | 3.3 | Merge on login API | Cart | 3 | Done |
 | 3.4 | Cart screen and merge-result notice | `cart` | 3 | Done |
 | **4** | **Checkout** | | | |
-| 4.1 | Stock reservation: lock in variant-ID order, reserve, commit on Paid, expire | Inventory | 2/4 | Review open |
-| 4.2 | Shipping methods API | Orders | 4 | Review open |
-| 4.3 | Checkout API: address, server total, idempotency key | Orders | 4 | Review open |
-| 4.4 | PaymentIntent creation | Payments | 4 | Review open |
-| 4.5 | Checkout screen: address, shipping, total, Stripe payment | `checkout` | 4 | Review open |
+| 4.1 | Stock reservation: lock in variant-ID order, reserve, commit on Paid, expire | Inventory | 2/4 | Done |
+| 4.2 | Shipping methods API | Orders | 4 | Done |
+| 4.3 | Checkout API: address, server total, idempotency key | Orders | 4 | Done |
+| 4.4 | PaymentIntent creation | Payments | 4 | Done |
+| 4.5 | Checkout screen: address, shipping, total, Stripe payment | `checkout` | 4 | Done |
 | **5** | **Payments** | | | |
 | 5.1 | Signed webhook confirms payment; dedupe by event ID | Payments | 4 | Review open |
 | 5.2 | Retry payment on the same order | Orders | 4 | Review open |

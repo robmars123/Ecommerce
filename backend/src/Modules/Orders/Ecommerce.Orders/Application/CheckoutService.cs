@@ -195,11 +195,11 @@ internal sealed class CheckoutService(
         return seen is not null && seen.UserId == userId && seen.RequestHash == hash && Guid.TryParse(seen.ResultRef, out orderId);
     }
 
-    /// <summary>SHA-256 over the trimmed body, in a fixed field order.</summary>
+    /// <summary>SHA-256 over the trimmed body, in a fixed field order; each field is length-prefixed so a newline inside one cannot shift a boundary.</summary>
     private static string HashOf(CheckoutCommand c)
     {
         ShippingAddress a = c.Address;
-        string text = string.Join('\n', c.ShippingMethodCode, a.FullName, a.Line1, a.Line2 ?? "", a.City, a.Region ?? "", a.PostalCode, a.Country);
+        string text = string.Concat(new[] { c.ShippingMethodCode, a.FullName, a.Line1, a.Line2 ?? "", a.City, a.Region ?? "", a.PostalCode, a.Country }.Select(f => $"{f.Length}:{f}"));
         return Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(text)));
     }
 }

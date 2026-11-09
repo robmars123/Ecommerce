@@ -35,6 +35,7 @@ public class RetryAndExpiryTests(PostgresFixture postgres)
         Assert.Equal(2, await f.CountAsync("SELECT count(*) FROM payments WHERE order_id = @o", ("o", orderId)));
         Assert.NotEqual(await f.IntentOfAsync(orderId, 1), await f.IntentOfAsync(orderId, 2));
         Assert.Equal(2, f.Gateway.Intents.Count);
+        Assert.Equal([$"pi:{orderId}:1", $"pi:{orderId}:2"], f.Gateway.Creates.Select(c => c.IdempotencyKey));
         Assert.Equal(2500, f.Gateway.Intents.Select(i => i.Request.AmountMinor).Distinct().Single());
         Assert.Equal(2, await f.CountAsync("SELECT count(*) FROM payments WHERE order_id = @o AND amount = 25.00 AND status = 'Pending'", ("o", orderId)));
         Assert.Equal(f.Gateway.Intents[1].Secret, r.Str("clientSecret"));
