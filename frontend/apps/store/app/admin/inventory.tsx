@@ -1,5 +1,5 @@
-import { ScreenStub } from '@/components/ScreenStub';
+import { AdminInventoryView } from '@/features/admin-inventory/components/AdminInventoryView';
 
 export default function AdminInventoryScreen() {
-  return <ScreenStub title="Admin · Inventory" />;
+  return <AdminInventoryView />;
 }
