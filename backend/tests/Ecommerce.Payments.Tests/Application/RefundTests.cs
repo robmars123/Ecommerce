@@ -85,6 +85,8 @@ internal sealed class FakePaymentStore : IPaymentStore
 
     public Task<IReadOnlyList<Refund>> ListRefundsAsync(Guid paymentId, CancellationToken ct) => Task.FromResult<IReadOnlyList<Refund>>(Refunds.ToList());
 
+    public Task<OrderRefundRows> ListRefundsForOrdersAsync(IReadOnlyCollection<Guid> orderIds, int recentTake, CancellationToken ct) => throw new NotSupportedException();
+
     public Task<Refund?> FindRefundAsync(Guid? refundId, string? providerRefundId, CancellationToken ct) =>
         Task.FromResult(Refunds.FirstOrDefault(r => r.Id == refundId || (providerRefundId != null && r.ProviderRefundId == providerRefundId)));
 

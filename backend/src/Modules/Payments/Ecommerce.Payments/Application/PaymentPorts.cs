@@ -24,6 +24,9 @@ internal interface IPaymentStore
     /// <summary>All of the payment's refunds, oldest first, no-tracking.</summary>
     Task<IReadOnlyList<Refund>> ListRefundsAsync(Guid paymentId, CancellationToken ct);
 
+    /// <summary>Refunds of any payment of these orders: each with its order id, plus the count and the Succeeded-with-actor sum. Newest first, at most <paramref name="recentTake"/> rows. No-tracking.</summary>
+    Task<OrderRefundRows> ListRefundsForOrdersAsync(IReadOnlyCollection<Guid> orderIds, int recentTake, CancellationToken ct);
+
     /// <summary>No-tracking lookup by our refund id (metadata) or the provider refund id.</summary>
     Task<Refund?> FindRefundAsync(Guid? refundId, string? providerRefundId, CancellationToken ct);
 
@@ -48,6 +51,10 @@ internal interface IPaymentStore
     /// <summary>Sets the provider id only if none is stored yet. Returns the id now stored.</summary>
     Task<string?> AttachProviderIdAsync(Guid paymentId, string providerPaymentId, DateTimeOffset now, CancellationToken ct);
 }
+
+internal sealed record OrderRefundRow(Refund Refund, Guid OrderId);
+
+internal sealed record OrderRefundRows(decimal ActorSucceededTotal, int Count, IReadOnlyList<OrderRefundRow> Recent);
 
 internal sealed record IntentRequest(string IdempotencyKey, long AmountMinor, string Currency, Guid OrderId, Guid PaymentId);
 

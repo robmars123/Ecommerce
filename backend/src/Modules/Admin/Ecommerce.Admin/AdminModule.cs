@@ -18,6 +18,7 @@ public static class AdminModule
         services.AddScoped<IProjector, DashboardProjector>();
         services.AddScoped<IDashboardStore, DashboardStore>();
         services.AddScoped<DashboardQueryService>();
+        services.AddScoped<CustomerQueryService>();
         return services;
     }
 }

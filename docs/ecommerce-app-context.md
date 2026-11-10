@@ -116,7 +116,7 @@ Status as of 2026-11-08: **Done** (Rob PASS) · **In progress** · **Not started
 | 11.4 | Admin order list screen with filter | `admin-orders` | 5 | Done |
 | 11.5 | Order action buttons on the admin detail screen | `admin-orders` | 5 | Done |
 | **12** | **Admin customers** | | | |
-| 12.1 | Customer list and detail API (read-only) | Identity | — | Not started |
+| 12.1 | Customer list and detail API (read-only) | Identity | gap-fill | Done |
 | 12.2 | Customer list and detail screens | `admin-customers` | — | Not started |
 | **13** | **Notifications** | | | |
 | 13.1 | Outbox runtime: retry, backoff, dead letter, alert | Persistence | 6 | Done |

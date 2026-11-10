@@ -55,6 +55,23 @@ internal sealed class UserRepository(EcommerceDbContext db) : IUserRepository
         List<Guid> ids = await db.Set<User>().AsNoTracking().Where(u => u.Email == normalizedEmail).Select(u => u.Id).Take(1).ToListAsync(ct);
         return ids.Count == 0 ? null : ids[0];
     }
+
+    public async Task<(IReadOnlyList<User> Items, int TotalCount)> SearchCustomersAsync(string? search, int page, int pageSize, CancellationToken ct)
+    {
+        IQueryable<User> customers = db.Set<User>().AsNoTracking().Where(u => u.Role == UserRole.Customer);
+        if (!string.IsNullOrEmpty(search))
+        {
+            string pattern = "%" + search.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_") + "%";
+            customers = customers.Where(u => EF.Functions.ILike(u.Email, pattern, "\\") || EF.Functions.ILike(u.DisplayName, pattern, "\\"));
+        }
+        int total = await customers.CountAsync(ct);
+        List<User> rows = await customers.OrderByDescending(u => u.CreatedAt).ThenByDescending(u => u.Id)
+            .Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(ct);
+        return (rows, total);
+    }
+
+    public Task<User?> FindCustomerAsync(Guid id, CancellationToken ct) =>
+        db.Set<User>().AsNoTracking().FirstOrDefaultAsync(u => u.Id == id && u.Role == UserRole.Customer, ct);
 }
 
 internal sealed class RefreshTokenRepository(EcommerceDbContext db) : IRefreshTokenRepository

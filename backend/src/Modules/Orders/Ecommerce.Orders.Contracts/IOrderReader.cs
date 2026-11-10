@@ -17,6 +17,18 @@ public sealed record RecentOrder(Guid Id, string OrderNumber, Guid UserId, DateT
 
 public sealed record RecentOrderPage(IReadOnlyList<RecentOrder> Items, int TotalCount);
 
+public sealed record CustomerOrderRef(Guid Id, string OrderNumber);
+
+public sealed record CustomerReturn(Guid Id, Guid OrderId, string OrderNumber, string Status, string Reason, DateTimeOffset CreatedAt, DateTimeOffset? DecidedAt);
+
+/// <summary>
+/// One customer's orders for the admin customer screen. <see cref="PaidTotal"/> is the sum of grand totals of orders that ever reached Paid
+/// (from the status history, so Refunded and Returned orders still count). <see cref="All"/> is every order id and number.
+/// </summary>
+public sealed record CustomerOrders(
+    int OrderCount, decimal PaidTotal, IReadOnlyList<CustomerOrderRef> All, IReadOnlyList<RecentOrder> Recent,
+    int ReturnCount, IReadOnlyList<CustomerReturn> RecentReturns);
+
 /// <summary>Orders' read for other modules: the notification view, and the dashboard's strongly consistent reads (arch 8.8.5).</summary>
 public interface IOrderReader
 {
@@ -28,4 +40,7 @@ public interface IOrderReader
 
     /// <summary>Return requests still waiting for an admin decision.</summary>
     Task<int> CountPendingReturnsAsync(CancellationToken ct);
+
+    /// <summary>Newest first; the recent lists hold at most <paramref name="recentTake"/> rows.</summary>
+    Task<CustomerOrders> GetCustomerOrdersAsync(Guid userId, int recentTake, CancellationToken ct);
 }

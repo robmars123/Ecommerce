@@ -10,6 +10,8 @@ internal sealed class FakeUsers : IUserReader
 {
     public Task<IReadOnlyDictionary<Guid, UserContact>> GetContactsAsync(IReadOnlyCollection<Guid> userIds, CancellationToken ct) => throw new NotSupportedException();
     public Task<Guid?> FindIdByEmailAsync(string email, CancellationToken ct) => throw new NotSupportedException();
+    public Task<CustomerPage> SearchCustomersAsync(string? search, int page, int pageSize, CancellationToken ct) => throw new NotSupportedException();
+    public Task<CustomerSummary?> GetCustomerAsync(Guid userId, CancellationToken ct) => throw new NotSupportedException();
 
 
     public Dictionary<Guid, UserContact> Contacts { get; } = [];
@@ -22,6 +24,8 @@ internal sealed class FakeOrders : IOrderReader
     public Task<RecentOrderPage> ListRecentAsync(int page, int pageSize, CancellationToken ct) => throw new NotSupportedException();
 
     public Task<int> CountPendingReturnsAsync(CancellationToken ct) => throw new NotSupportedException();
+
+    public Task<CustomerOrders> GetCustomerOrdersAsync(Guid userId, int recentTake, CancellationToken ct) => throw new NotSupportedException();
 
     public Dictionary<Guid, OrderNotificationView> Views { get; } = [];
 

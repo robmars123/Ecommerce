@@ -97,6 +97,19 @@ internal sealed class PaymentStore(EcommerceDbContext db) : IPaymentStore
     public async Task<IReadOnlyList<Refund>> ListRefundsAsync(Guid paymentId, CancellationToken ct) =>
         await db.Set<Refund>().AsNoTracking().Where(r => r.PaymentId == paymentId).OrderBy(r => r.CreatedAt).ThenBy(r => r.Id).ToListAsync(ct);
 
+    public async Task<OrderRefundRows> ListRefundsForOrdersAsync(IReadOnlyCollection<Guid> orderIds, int recentTake, CancellationToken ct)
+    {
+        IQueryable<Refund> refunds = db.Set<Refund>().AsNoTracking()
+            .Where(r => db.Set<Payment>().Any(p => p.Id == r.PaymentId && orderIds.Contains(p.OrderId)));
+        int count = await refunds.CountAsync(ct);
+        decimal actorTotal = await refunds.Where(r => r.Status == RefundStatus.Succeeded && r.ActorId != null).SumAsync(r => r.Amount, ct);
+        List<Refund> recent = await refunds.OrderByDescending(r => r.CreatedAt).ThenByDescending(r => r.Id).Take(recentTake).ToListAsync(ct);
+        List<Guid> paymentIds = recent.Select(r => r.PaymentId).Distinct().ToList();
+        Dictionary<Guid, Guid> orderOf = await db.Set<Payment>().AsNoTracking()
+            .Where(p => paymentIds.Contains(p.Id)).ToDictionaryAsync(p => p.Id, p => p.OrderId, ct);
+        return new OrderRefundRows(actorTotal, count, recent.Select(r => new OrderRefundRow(r, orderOf[r.PaymentId])).ToList());
+    }
+
     public Task<Refund?> FindRefundAsync(Guid? refundId, string? providerRefundId, CancellationToken ct) =>
         db.Set<Refund>().AsNoTracking()
             .Where(r => (refundId != null && r.Id == refundId) || (providerRefundId != null && r.ProviderRefundId == providerRefundId))

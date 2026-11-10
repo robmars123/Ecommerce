@@ -118,6 +118,27 @@ internal sealed class OrderReadStore(EcommerceDbContext db) : IOrderReadStore
 
     public Task<int> CountPendingReturnsAsync(CancellationToken ct) =>
         db.Set<ReturnRequest>().AsNoTracking().CountAsync(r => r.Status == ReturnStatus.Requested, ct);
+
+    public async Task<CustomerOrders> GetCustomerOrdersAsync(Guid userId, int recentTake, CancellationToken ct)
+    {
+        IQueryable<Order> mine = db.Set<Order>().AsNoTracking().Where(o => o.UserId == userId);
+        List<CustomerOrderRef> all = await mine.OrderByDescending(o => o.CreatedAt).ThenByDescending(o => o.Id)
+            .Select(o => new CustomerOrderRef(o.Id, o.OrderNumber)).ToListAsync(ct);
+        decimal paidTotal = await mine.Where(o => o.History.Any(h => h.ToStatus == OrderStatus.Paid)).SumAsync(o => o.GrandTotal, ct);
+        List<Order> recent = await mine.OrderByDescending(o => o.CreatedAt).ThenByDescending(o => o.Id).Take(recentTake).ToListAsync(ct);
+
+        IQueryable<ReturnRequest> returns = db.Set<ReturnRequest>().AsNoTracking()
+            .Where(r => db.Set<Order>().Any(o => o.Id == r.OrderId && o.UserId == userId));
+        int returnCount = await returns.CountAsync(ct);
+        List<ReturnRequest> recentReturns = await returns.OrderByDescending(r => r.CreatedAt).ThenByDescending(r => r.Id).Take(recentTake).ToListAsync(ct);
+        Dictionary<Guid, string> numbers = all.ToDictionary(o => o.Id, o => o.OrderNumber);
+
+        return new CustomerOrders(
+            all.Count, paidTotal, all,
+            recent.Select(o => new RecentOrder(o.Id, o.OrderNumber, o.UserId, o.CreatedAt, o.GrandTotal, o.Currency, o.Status.ToString())).ToList(),
+            returnCount,
+            recentReturns.Select(r => new CustomerReturn(r.Id, r.OrderId, numbers[r.OrderId], r.Status.ToString(), r.Reason, r.CreatedAt, r.DecidedAt)).ToList());
+    }
 }
 
 internal sealed record LineName(Guid OrderId, Guid VariantId, string Name);
