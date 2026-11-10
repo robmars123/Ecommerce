@@ -25,6 +25,12 @@ internal interface IUserRepository
 
     /// <summary>The id of the user with this normalised email, or null. No tracking, no lock (a read path, never the ForUpdate variant).</summary>
     Task<Guid?> FindIdByEmailAsync(string normalizedEmail, CancellationToken ct);
+
+    /// <summary>Role Customer only, newest first. The search is a literal, case-insensitive substring of email or display name. No tracking, no lock.</summary>
+    Task<(IReadOnlyList<User> Items, int TotalCount)> SearchCustomersAsync(string? search, int page, int pageSize, CancellationToken ct);
+
+    /// <summary>The user if it has role Customer, else null. No tracking, no lock.</summary>
+    Task<User?> FindCustomerAsync(Guid id, CancellationToken ct);
 }
 
 internal interface IRefreshTokenRepository

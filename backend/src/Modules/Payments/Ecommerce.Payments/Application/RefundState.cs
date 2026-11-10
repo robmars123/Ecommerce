@@ -33,4 +33,12 @@ internal sealed class RefundState(IPaymentStore store) : IRefundState
             payment.Currency, payment.Amount, succeeded, pending, payment.Amount - succeeded - pending,
             refunds.Select(r => new RefundInfo(r.Id, r.Amount, r.Status.ToString(), r.CreatedAt)).ToList());
     }
+
+    public async Task<CustomerRefunds> GetForOrdersAsync(IReadOnlyCollection<Guid> orderIds, int recentTake, CancellationToken ct)
+    {
+        OrderRefundRows rows = await store.ListRefundsForOrdersAsync(orderIds, recentTake, ct);
+        return new CustomerRefunds(
+            rows.ActorSucceededTotal, rows.Count,
+            rows.Recent.Select(r => new OrderRefundInfo(r.Refund.Id, r.OrderId, r.Refund.Amount, r.Refund.Currency, r.Refund.Status.ToString(), r.Refund.ActorId is null, r.Refund.CreatedAt)).ToList());
+    }
 }

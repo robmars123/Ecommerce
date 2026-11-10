@@ -17,4 +17,18 @@ internal sealed class UserReader(IUserRepository users) : IUserReader
 
     public Task<Guid?> FindIdByEmailAsync(string email, CancellationToken ct) =>
         users.FindIdByEmailAsync(EmailAddress.Normalize(email), ct);
+
+    public async Task<CustomerPage> SearchCustomersAsync(string? search, int page, int pageSize, CancellationToken ct)
+    {
+        (IReadOnlyList<User> items, int total) = await users.SearchCustomersAsync(search, page, pageSize, ct);
+        return new CustomerPage(items.Select(ToSummary).ToList(), total);
+    }
+
+    public async Task<CustomerSummary?> GetCustomerAsync(Guid userId, CancellationToken ct)
+    {
+        User? user = await users.FindCustomerAsync(userId, ct);
+        return user is null ? null : ToSummary(user);
+    }
+
+    private static CustomerSummary ToSummary(User u) => new(u.Id, u.Email, u.DisplayName, u.CreatedAt);
 }

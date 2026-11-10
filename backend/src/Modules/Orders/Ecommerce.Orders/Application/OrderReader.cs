@@ -25,4 +25,6 @@ internal sealed class OrderReader(IOrderReadStore store, ShippingCarriers carrie
     public Task<RecentOrderPage> ListRecentAsync(int page, int pageSize, CancellationToken ct) => store.ListRecentAsync(page, pageSize, ct);
 
     public Task<int> CountPendingReturnsAsync(CancellationToken ct) => store.CountPendingReturnsAsync(ct);
+
+    public Task<CustomerOrders> GetCustomerOrdersAsync(Guid userId, int recentTake, CancellationToken ct) => store.GetCustomerOrdersAsync(userId, recentTake, ct);
 }

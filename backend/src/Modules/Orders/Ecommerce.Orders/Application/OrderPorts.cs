@@ -34,6 +34,8 @@ internal interface IOrderReadStore
     Task<RecentOrderPage> ListForAdminAsync(AdminOrderFilter filter, int page, int pageSize, CancellationToken ct);
 
     Task<int> CountPendingReturnsAsync(CancellationToken ct);
+
+    Task<CustomerOrders> GetCustomerOrdersAsync(Guid userId, int recentTake, CancellationToken ct);
 }
 
 /// <summary>From and To are inclusive UTC days.</summary>

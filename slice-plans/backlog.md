@@ -23,3 +23,4 @@
 - 10.4 R1 (Rob): `AdminInventoryView.test.tsx` insufficient-409 case uses `available: -1`; the server sends current `OnHand − Reserved` (8 for that row). Use `available: 8` and assert `Only 8 available; reserved stock cannot be removed.`
 - 10.4 R1 (Rob): test 5's exact GET count (owner rule: no reread after adjust) was never seen red against a refetch; when next touched, add a local `onSettled` invalidate, confirm red, restore.
 - 10.4 R1 (Rob): `text-warning` (Low stock label) may be under 4.5:1 on the light surface; consider a darker warning-text token.
+- 12.1 R1 (Rob): paged lists compute `(page - 1) * pageSize` in `int`; a huge `page` (e.g. 30000000 with pageSize 100) overflows to a negative OFFSET → 500. Applies to Identity `Repositories.cs` customer search, Orders `OrderStores.cs` (3 lists), Catalog `ProductReader.cs`. Fix once API-wide: offset in `long` or a `page` upper bound → 400, with one test per list.

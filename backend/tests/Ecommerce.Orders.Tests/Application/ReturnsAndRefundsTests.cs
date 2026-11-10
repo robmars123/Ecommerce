@@ -51,6 +51,8 @@ internal sealed class FakeOrderReadStore : IOrderReadStore
 
     public Task<int> CountPendingReturnsAsync(CancellationToken ct) => throw new NotSupportedException();
 
+    public Task<CustomerOrders> GetCustomerOrdersAsync(Guid userId, int recentTake, CancellationToken ct) => throw new NotSupportedException();
+
     public OrderDetailRow? Order { get; set; }
 
     public Task<OrderListRows> ListAsync(Guid userId, int page, int pageSize, CancellationToken ct) => Task.FromResult(new OrderListRows([], 0));
