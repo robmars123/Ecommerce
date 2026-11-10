@@ -58,6 +58,11 @@ export const queryKeys = {
       list: (f: AdminOrderFilters, page: number) => ['admin', 'orders', 'list', normalizeAdminOrders(f), page] as const,
       detail: (id: string) => ['admin', 'orders', 'detail', id] as const,
     },
+    customers: {
+      all: ['admin', 'customers'] as const,
+      list: (search: string | undefined, page: number) => ['admin', 'customers', 'list', { ...(search ? { search } : {}), page }] as const,
+      detail: (id: string) => ['admin', 'customers', 'detail', id] as const,
+    },
     dashboard: (period: string) => ['admin', 'dashboard', period] as const,
     recentOrders: (page: number) => ['admin', 'dashboard', 'recent-orders', page] as const,
     returns: {

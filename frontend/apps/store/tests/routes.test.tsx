@@ -7,6 +7,7 @@ import { resetSession } from '@/features/auth/session';
 import type { UserRole } from '@/features/auth/types';
 import { makeDashboard, makeRecentOrdersPage } from '@/tests/admin-dashboard-fixtures';
 import { makeAdminPage, makeAdminProduct } from '@/tests/admin-fixtures';
+import { makeCustomerDetail, makeCustomerPage } from '@/tests/admin-customer-fixtures';
 import { makeAdminListPage, makeAdminOrderDetail, makeReturnPage } from '@/tests/admin-order-fixtures';
 import { jsonResponse } from '@/tests/fetch-mock';
 import { categories, makeDetail, makeInventoryPage, makePage } from '@/tests/fixtures';
@@ -39,8 +40,8 @@ const ROUTES: ReadonlyArray<readonly [file: string, url: string, title: string, 
   ['admin/orders/index.tsx', '/admin/orders', 'Orders', true, 'Admin'],
   ['admin/orders/[id].tsx', '/admin/orders/9', 'Order', true, 'Admin'],
   ['admin/returns.tsx', '/admin/returns', 'Returns', true, 'Admin'],
-  ['admin/customers/index.tsx', '/admin/customers', 'Admin · Customers', false, 'Admin'],
-  ['admin/customers/[id].tsx', '/admin/customers/3', 'Admin · Customer', false, 'Admin'],
+  ['admin/customers/index.tsx', '/admin/customers', 'Admin · Customers', true, 'Admin'],
+  ['admin/customers/[id].tsx', '/admin/customers/3', 'Admin · Customer', true, 'Admin'],
 ];
 
 function mockCatalogApi() {
@@ -53,6 +54,8 @@ function mockCatalogApi() {
     if (pathname === '/api/v1/orders/42') return jsonResponse(200, makeOrderDetail());
     if (pathname === '/api/v1/admin/orders') return jsonResponse(200, makeAdminListPage([]));
     if (pathname === '/api/v1/admin/orders/9') return jsonResponse(200, makeAdminOrderDetail());
+    if (pathname === '/api/v1/admin/customers') return jsonResponse(200, makeCustomerPage([]));
+    if (pathname === '/api/v1/admin/customers/3') return jsonResponse(200, makeCustomerDetail());
     if (pathname === '/api/v1/admin/returns') return jsonResponse(200, makeReturnPage([]));
     if (pathname === '/api/v1/admin/dashboard') return jsonResponse(200, makeDashboard());
     if (pathname === '/api/v1/admin/dashboard/recent-orders') return jsonResponse(200, makeRecentOrdersPage([]));
@@ -90,18 +93,23 @@ describe('route table', () => {
   });
 });
 
-describe('routes render under the real root layout', () => {
-  it.each(ROUTES.filter(([, , , built]) => !built))(
-    '%s renders at %s with title "%s" as a stub',
-    async (_file, url, title, _built, session) => {
-      if (session) await signInAs(session);
-      await renderRouter('./app', { initialUrl: url });
+const STUB_ROUTES = ROUTES.filter(([, , , built]) => !built);
 
-      expect(screen).toHavePathname(url);
-      expect(screen.getAllByRole('header', { name: title }).length).toBeGreaterThanOrEqual(1);
-      expect(screen.getByText('Not built yet.')).toBeOnTheScreen();
-    },
-  );
+describe('routes render under the real root layout', () => {
+  // it.each throws on an empty table, and every route is built as of slice 12.2.
+  if (STUB_ROUTES.length > 0) {
+    it.each(STUB_ROUTES)(
+      '%s renders at %s with title "%s" as a stub',
+      async (_file, url, title, _built, session) => {
+        if (session) await signInAs(session);
+        await renderRouter('./app', { initialUrl: url });
+
+        expect(screen).toHavePathname(url);
+        expect(screen.getAllByRole('header', { name: title }).length).toBeGreaterThanOrEqual(1);
+        expect(screen.getByText('Not built yet.')).toBeOnTheScreen();
+      },
+    );
+  }
 
   it.each(ROUTES.filter(([, , , built]) => built))(
     '%s renders at %s as a real screen titled "%s"',
