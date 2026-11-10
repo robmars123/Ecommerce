@@ -9,7 +9,7 @@ import { makeDashboard, makeRecentOrdersPage } from '@/tests/admin-dashboard-fix
 import { makeAdminPage, makeAdminProduct } from '@/tests/admin-fixtures';
 import { makeAdminListPage, makeAdminOrderDetail, makeReturnPage } from '@/tests/admin-order-fixtures';
 import { jsonResponse } from '@/tests/fetch-mock';
-import { categories, makeDetail, makePage } from '@/tests/fixtures';
+import { categories, makeDetail, makeInventoryPage, makePage } from '@/tests/fixtures';
 import { makeOrderDetail, makeOrderPage } from '@/tests/order-fixtures';
 import { signInAs } from '@/tests/session';
 
@@ -35,7 +35,7 @@ const ROUTES: ReadonlyArray<readonly [file: string, url: string, title: string, 
   ['admin/products/[id].tsx', '/admin/products/7', 'Admin · Product', true, 'Admin'],
   ['admin/products/new.tsx', '/admin/products/new', 'Admin · New product', true, 'Admin'],
   ['admin/categories.tsx', '/admin/categories', 'Admin · Categories', true, 'Admin'],
-  ['admin/inventory.tsx', '/admin/inventory', 'Admin · Inventory', false, 'Admin'],
+  ['admin/inventory.tsx', '/admin/inventory', 'Admin · Inventory', true, 'Admin'],
   ['admin/orders/index.tsx', '/admin/orders', 'Orders', true, 'Admin'],
   ['admin/orders/[id].tsx', '/admin/orders/9', 'Order', true, 'Admin'],
   ['admin/returns.tsx', '/admin/returns', 'Returns', true, 'Admin'],
@@ -56,6 +56,7 @@ function mockCatalogApi() {
     if (pathname === '/api/v1/admin/returns') return jsonResponse(200, makeReturnPage([]));
     if (pathname === '/api/v1/admin/dashboard') return jsonResponse(200, makeDashboard());
     if (pathname === '/api/v1/admin/dashboard/recent-orders') return jsonResponse(200, makeRecentOrdersPage([]));
+    if (pathname === '/api/v1/admin/inventory') return jsonResponse(200, makeInventoryPage([]));
     if (pathname === '/api/v1/admin/products') return jsonResponse(200, makeAdminPage([]));
     if (pathname.startsWith('/api/v1/admin/products/')) return jsonResponse(200, makeAdminProduct());
     return new Response('not mocked', { status: 599 });

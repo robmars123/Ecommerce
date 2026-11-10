@@ -5,9 +5,9 @@ Agents update this at the **start and end of every task**.
 
 | Agent | Status | Slice | Task | Fix round | Updated |
 |---|---|---|---|---|---|
-| Marco (developer) | 🟢 AVAILABLE | 9.7 gap-fill | Fix round 1 done | 1 | 2026-11-09 |
+| Marco (developer) | 🟢 AVAILABLE | 10.4 | Build done, verify PASS | 0 | 2026-11-09 |
 | Shin (developer 2) | 🟢 AVAILABLE | — | Ready | 0 | 2026-11-08 18:45 |
-| Rob (architect, on demand) | 🟢 AVAILABLE | 9.7 gap-fill | Review R2 PASS | 1 | 2026-11-09 |
+| Rob (architect, on demand) | 🟢 AVAILABLE | 10.4 | Review PASS | 0 | 2026-11-09 |
 
 **Rules**
 
@@ -19,4 +19,4 @@ Agents update this at the **start and end of every task**.
 
 - Marco: slice-plans/slice-9.7-gapfill-marco-report.md (previous: slice-plans/archive/slice-9.5-gapfill-marco-report.md)
 - Shin: none yet
-- Rob: slice-plans/slice-9.7-gapfill-rob-review.md (previous: slice-plans/slice-5-gapfill-rob-review.md)
+- Rob: slice-plans/slice-10.4-rob-review.md (previous: slice-plans/archive/slice-9.7-gapfill-rob-review.md)

@@ -108,7 +108,7 @@ Status as of 2026-11-08: **Done** (Rob PASS) · **In progress** · **Not started
 | 10.1 | Stock levels API | Inventory | 2 | Done |
 | 10.2 | Audited adjustment API | Inventory | 2 | Done |
 | 10.3 | Low-stock alerts | Inventory | 2 | Unverified |
-| 10.4 | Inventory screen: levels, adjust, low stock | `admin-inventory` | — | Not started |
+| 10.4 | Inventory screen: levels, adjust, low stock | `admin-inventory` | gap-fill | Done |
 | **11** | **Admin orders** | | | |
 | 11.1 | Process, ship with tracking, deliver, audited override APIs | Orders | 5 | Done |
 | 11.2 | Admin order list API with filter | Orders | 5 | Done |
@@ -258,7 +258,7 @@ List with search by name or email. Detail: profile, orders, total spent (Paid mi
 | `/admin` | Admin, Support | Dashboard |
 | `/admin/products`, `/admin/products/new`, `/admin/products/[id]` | Admin | Catalog: list, create, and edit with a customer preview |
 | `/admin/categories` | Admin | Categories: list with parent, create, edit slug and name, delete |
-| `/admin/inventory` | Admin | Stock and adjustments |
+| `/admin/inventory` | Admin | Stock levels with low-stock flag (paged), inline adjust with reason |
 | `/admin/orders`, `/admin/orders/[id]` | Admin, Support | Orders and fulfillment |
 | `/admin/returns` | Admin | Return requests |
 | `/admin/customers`, `/admin/customers/[id]` | Admin, Support | Customers (read-only) |

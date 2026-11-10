@@ -27,6 +27,8 @@ export class ApiError extends Error {
   fieldErrors?: Record<string, string[]>;
   /** From a 409 stock reply: how many are available. */
   available?: number;
+  /** From a 409 stock reply: the current on-hand count (tells a stale adjust from an insufficient one). */
+  onHand?: number;
   /** The problem `type` the server sets as a machine-readable cause, such as `reservation-expired`. */
   problemType?: string;
   /** From a 409 `checkout-lines-rejected` reply: each line that cannot be ordered, and why. */
@@ -43,6 +45,7 @@ export class ApiError extends Error {
       correlationId?: string;
       fieldErrors?: Record<string, string[]>;
       available?: number;
+      onHand?: number;
       problemType?: string;
       lines?: RejectedLine[];
       orderId?: string;
@@ -57,6 +60,7 @@ export class ApiError extends Error {
     this.correlationId = details.correlationId;
     this.fieldErrors = details.fieldErrors;
     this.available = details.available;
+    this.onHand = details.onHand;
     this.problemType = details.problemType;
     this.lines = details.lines;
     this.orderId = details.orderId;
@@ -228,6 +232,7 @@ async function attempt<T>(spec: RequestSpec, token: string | undefined): Promise
         correlationId,
         fieldErrors: toFieldErrors(body.errors),
         available: typeof body.available === 'number' ? body.available : undefined,
+        onHand: typeof body.onHand === 'number' ? body.onHand : undefined,
         problemType: typeof body.type === 'string' ? body.type : undefined,
         lines: toRejectedLines(body.lines),
         orderId: typeof body.orderId === 'string' ? body.orderId : undefined,

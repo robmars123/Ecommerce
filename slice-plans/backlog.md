@@ -20,3 +20,6 @@
 - 9.5 gap-fill R1 (Rob): orphaned objects (uploaded, never saved on a product) need a periodic sweep; Slice 7 deploy smoke must upload one image to real Spaces and fetch it through the CDN URL (D11 checksum/chunk settings are unverified in CI).
 - 9.7 gap-fill R1 (Rob): D8 says the category update invalidates on settle, but only the success path is tested (V4); the error-path invalidation (409/404 → refetch) is unpinned. Add one assertion to the 409 test.
 - 9.7 gap-fill R1 (Rob): `AdminProductListView.tsx` keeps an empty line where `<CategoryCreateForm />` was removed (just before `</ScrollView>`).
+- 10.4 R1 (Rob): `AdminInventoryView.test.tsx` insufficient-409 case uses `available: -1`; the server sends current `OnHand − Reserved` (8 for that row). Use `available: 8` and assert `Only 8 available; reserved stock cannot be removed.`
+- 10.4 R1 (Rob): test 5's exact GET count (owner rule: no reread after adjust) was never seen red against a refetch; when next touched, add a local `onSettled` invalidate, confirm red, restore.
+- 10.4 R1 (Rob): `text-warning` (Low stock label) may be under 4.5:1 on the light surface; consider a darker warning-text token.

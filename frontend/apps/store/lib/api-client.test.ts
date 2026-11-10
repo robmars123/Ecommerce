@@ -277,3 +277,16 @@ describe('ApiError carries the checkout causes (Slice 4)', () => {
     expect(unavailable.lines).toBeUndefined();
   });
 });
+
+describe('ApiError carries the on-hand count of a stock conflict (Slice 10.4)', () => {
+  it('keeps onHand next to available, and leaves it undefined when the reply has none', async () => {
+    mockFetchOnce(problemResponse(409, { title: 'Conflict', onHand: 7, reserved: 5, available: 2 }));
+    const withCount = await catchError(apiGet('/api/v1/admin/inventory'));
+
+    expect(withCount.onHand).toBe(7);
+    expect(withCount.available).toBe(2);
+
+    mockFetchOnce(problemResponse(409, { title: 'Conflict' }));
+    expect((await catchError(apiGet('/api/v1/admin/inventory'))).onHand).toBeUndefined();
+  });
+});

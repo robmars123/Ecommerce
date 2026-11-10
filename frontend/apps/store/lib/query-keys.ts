@@ -49,6 +49,10 @@ export const queryKeys = {
       detail: (id: string) => ['admin', 'products', 'detail', id] as const,
       preview: (id: string) => ['admin', 'products', 'preview', id] as const,
     },
+    inventory: {
+      all: ['admin', 'inventory'] as const,
+      list: (page: number, pageSize: number) => ['admin', 'inventory', 'list', page, pageSize] as const,
+    },
     orders: {
       all: ['admin', 'orders'] as const,
       list: (f: AdminOrderFilters, page: number) => ['admin', 'orders', 'list', normalizeAdminOrders(f), page] as const,

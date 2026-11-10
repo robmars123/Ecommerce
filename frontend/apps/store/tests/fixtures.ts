@@ -1,3 +1,4 @@
+import type { AdminInventoryItem, AdminInventoryPage } from '@/features/admin-inventory/types';
 import type {
   Category,
   ProductDetail,
@@ -63,3 +64,29 @@ export const categories: Category[] = [
   { slug: 'clothing', name: 'Clothing', parentSlug: null },
   { slug: 'tops', name: 'Tops', parentSlug: 'clothing' },
 ];
+
+export function makeInventoryItem(overrides: Partial<AdminInventoryItem> = {}): AdminInventoryItem {
+  return {
+    variantId: 'v-1',
+    productName: 'Test Shirt',
+    sku: 'TS-1',
+    variantName: 'Blue / M',
+    isActive: true,
+    onHand: 10,
+    reserved: 2,
+    available: 8,
+    stockStatus: 'InStock',
+    ...overrides,
+  };
+}
+
+export function makeInventoryPage(items: AdminInventoryItem[], overrides: Partial<AdminInventoryPage> = {}): AdminInventoryPage {
+  return {
+    items,
+    page: 1,
+    pageSize: 20,
+    totalCount: items.length,
+    totalPages: items.length === 0 ? 0 : 1,
+    ...overrides,
+  };
+}
