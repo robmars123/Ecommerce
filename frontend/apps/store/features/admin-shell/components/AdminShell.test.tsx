@@ -1,11 +1,11 @@
-import { fireEvent, renderRouter, screen } from 'expo-router/testing-library';
+import { fireEvent, renderRouter, screen, within } from 'expo-router/testing-library';
 import { Text } from 'react-native';
 
 import { AdminShell } from '@/features/admin-shell/components/AdminShell';
 import { ADMIN_NAV } from '@/features/admin-shell/nav';
 import { resetSession } from '@/features/auth/session';
 import { sidebarBreakpoint } from '@/lib/design-tokens';
-import { signInAs } from '@/tests/session';
+import { makeTokens, signInAs } from '@/tests/session';
 
 jest.mock('expo-secure-store');
 
@@ -177,5 +177,76 @@ describe('AdminShell', () => {
     expect(screen.queryAllByRole('link')).toHaveLength(0);
     expect(screen.queryAllByRole('header')).toHaveLength(0);
     expect(screen.getByText('Store Admin')).toBeTruthy();
+  });
+});
+
+describe('AdminShell footer', () => {
+  it('S13: wide, Admin footer shows name and role as one labelled group', async () => {
+    await signInAs('Admin');
+    await renderShell(1024);
+
+    const footer = screen.getByLabelText('Signed in as Admin User, Admin');
+    expect(footer).toBeTruthy();
+    expect(screen.getByText('Admin User')).toBeTruthy();
+    expect(screen.getByText('Admin')).toBeTruthy();
+    expect(within(screen.getByLabelText('Admin navigation')).getByLabelText('Signed in as Admin User, Admin')).toBeTruthy();
+  });
+
+  it('S14: wide, Support footer shows the Support name and role, no Admin role text', async () => {
+    await signInAs('Support');
+    await renderShell(1024);
+
+    expect(screen.getByText('Support User')).toBeTruthy();
+    expect(screen.getByText('Support')).toBeTruthy();
+    expect(screen.queryByText('Admin')).toBeNull();
+  });
+
+  it('S15: a 100-char name stays on one line and the sidebar keeps its width', async () => {
+    const longName = 'N'.repeat(100);
+    const tokens = makeTokens('Admin');
+    await signInAs('Admin', { user: { ...tokens.user, displayName: longName } });
+    await renderShell(1024);
+
+    expect(screen.getByText(longName).props.numberOfLines).toBe(1);
+    expect(screen.getByText('Admin').props.numberOfLines).toBe(1);
+    const { className } = screen.getByLabelText('Admin navigation').props;
+    expect(className).toContain('w-sidebar');
+    expect(className.split(' ')).not.toContain('flex-1');
+  });
+
+  it.each([['blank', '   '], ['empty', '']])('S16: %s name falls back to the email', async (_case, displayName) => {
+    const tokens = makeTokens('Admin');
+    await signInAs('Admin', { user: { ...tokens.user, displayName } });
+    await renderShell(1024);
+
+    expect(screen.getByLabelText(`Signed in as ${tokens.user.email}, Admin`)).toBeTruthy();
+    expect(screen.getByText(tokens.user.email)).toBeTruthy();
+    const empties = screen.queryAllByText(/^\s*$/);
+    expect(empties).toHaveLength(0);
+  });
+
+  it('S17: narrow, the footer appears only while the menu is open', async () => {
+    await signInAs('Admin');
+    await renderShell(390);
+
+    expect(screen.queryByText('Admin User')).toBeNull();
+    expect(screen.getByText('Store Admin')).toBeTruthy();
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Open menu' }));
+    expect(screen.getByText('Admin User')).toBeTruthy();
+    expect(screen.getByText('Admin')).toBeTruthy();
+
+    const closers = screen.getAllByLabelText('Close menu');
+    await fireEvent.press(closers[closers.length - 1]);
+    expect(screen.queryByText('Admin User')).toBeNull();
+  });
+
+  it('S18: with no user there is no footer, brand and body still render', async () => {
+    await renderShell(1024);
+
+    expect(screen.queryByLabelText(/Signed in as/)).toBeNull();
+    expect(screen.queryByText('Admin User')).toBeNull();
+    expect(screen.getByText('Store Admin')).toBeTruthy();
+    expect(screen.getByText('Body')).toBeTruthy();
   });
 });

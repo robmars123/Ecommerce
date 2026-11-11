@@ -32,3 +32,4 @@
 - P2.3 R1 (Rob): `app.json` now registers the `expo-status-bar` config plugin (added by `expo install --fix`); on the next EAS/Expo Go native check, confirm status-bar appearance is unchanged on iOS and Android.
 - P2.3 R1 (Rob): the 12.2 note "no navigation entry to `/admin/customers`" is covered by the P2.3 sidebar (Customers item, Admin + Support); drop the `DashboardView` quick action unless the dashboard row asks for it.
 - P2.3 R1 (Rob): manual browser check still open (Nathaniel): web 1024 px as Admin and Support (groups/items per plan D3), 390 px overlay scrolls to Settings.
+- P2.4 R1 (Rob): manual browser check still open (Nathaniel): footer pinned to the sidebar bottom at 1280 px (wide column) and 390 px (overlay), long nav still scrolls above it, 100-char name ellipsises. If `h-full` does not resolve (Yoga % height of a stretched child), drop `h-full`/`flex-1` per plan risk 1; never add `flex-1` to the Sidebar root (S7).

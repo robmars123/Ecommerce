@@ -3,6 +3,7 @@ import { useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
 
 import { useSession } from '@/features/auth/hooks/useSession';
+import type { SessionUser } from '@/features/auth/types';
 import { visibleNav, type NavGroup } from '@/features/admin-shell/nav';
 import { sidebarBreakpoint } from '@/lib/design-tokens';
 
@@ -22,11 +23,25 @@ function Brand() {
   );
 }
 
-type SidebarProps = { groups: NavGroup[]; onNavigate?: () => void; onClose?: () => void };
-
-function Sidebar({ groups, onNavigate, onClose }: SidebarProps) {
+function SidebarFooter({ user }: { user: SessionUser }) {
+  const name = user.displayName.trim() || user.email;
   return (
-    <View accessibilityLabel="Admin navigation" className="w-sidebar max-w-full gap-xl bg-surface p-lg">
+    <View accessible accessibilityLabel={`Signed in as ${name}, ${user.role}`} className="border-t border-border pt-md">
+      <Text numberOfLines={1} className="text-body font-bold text-foreground">
+        {name}
+      </Text>
+      <Text numberOfLines={1} className="text-caption text-muted">
+        {user.role}
+      </Text>
+    </View>
+  );
+}
+
+type SidebarProps = { groups: NavGroup[]; user: SessionUser | null; onNavigate?: () => void; onClose?: () => void };
+
+function Sidebar({ groups, user, onNavigate, onClose }: SidebarProps) {
+  return (
+    <View accessibilityLabel="Admin navigation" className="h-full w-sidebar max-w-full gap-xl bg-surface p-lg">
       <View className="flex-row items-center justify-between gap-md">
         <Brand />
         {onClose ? (
@@ -40,7 +55,7 @@ function Sidebar({ groups, onNavigate, onClose }: SidebarProps) {
           </Pressable>
         ) : null}
       </View>
-      <ScrollView contentContainerClassName="gap-lg">
+      <ScrollView className="flex-1" contentContainerClassName="gap-lg">
         {groups.map((group) => (
           <View key={group.title} className="gap-xs">
             <Text accessibilityRole="header" className="px-md text-caption text-muted">
@@ -73,6 +88,7 @@ function Sidebar({ groups, onNavigate, onClose }: SidebarProps) {
           </View>
         ))}
       </ScrollView>
+      {user ? <SidebarFooter user={user} /> : null}
     </View>
   );
 }
@@ -89,7 +105,7 @@ export function AdminShell({ children }: AdminShellProps) {
     return (
       <View className="flex-1 flex-row bg-background">
         <View className="border-r border-border bg-surface">
-          <Sidebar groups={groups} />
+          <Sidebar groups={groups} user={user} />
         </View>
         <View className="flex-1">{children}</View>
       </View>
@@ -113,7 +129,7 @@ export function AdminShell({ children }: AdminShellProps) {
       <View className="flex-1">{children}</View>
       {isOpen ? (
         <View className="absolute inset-0 flex-row">
-          <Sidebar groups={groups} onNavigate={close} onClose={close} />
+          <Sidebar groups={groups} user={user} onNavigate={close} onClose={close} />
           <Pressable accessibilityRole="button" accessibilityLabel="Close menu" onPress={close} className="flex-1 bg-scrim" />
         </View>
       ) : null}
