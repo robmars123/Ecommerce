@@ -2,26 +2,52 @@
 // Sizes are px on purpose: NativeWind's native rem is 14px, px is exact on every platform.
 const touch = 44;
 
+const dark = {
+  background: '#0f1210',
+  surface: '#171b18',
+  'surface-raised': '#1e231f',
+  border: '#2a302b',
+  foreground: '#eef1ee',
+  muted: '#9ba39d',
+  primary: '#3dae6f',
+  'primary-foreground': '#f5fbf7',
+  'primary-subtle': '#1c3326',
+  'primary-text': '#4cc283',
+  selected: '#e8ece9',
+  'selected-foreground': '#111412',
+  success: '#3dae6f',
+  warning: '#e0a43a',
+  danger: '#e35d4f',
+  scrim: '#000000b3',
+};
+
+const light = {
+  background: '#f6f8f6',
+  surface: '#ffffff',
+  'surface-raised': '#eef2ef',
+  border: '#d6ddd8',
+  foreground: '#111412',
+  muted: '#5a645d',
+  primary: '#23804c',
+  'primary-foreground': '#ffffff',
+  'primary-subtle': '#e2f2e8',
+  'primary-text': '#1d6e41',
+  selected: '#111412',
+  'selected-foreground': '#f5fbf7',
+  success: '#23804c',
+  warning: '#9a6410',
+  danger: '#c0392b',
+  scrim: '#11141266',
+};
+
 module.exports = {
   // Numeric px for the rare JS-prop cases (the arch 5.5 Tests fallback); utilities use the px strings below.
   touch,
-  colors: {
-    background: '#0f1210',
-    surface: '#171b18',
-    'surface-raised': '#1e231f',
-    border: '#2a302b',
-    foreground: '#eef1ee',
-    muted: '#9ba39d',
-    primary: '#3dae6f',
-    'primary-foreground': '#f5fbf7',
-    'primary-subtle': '#1c3326',
-    'primary-text': '#4cc283',
-    selected: '#e8ece9',
-    'selected-foreground': '#111412',
-    success: '#3dae6f',
-    warning: '#e0a43a',
-    danger: '#e35d4f',
-  },
+  // Dark is the shipped palette; `colors` stays exported as the dark theme (one source, Tailwind consumes it).
+  colors: dark,
+  // Both modes share one key set. Light has no consumer yet (switching is a later row).
+  themes: { dark, light },
+  sidebarBreakpoint: 768,
   spacing: {
     xs: '4px',
     sm: '8px',
@@ -48,6 +74,6 @@ module.exports = {
   minHeight: { touch: `${touch}px`, textarea: '96px' },
   minWidth: { touch: `${touch}px` },
   maxWidth: { content: '1200px' },
-  width: { thumb: '72px' },
+  width: { thumb: '72px', sidebar: '240px' },
   height: { thumb: '72px' },
 };

@@ -54,6 +54,17 @@ describe('queryKeys.admin', () => {
   });
 });
 
+describe('queryKeys.admin.customers', () => {
+  it('treats an empty search like none and starts every key with customers.all', () => {
+    const all = queryKeys.admin.customers.all;
+    expect(queryKeys.admin.customers.list(undefined, 1)).toEqual(queryKeys.admin.customers.list('', 1));
+    expect(queryKeys.admin.customers.list('ann', 1)).not.toEqual(queryKeys.admin.customers.list(undefined, 1));
+    for (const key of [queryKeys.admin.customers.list('ann', 2), queryKeys.admin.customers.detail('x')]) {
+      expect(key.slice(0, all.length)).toEqual([...all]);
+    }
+  });
+});
+
 describe('queryKeys.orders', () => {
   it('differs by page and by id, and every orders key starts with orders.all', () => {
     const all = queryKeys.orders.all;

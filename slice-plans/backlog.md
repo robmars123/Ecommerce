@@ -24,3 +24,8 @@
 - 10.4 R1 (Rob): test 5's exact GET count (owner rule: no reread after adjust) was never seen red against a refetch; when next touched, add a local `onSettled` invalidate, confirm red, restore.
 - 10.4 R1 (Rob): `text-warning` (Low stock label) may be under 4.5:1 on the light surface; consider a darker warning-text token.
 - 12.1 R1 (Rob): paged lists compute `(page - 1) * pageSize` in `int`; a huge `page` (e.g. 30000000 with pageSize 100) overflows to a negative OFFSET → 500. Applies to Identity `Repositories.cs` customer search, Orders `OrderStores.cs` (3 lists), Catalog `ProductReader.cs`. Fix once API-wide: offset in `long` or a `page` upper bound → 400, with one test per list.
+- 12.2 (Rob, plan): no navigation entry to `/admin/customers`; add a "Customers" quick action to `DashboardView` (`admin-dashboard` feature, Admin and Support).
+- 12.2 (Rob, plan): customer detail has no "all orders" link; let `AdminOrderListView` take `?customer=<email>` (the API filter exists) and link to it from the detail.
+- 12.2 R1 (Rob): customer list reuses catalog `SearchBar`, whose placeholder and accessibilityLabel are hard-coded "Search products"; add an optional `label` prop (default unchanged) and pass "Search customers" from `AdminCustomerListView`, updating its tests.
+- P2.1–P2.2 R1 (Rob): manual browser check still open (Nathaniel, after the flex fix): `/admin` + orders/products/categories/inventory/returns/customers at 1280px (fixed sidebar) and 375px (toggle, 16px gutter, 240px overlay panel, no horizontal scroll, Stack header/back readable).
+- P2.1–P2.2 R1 (Rob): jest-expo's default window width was never measured; P2.3 adds nav text to every admin screen, so record it there and pin width in any test that depends on sidebar visibility.

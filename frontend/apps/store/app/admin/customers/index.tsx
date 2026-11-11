@@ -1,5 +1,5 @@
-import { ScreenStub } from '@/components/ScreenStub';
+import { AdminCustomerListView } from '@/features/admin-customers/components/AdminCustomerListView';
 
 export default function AdminCustomerListScreen() {
-  return <ScreenStub title="Admin · Customers" />;
+  return <AdminCustomerListView />;
 }

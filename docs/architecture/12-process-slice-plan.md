@@ -33,6 +33,7 @@ Session workflow, prompts, and deny rules: `CLAUDE.md`. Gates: `docs/quality-bar
 | 6 Notifications + Returns | Outbox consumers (email, SignalR), return requests, admin refunds (`POST /admin/orders/{id}/refund`, `RefundRequested` consumer, refund webhook) | Feature 5 admin refunds: ceiling, idempotency, partial → `PartiallyRefunded`, full → `Refunded`/`Returned`, audited. Tests 9, 26, 27, 28; F8, F13; no duplicate email on retry |
 | 6b Eventual consistency | Dashboard + search projectors, checkpoints, gaps, replay, fulfillment saga | Tests 11–18 |
 | 7 Hardening | Rate limits, caching (§10.2), slow-query pass, staging deploy | §14 green; staging end-to-end works |
+| P2 Admin UI (Phase 2) | Rows P2.1–P2.47 in `docs/admin-dashboard-feature-tracker.md`: admin shell and theme, dashboard to the target screenshot, existing admin screens restyled into the shell, admin search, dashboard export, revenue trend, previous-period revenue, Analytics and Settings screens (app context §4.14). Built as gap-fill row groups | Every P2 row Done; Support 403 on Admin-only P2 endpoints and no revenue rendered; existing admin tests unchanged; phone width and both themes pass |
 
 **Do not skip to Slice 4.** Slices 0–3 make it testable.
 
