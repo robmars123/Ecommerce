@@ -1,0 +1,11 @@
+Concerns: verify.sh is not green for reasons outside this diff. (1) test: Ecommerce.Api.IntegrationTests 495/495 fail, Docker/Testcontainers not reachable (Docker.DotNet PingAsync error). (2) expo-check: "Found outdated dependencies" (expo 58.0.23 vs ~58.0.24, expo-router, expo-constants, expo-crypto, expo-linking, expo-secure-store, expo-status-bar patch bumps). I changed no package.json and no backend file. Needs Nathaniel: start Docker; decide on the Expo patch bumps (not in plan, so I did not touch them).
+Bugs found: None
+Bugs fixed: None
+Bugs open: None
+Tests changed: AdminShell.test.tsx S1-S7: setup only (jest.mock('expo-secure-store'), afterEach(resetSession), beforeEach(signInAs('Admin')), since the shell now reads the role). Assertion lines untouched; S1-S7 passed against the OLD shell before the shell change (14/14 across both jest projects). admin-access.test.ts and AdminGate.test.tsx unchanged.
+Red output: nav.test.ts "Cannot find module './nav'" (N1-N4 red); AdminShell S8-S12 "Tests: 10 failed, 14 passed" (5 tests x 2 projects) before AdminShell.tsx change. Then green: N1-N4 8 passed; admin-shell 32 passed.
+Test note: S8 presses each ready link on a fresh render, because the harness mounts the shell only on the index route (it disappears after navigating). S9/S12 call resetSession() before signing in as another role.
+Changed: slice P2.3, all under frontend/apps/store/features/admin-shell/: nav.ts (new), nav.test.ts (new), components/AdminShell.tsx (Sidebar takes groups, ScrollView, headers, disabled "Soon" items, useSession -> visibleNav), components/AdminShell.test.tsx. Not touched: admin-access.ts, AdminGate, backend (tier stays Low). AGENT_STATUS.md edited.
+verify.sh: PASS drift, tsc clean, jest 181 suites/1291 tests passed, export OK; FAIL test (Docker), FAIL expo-check (package drift). Final line: "VERIFY FAIL: test expo-check".
+Manual checks (web at 1024/390 px, Admin/Support): not run, no browser in this session; covered by S8-S12 only.
+Quality-bar §2: tests for the slice pass: checked. Full verify green: UNCHECKED (Docker down; Expo patch drift, both environmental). Manual browser check: UNCHECKED. Marco status left BUSY because verify did not pass.

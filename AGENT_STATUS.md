@@ -5,9 +5,9 @@ Agents update this at the **start and end of every task**.
 
 | Agent | Status | Slice | Task | Fix round | Updated |
 |---|---|---|---|---|---|
-| Marco (developer) | 🟢 AVAILABLE | P2.1–P2.2 | Fix round 1 done, verify PASS | 0 | 2026-11-10 |
+| Marco (developer) | 🔴 BUSY | P2.3 | Built; verify FAIL env (Docker down, expo-check pkg drift) | 0 | 2026-11-11 |
 | Shin (developer 2) | 🟢 AVAILABLE | — | Ready | 0 | 2026-11-08 18:45 |
-| Rob (architect, on demand) | 🟢 AVAILABLE | P2.1–P2.2 | Re-review R1 PASS | 0 | 2026-11-10 |
+| Rob (architect, on demand) | 🟢 AVAILABLE | P2.3 | Plan READY | 0 | 2026-11-11 |
 
 **Rules**
 
