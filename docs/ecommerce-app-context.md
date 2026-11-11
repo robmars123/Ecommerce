@@ -201,7 +201,7 @@ The admin home is a dashboard, not a link list. Data is projected and shows an *
 - **KPIs** (today / 7 days / 30 days): revenue (Paid minus refunds), order count, average order value, customers (new vs returning if easy, else total).
 - **Orders by status:** a count per status; tapping one filters the order list.
 - **Recent orders:** number, customer, date, total, status — paginated, newest first.
-- **Low stock:** variants at or below the threshold (config, default 5), each linking to adjust.
+- **Low stock:** variants at or below the threshold (config `Inventory:LowStockThreshold`, set to 3 in Phase 2), each linking to adjust.
 - **Top products:** top 5 by quantity sold in the period.
 - **Needs attention:** pending returns, dead letters, and projector lag beyond target — shown as alerts.
 - **Quick actions:** Add Product, Adjust Stock, View Orders, View Returns.
@@ -242,6 +242,24 @@ List with search by name or email. Detail: profile, orders, total spent (Paid mi
 - **SignalR** status updates while an order is open.
 - No SMS, marketing email, or push in v1. Push (FCM/APNs) can come later behind `lib/platform.ts`.
 
+### 4.14 Admin UI — Phase 2
+
+Added by Nathaniel on 2026-11-10. The rows are in `docs/admin-dashboard-feature-tracker.md`, and the slice is P2 in arch §12.3.
+
+- **Shell:** every admin screen sits in one layout. It has a sidebar grouped as Overview, Manage and Insights, hidden by role, and collapses at phone width. The top bar has a breadcrumb, search and a "Live store" pill showing the SignalR connection. Shared admin theme tokens, light and dark.
+- **Search:** `GET /api/v1/admin/search?q=` (Admin, Support). Up to 5 each of orders, products and SKUs, each from its own module's contract.
+- **Dashboard additions:**
+  - greeting by device time
+  - Export as CSV (Admin only)
+  - revenue trend (Admin only)
+  - "vs previous period" revenue
+  - cancelled and completed (Delivered) counts for the period
+  - 4-bucket status legend (display only; the API keeps all 8 statuses)
+  - inventory alert banner
+  - User Stories and Acceptance Criteria tabs (static)
+- **Analytics:** the trend and top products full-width (Admin only).
+- **Settings:** read-only currency and low-stock threshold (Admin only). No secrets, no editing.
+
 ---
 
 ## 5. Screens (Expo Router, identical on all platforms)
@@ -262,6 +280,8 @@ List with search by name or email. Detail: profile, orders, total spent (Paid mi
 | `/admin/orders`, `/admin/orders/[id]` | Admin, Support | Orders and fulfillment |
 | `/admin/returns` | Admin | Return requests |
 | `/admin/customers`, `/admin/customers/[id]` | Admin, Support | Customers (read-only) |
+| `/admin/analytics` | Admin | Revenue trend and top products (Phase 2) |
+| `/admin/settings` | Admin | Store currency and low-stock threshold, read-only (Phase 2) |
 
 A customer opening an admin route is redirected and receives no data — the API blocks it by role.
 

@@ -2,6 +2,8 @@ type TokenMap = Record<string, string>;
 
 export const touch: number;
 export const colors: TokenMap;
+export const themes: { dark: TokenMap; light: TokenMap };
+export const sidebarBreakpoint: number;
 export const spacing: TokenMap;
 export const fontSize: TokenMap;
 export const borderRadius: TokenMap;
