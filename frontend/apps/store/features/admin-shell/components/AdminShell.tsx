@@ -1,9 +1,10 @@
-import { Link } from 'expo-router';
+import { Link, usePathname } from 'expo-router';
 import { useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
 
 import { useSession } from '@/features/auth/hooks/useSession';
 import type { SessionUser } from '@/features/auth/types';
+import { breadcrumbFor } from '@/features/admin-shell/breadcrumb';
 import { visibleNav, type NavGroup } from '@/features/admin-shell/nav';
 import { sidebarBreakpoint } from '@/lib/design-tokens';
 
@@ -33,6 +34,42 @@ function SidebarFooter({ user }: { user: SessionUser }) {
       <Text numberOfLines={1} className="text-caption text-muted">
         {user.role}
       </Text>
+    </View>
+  );
+}
+
+function Breadcrumb() {
+  const crumbs = breadcrumbFor(usePathname());
+  if (crumbs.length === 0) return null;
+  return (
+    <View accessibilityLabel="Breadcrumb" className="flex-row flex-wrap items-center gap-xs">
+      {crumbs.map((crumb, index) => {
+        const isLast = index === crumbs.length - 1;
+        return (
+          <View key={crumb.href} className="flex-row items-center gap-xs">
+            {index > 0 ? (
+              <Text
+                accessibilityElementsHidden
+                importantForAccessibility="no-hide-descendants"
+                className="text-caption text-muted"
+              >
+                ›
+              </Text>
+            ) : null}
+            {isLast ? (
+              <Text numberOfLines={1} className="text-body font-bold text-foreground">
+                {crumb.label}
+              </Text>
+            ) : (
+              <Link href={crumb.href as never} asChild>
+                <Pressable accessibilityRole="link" className="min-h-touch justify-center">
+                  <Text className="text-body text-muted">{crumb.label}</Text>
+                </Pressable>
+              </Link>
+            )}
+          </View>
+        );
+      })}
     </View>
   );
 }
@@ -107,24 +144,32 @@ export function AdminShell({ children }: AdminShellProps) {
         <View className="border-r border-border bg-surface">
           <Sidebar groups={groups} user={user} />
         </View>
-        <View className="flex-1">{children}</View>
+        <View className="flex-1">
+          <View className="min-h-touch justify-center border-b border-border bg-surface px-lg">
+            <Breadcrumb />
+          </View>
+          {children}
+        </View>
       </View>
     );
   }
 
   return (
     <View className="flex-1 bg-background">
-      <View className="flex-row items-center gap-md border-b border-border bg-surface px-lg">
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Open menu"
-          accessibilityState={{ expanded: isOpen }}
-          onPress={() => setOpen(true)}
-          className="min-h-touch min-w-touch items-center justify-center"
-        >
-          <Text className="text-body text-foreground">Menu</Text>
-        </Pressable>
-        <Text className="text-body font-bold text-foreground">Store Admin</Text>
+      <View className="border-b border-border bg-surface px-lg">
+        <View className="flex-row items-center gap-md">
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Open menu"
+            accessibilityState={{ expanded: isOpen }}
+            onPress={() => setOpen(true)}
+            className="min-h-touch min-w-touch items-center justify-center"
+          >
+            <Text className="text-body text-foreground">Menu</Text>
+          </Pressable>
+          <Text className="text-body font-bold text-foreground">Store Admin</Text>
+        </View>
+        <Breadcrumb />
       </View>
       <View className="flex-1">{children}</View>
       {isOpen ? (

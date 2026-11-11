@@ -34,3 +34,6 @@
 - P2.3 R1 (Rob): manual browser check still open (Nathaniel): web 1024 px as Admin and Support (groups/items per plan D3), 390 px overlay scrolls to Settings.
 - P2.4 R1 (Rob): manual browser check still open (Nathaniel): footer pinned to the sidebar bottom at 1280 px (wide column) and 390 px (overlay), long nav still scrolls above it, 100-char name ellipsises. If `h-full` does not resolve (Yoga % height of a stretched child), drop `h-full`/`flex-1` per plan risk 1; never add `flex-1` to the Sidebar root (S7).
 - P2.5 (Rob): `docs/architecture/13.2-decision-log.md` is ~50 KB, well over the ~10 KB per-file guide; split it (pre-existing, not caused by P2.5).
+- P2.6 (manual, Nathaniel): eyeball the breadcrumb at 1280 px (top bar height) and 390/320 px (phone wrap) on :8081.
+- P2.6 R1 (Rob): `tests/app/admin.test.tsx` F7b "signed out" (first test, cold `renderRouter('./app')`) hit the 5 s Jest timeout once under full-verify load; passed on rerun and in Rob's full run. If it recurs: per-describe timeout or a `beforeAll` router warm-up; never blind retries.
+- P2.6 R1 (Rob): during the 320 px manual check, confirm the current crumb (`numberOfLines={1}`, no `shrink`) doesn't overflow; add `shrink` to that `Text` only if it does.

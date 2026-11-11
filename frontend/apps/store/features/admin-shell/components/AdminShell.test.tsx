@@ -250,3 +250,98 @@ describe('AdminShell footer', () => {
     expect(screen.getByText('Body')).toBeTruthy();
   });
 });
+
+async function renderShellAt(width: number, url: string) {
+  mockUseWindowDimensions.mockReturnValue({ width, height: 800, scale: 1, fontScale: 1 });
+  const shell = () => <AdminShell><Text>Body</Text></AdminShell>;
+  const stub = (name: string) => () => <Text>{`${name} page`}</Text>;
+  return await renderRouter(
+    {
+      index: shell,
+      'admin/index': shell,
+      'admin/orders/index': shell,
+      'admin/orders/[id]': shell,
+      'admin/products/index': stub('Products'),
+      'admin/products/new': shell,
+      'admin/customers/[id]': shell,
+    },
+    { initialUrl: url },
+  );
+}
+
+describe('AdminShell breadcrumb', () => {
+  it('S19: wide, order detail shows linked ancestors and a plain current crumb, never the id', async () => {
+    await signInAs('Admin');
+    await renderShellAt(1024, '/admin/orders/abc-123');
+
+    const crumbs = within(screen.getByLabelText('Breadcrumb'));
+    expect(crumbs.getByRole('link', { name: 'Dashboard' })).toBeTruthy();
+    expect(crumbs.getByRole('link', { name: 'Orders' })).toBeTruthy();
+    expect(crumbs.getByText('Order details')).toBeTruthy();
+    expect(crumbs.queryByRole('link', { name: 'Order details' })).toBeNull();
+    expect(screen.queryByText(/abc-123/)).toBeNull();
+    expect(screen.getByLabelText('Admin navigation')).toBeTruthy();
+    expect(screen.getByText('Body')).toBeTruthy();
+  });
+
+  it('S20: wide, pressing the Orders crumb navigates and Orders becomes the current text', async () => {
+    await signInAs('Admin');
+    await renderShellAt(1024, '/admin/orders/abc-123');
+
+    await fireEvent.press(within(screen.getByLabelText('Breadcrumb')).getByRole('link', { name: 'Orders' }));
+    expect(screen).toHavePathname('/admin/orders');
+    const crumbs = within(screen.getByLabelText('Breadcrumb'));
+    expect(crumbs.getByRole('link', { name: 'Dashboard' })).toBeTruthy();
+    expect(crumbs.queryByRole('link', { name: 'Orders' })).toBeNull();
+    expect(crumbs.getByText('Orders')).toBeTruthy();
+  });
+
+  it('S21: wide, /admin shows only Dashboard and no links', async () => {
+    await signInAs('Admin');
+    await renderShellAt(1024, '/admin');
+
+    const crumbs = within(screen.getByLabelText('Breadcrumb'));
+    expect(crumbs.getByText('Dashboard')).toBeTruthy();
+    expect(crumbs.queryAllByRole('link')).toHaveLength(0);
+  });
+
+  it('S22: narrow, the breadcrumb is visible with the menu closed and wraps', async () => {
+    await signInAs('Admin');
+    await renderShellAt(390, '/admin/customers/xyz');
+
+    expect(screen.getByRole('button', { name: 'Open menu' })).toBeCollapsed();
+    expect(screen.getByText('Store Admin')).toBeTruthy();
+    expect(screen.queryByLabelText('Admin navigation')).toBeNull();
+    const container = screen.getByLabelText('Breadcrumb');
+    expect(container.props.className).toContain('flex-wrap');
+    expect(within(container).getByText('Customer details').props.numberOfLines).toBe(1);
+  });
+
+  it('S23: narrow, pressing the Products crumb navigates and the overlay stays closed', async () => {
+    await signInAs('Admin');
+    await renderShellAt(390, '/admin/products/new');
+
+    await fireEvent.press(within(screen.getByLabelText('Breadcrumb')).getByRole('link', { name: 'Products' }));
+    expect(screen).toHavePathname('/admin/products');
+    expect(screen.queryByLabelText('Admin navigation')).toBeNull();
+  });
+
+  it('S24: Support, wide, order detail shows the same crumbs', async () => {
+    await signInAs('Support');
+    await renderShellAt(1024, '/admin/orders/abc');
+
+    const crumbs = within(screen.getByLabelText('Breadcrumb'));
+    expect(crumbs.getByRole('link', { name: 'Dashboard' })).toBeTruthy();
+    expect(crumbs.getByRole('link', { name: 'Orders' })).toBeTruthy();
+    expect(crumbs.getByText('Order details')).toBeTruthy();
+  });
+
+  it('S25: a non-admin path renders no breadcrumb, brand and body still render', async () => {
+    await signInAs('Admin');
+    await renderShell(1024);
+
+    expect(screen.queryByLabelText('Breadcrumb')).toBeNull();
+    expect(screen.getByText('Store Admin')).toBeTruthy();
+    expect(screen.getByText('Body')).toBeTruthy();
+  });
+});
