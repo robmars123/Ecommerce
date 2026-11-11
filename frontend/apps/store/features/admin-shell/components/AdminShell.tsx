@@ -4,6 +4,7 @@ import { Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-na
 
 import { useSession } from '@/features/auth/hooks/useSession';
 import type { SessionUser } from '@/features/auth/types';
+import { AdminSearch } from '@/features/admin-shell/components/AdminSearch';
 import { breadcrumbFor } from '@/features/admin-shell/breadcrumb';
 import { visibleNav, type NavGroup } from '@/features/admin-shell/nav';
 import { sidebarBreakpoint } from '@/lib/design-tokens';
@@ -145,8 +146,15 @@ export function AdminShell({ children }: AdminShellProps) {
           <Sidebar groups={groups} user={user} />
         </View>
         <View className="flex-1">
-          <View className="min-h-touch justify-center border-b border-border bg-surface px-lg">
-            <Breadcrumb />
+          <View className="min-h-touch flex-row items-start justify-between gap-md border-b border-border bg-surface px-lg">
+            <View className="min-h-touch flex-1 justify-center">
+              <Breadcrumb />
+            </View>
+            {user ? (
+              <View className="w-sidebar max-w-full">
+                <AdminSearch role={user.role} />
+              </View>
+            ) : null}
           </View>
           {children}
         </View>
@@ -170,6 +178,7 @@ export function AdminShell({ children }: AdminShellProps) {
           <Text className="text-body font-bold text-foreground">Store Admin</Text>
         </View>
         <Breadcrumb />
+        {user ? <AdminSearch role={user.role} /> : null}
       </View>
       <View className="flex-1">{children}</View>
       {isOpen ? (

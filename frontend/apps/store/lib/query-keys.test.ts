@@ -80,3 +80,10 @@ describe('queryKeys.shippingMethods', () => {
     expect(queryKeys.shippingMethods).toEqual(['shipping-methods']);
   });
 });
+
+describe('queryKeys.admin.search', () => {
+  it('K1 is keyed by the term', () => {
+    expect(queryKeys.admin.search('ab')).toEqual(['admin', 'search', 'ab']);
+    expect(queryKeys.admin.search('ab')).not.toEqual(queryKeys.admin.search('abc'));
+  });
+});
