@@ -9,7 +9,7 @@ Match the target screenshot across all admin screens. Go top to bottom. Mark a r
 | **A** | **Shell** | | |
 | P2.1 | Admin theme tokens (dark and light), one shared file | `components` | Done |
 | P2.2 | Shell in `app/admin/_layout.tsx`: sidebar, collapses at phone width | `admin-shell` | Done |
-| P2.3 | Sidebar nav, hidden by role. Overview: Dashboard, User Stories. Manage: Orders, Products, Categories, Inventory, Returns, Customers. Insights: Analytics, Settings | `admin-shell` | Todo |
+| P2.3 | Sidebar nav, hidden by role. Overview: Dashboard, User Stories. Manage: Orders, Products, Categories, Inventory, Returns, Customers. Insights: Analytics, Settings | `admin-shell` | Done |
 | P2.4 | Sidebar footer: name and role | `admin-shell` | Todo |
 | P2.5 | Get approval for the chart package (`react-native-svg`) in Rob's plan | — | Todo |
 | P2.6 | Breadcrumb in the top bar | `admin-shell` | Todo |

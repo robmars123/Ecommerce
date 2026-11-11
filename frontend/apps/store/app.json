@@ -28,7 +28,11 @@
       "expo-router",
       "expo-image",
       "expo-secure-store",
-      ["@stripe/stripe-react-native", {}]
+      [
+        "@stripe/stripe-react-native",
+        {}
+      ],
+      "expo-status-bar"
     ]
   }
 }
