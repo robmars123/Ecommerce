@@ -66,7 +66,7 @@ export function CategoryRow({ category, parentName, mode, onOpen, onClose }: Cat
       ) : null}
 
       {mode === 'edit' ? (
-        <View className="gap-md">
+        <View className="gap-md rounded-control bg-surface-raised p-md">
           <TextField label={`New name for ${category.name}`} value={name} onChangeText={setName} error={updateErrors.name?.[0]} />
           <TextField
             label={`New slug for ${category.name}`}
@@ -88,7 +88,7 @@ export function CategoryRow({ category, parentName, mode, onOpen, onClose }: Cat
       ) : null}
 
       {mode === 'delete' ? (
-        <View className="gap-md">
+        <View className="gap-md rounded-control bg-surface-raised p-md">
           <Text className="text-body text-foreground">{`Delete ${category.name}? Products and subcategories must be moved first.`}</Text>
           {remove.error ? (
             <Text accessibilityRole="alert" className="text-body text-danger">

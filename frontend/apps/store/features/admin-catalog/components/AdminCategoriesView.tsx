@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 
+import { AdminPanel } from '@/components/AdminPanel';
 import { EmptyState } from '@/components/EmptyState';
 import { ErrorState } from '@/components/ErrorState';
 import { LoadingState } from '@/components/LoadingState';
@@ -19,37 +20,36 @@ export function AdminCategoriesView() {
   const items = categories.data?.items;
 
   return (
-    <ScrollView contentContainerClassName="gap-md p-lg">
+    <ScrollView contentContainerClassName="w-full max-w-content gap-lg self-center p-lg">
       <ScreenTitle title="Admin · Categories" />
       <CategoryCreateForm />
-      <Text accessibilityRole="header" className="text-title font-semibold text-foreground">
-        Categories
-      </Text>
-      {items ? (
-        items.length === 0 ? (
-          <EmptyState message="No categories yet." />
+      <AdminPanel title="Categories">
+        {items ? (
+          items.length === 0 ? (
+            <EmptyState message="No categories yet." />
+          ) : (
+            <View>
+              {items.map((c) => {
+                const mode: CategoryRowMode = open?.slug === c.slug ? open.mode : null;
+                return (
+                  <CategoryRow
+                    key={c.slug}
+                    category={c}
+                    parentName={c.parentSlug ? (items.find((p) => p.slug === c.parentSlug)?.name ?? null) : null}
+                    mode={mode}
+                    onOpen={(m) => setOpen({ slug: c.slug, mode: m })}
+                    onClose={() => setOpen(null)}
+                  />
+                );
+              })}
+            </View>
+          )
+        ) : categories.isError ? (
+          <ErrorState message={userMessage(categories.error)} onRetry={() => void categories.refetch()} />
         ) : (
-          <View>
-            {items.map((c) => {
-              const mode: CategoryRowMode = open?.slug === c.slug ? open.mode : null;
-              return (
-                <CategoryRow
-                  key={c.slug}
-                  category={c}
-                  parentName={c.parentSlug ? (items.find((p) => p.slug === c.parentSlug)?.name ?? null) : null}
-                  mode={mode}
-                  onOpen={(m) => setOpen({ slug: c.slug, mode: m })}
-                  onClose={() => setOpen(null)}
-                />
-              );
-            })}
-          </View>
-        )
-      ) : categories.isError ? (
-        <ErrorState message={userMessage(categories.error)} onRetry={() => void categories.refetch()} />
-      ) : (
-        <LoadingState />
-      )}
+          <LoadingState />
+        )}
+      </AdminPanel>
     </ScrollView>
   );
 }

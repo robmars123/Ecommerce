@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { ScrollView } from 'react-native';
 
+import { AdminPanel } from '@/components/AdminPanel';
 import { ScreenTitle } from '@/components/ScreenTitle';
 
 import { emptyFormState, toCreateRequest } from '../form-model';
@@ -12,19 +13,21 @@ export function AdminProductCreateView() {
   const create = useCreateProductMutation();
 
   return (
-    <ScrollView contentContainerClassName="gap-md p-lg">
+    <ScrollView contentContainerClassName="w-full max-w-content gap-lg self-center p-lg">
       <ScreenTitle title="Admin · New product" />
-      <ProductForm
-        mode="create"
-        initial={emptyFormState()}
-        onSubmit={(state) =>
-          create.mutate(toCreateRequest(state), {
-            onSuccess: (product) => router.replace({ pathname: '/admin/products/[id]', params: { id: product.id } }),
-          })
-        }
-        pending={create.isPending}
-        error={create.error}
-      />
+      <AdminPanel>
+        <ProductForm
+          mode="create"
+          initial={emptyFormState()}
+          onSubmit={(state) =>
+            create.mutate(toCreateRequest(state), {
+              onSuccess: (product) => router.replace({ pathname: '/admin/products/[id]', params: { id: product.id } }),
+            })
+          }
+          pending={create.isPending}
+          error={create.error}
+        />
+      </AdminPanel>
     </ScrollView>
   );
 }
