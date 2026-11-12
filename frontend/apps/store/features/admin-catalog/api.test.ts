@@ -1,7 +1,17 @@
 import { jsonResponse } from '@/tests/fetch-mock';
 import { makeAdminProduct } from '@/tests/admin-fixtures';
 
-import { createCategory, createProduct, deleteCategory, fetchAdminPreview, fetchAdminProduct, fetchAdminProducts, publishProduct, updateCategory, updateProduct } from './api';
+import {
+  createCategory,
+  createProduct,
+  deleteCategory,
+  fetchAdminPreview,
+  fetchAdminProduct,
+  fetchAdminProducts,
+  publishProduct,
+  updateCategory,
+  updateProduct,
+} from './api';
 
 beforeEach(() => {
   process.env.EXPO_PUBLIC_API_BASE_URL = 'http://api.test.invalid:5080';
@@ -42,7 +52,9 @@ describe('admin catalog api', () => {
   });
 
   it('updates a category with exactly { slug, name } and encodes the current slug', async () => {
-    const spy = jest.spyOn(globalThis, 'fetch').mockImplementation(async () => jsonResponse(200, { slug: 'shirts', name: 'Shirts', parentSlug: 'clothing' }));
+    const spy = jest
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(async () => jsonResponse(200, { slug: 'shirts', name: 'Shirts', parentSlug: 'clothing' }));
     await updateCategory('tops', { slug: 'shirts', name: 'Shirts' });
     const first = lastCall(spy);
     expect(first).toMatchObject({ method: 'PUT', url: expect.stringMatching(/\/api\/v1\/admin\/categories\/tops$/) });

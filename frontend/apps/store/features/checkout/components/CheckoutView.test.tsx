@@ -140,7 +140,10 @@ describe('CheckoutView: details', () => {
       'POST /api/v1/checkout': () =>
         problemResponse(400, {
           title: 'One or more validation errors occurred.',
-          errors: { 'shippingAddress.city': ['Enter a city of 1 to 100 characters.'], 'shippingAddress.country': ['We do not ship to this country.'] },
+          errors: {
+            'shippingAddress.city': ['Enter a city of 1 to 100 characters.'],
+            'shippingAddress.country': ['We do not ship to this country.'],
+          },
         }),
     });
     await render();
@@ -153,7 +156,11 @@ describe('CheckoutView: details', () => {
   });
 
   it('F6 sends exactly an address and a method code, then shows the total from the server reply', async () => {
-    const api = mockApi({ ...baseHandlers(), 'POST /api/v1/checkout': () => jsonResponse(200, placed()), 'GET /api/v1/orders/o-1': () => jsonResponse(200, makeOrderDetail({ status: 'PendingPayment' })) });
+    const api = mockApi({
+      ...baseHandlers(),
+      'POST /api/v1/checkout': () => jsonResponse(200, placed()),
+      'GET /api/v1/orders/o-1': () => jsonResponse(200, makeOrderDetail({ status: 'PendingPayment' })),
+    });
     await render();
     expect(await screen.findByText('Estimated total $54.00')).toBeOnTheScreen();
 
@@ -164,7 +171,13 @@ describe('CheckoutView: details', () => {
     const sent = api.to('POST', '/api/v1/checkout')[0].body as Record<string, unknown>;
     expect(Object.keys(sent).sort()).toEqual(['shippingAddress', 'shippingMethodCode']);
     expect(sent.shippingMethodCode).toBe('standard');
-    expect(sent.shippingAddress).toEqual({ fullName: 'Test Buyer', line1: '1 Example Street', city: 'Exampleville', postalCode: '12345', country: 'US' });
+    expect(sent.shippingAddress).toEqual({
+      fullName: 'Test Buyer',
+      line1: '1 Example Street',
+      city: 'Exampleville',
+      postalCode: '12345',
+      country: 'US',
+    });
     expect(JSON.stringify(sent)).not.toMatch(/price|total|tax|status|amount/i);
   });
 
@@ -266,10 +279,15 @@ describe('CheckoutView: details', () => {
       'POST /api/v1/checkout': () => {
         attempt += 1;
         return attempt === 1
-          ? problemResponse(409, { type: 'checkout-lines-rejected', title: 'Some items cannot be ordered', lines: [{ variantId: 'v-1', reason: 'PriceChanged' }] })
+          ? problemResponse(409, {
+              type: 'checkout-lines-rejected',
+              title: 'Some items cannot be ordered',
+              lines: [{ variantId: 'v-1', reason: 'PriceChanged' }],
+            })
           : jsonResponse(200, placed());
       },
-      'PUT /api/v1/cart/items/v-1': () => jsonResponse(200, makeCart([makeCartLine({ unitPrice: usd('25.00'), lineTotal: usd('50.00') })], '50.00')),
+      'PUT /api/v1/cart/items/v-1': () =>
+        jsonResponse(200, makeCart([makeCartLine({ unitPrice: usd('25.00'), lineTotal: usd('50.00') })], '50.00')),
       'GET /api/v1/orders/o-1': () => jsonResponse(200, makeOrderDetail({ status: 'PendingPayment' })),
     });
     await render();
@@ -288,7 +306,11 @@ describe('CheckoutView: details', () => {
     mockApi({
       ...baseHandlers(),
       'POST /api/v1/checkout': () =>
-        problemResponse(409, { type: 'checkout-lines-rejected', title: 'x', lines: [{ variantId: 'v-1', reason: 'OutOfStock', available: 1 }] }),
+        problemResponse(409, {
+          type: 'checkout-lines-rejected',
+          title: 'x',
+          lines: [{ variantId: 'v-1', reason: 'OutOfStock', available: 1 }],
+        }),
     });
     await render();
 
@@ -401,7 +423,8 @@ describe('CheckoutView: payment', () => {
 
   it('F11 an expired reservation says so and "Check out again" returns to the details with no order id', async () => {
     afterPlacing({
-      'POST /api/v1/orders/o-1/retry-payment': () => problemResponse(409, { type: 'reservation-expired', title: 'The reservation has expired; check out again' }),
+      'POST /api/v1/orders/o-1/retry-payment': () =>
+        problemResponse(409, { type: 'reservation-expired', title: 'The reservation has expired; check out again' }),
     });
     await render();
     await placeOrder();

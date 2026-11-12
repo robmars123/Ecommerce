@@ -12,7 +12,10 @@ import { shouldRetry } from '@/lib/query-client';
  */
 export function createTestQueryClient(options: { useRealRetryPolicy?: boolean } = {}) {
   return new QueryClient({
-    defaultOptions: { queries: { retry: options.useRealRetryPolicy ? shouldRetry : false, gcTime: Infinity }, mutations: { gcTime: Infinity } },
+    defaultOptions: {
+      queries: { retry: options.useRealRetryPolicy ? shouldRetry : false, gcTime: Infinity },
+      mutations: { gcTime: Infinity },
+    },
   });
 }
 
@@ -27,10 +30,7 @@ export function queryWrapper(client: QueryClient) {
 }
 
 /** Renders routes under a fresh QueryClient and a header-less Stack (the routes under test render their own headers). */
-export function renderRouterWithQuery(
-  routes: Record<string, ComponentType>,
-  options: { initialUrl: string; client?: QueryClient },
-) {
+export function renderRouterWithQuery(routes: Record<string, ComponentType>, options: { initialUrl: string; client?: QueryClient }) {
   const client = options.client ?? createTestQueryClient();
   const layout = () => (
     <QueryClientProvider client={client}>

@@ -8,7 +8,15 @@ describe('form model', () => {
     state.slug = ' linen-shirt ';
     state.name = ' Linen shirt ';
     state.currency = 'usd';
-    state.variants[0] = { ...state.variants[0], sku: ' LS-1 ', name: 'Default', price: ' 1.50 ', compareAt: '', size: ' ', weightGrams: '250' };
+    state.variants[0] = {
+      ...state.variants[0],
+      sku: ' LS-1 ',
+      name: 'Default',
+      price: ' 1.50 ',
+      compareAt: '',
+      size: ' ',
+      weightGrams: '250',
+    };
 
     const request = toCreateRequest(state);
 

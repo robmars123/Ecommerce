@@ -1,11 +1,5 @@
 import type { AdminInventoryItem, AdminInventoryPage } from '@/features/admin-inventory/types';
-import type {
-  Category,
-  ProductDetail,
-  ProductListItem,
-  ProductListPage,
-  ProductVariant,
-} from '@/features/catalog/types';
+import type { Category, ProductDetail, ProductListItem, ProductListPage, ProductVariant } from '@/features/catalog/types';
 
 export function makeItem(overrides: Partial<ProductListItem> = {}): ProductListItem {
   return {

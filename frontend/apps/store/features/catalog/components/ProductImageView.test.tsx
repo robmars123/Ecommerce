@@ -16,11 +16,9 @@ describe('ProductImageView', () => {
   });
 
   it('renders the image with its alt text inside an explicit aspect-ratio box', async () => {
-    await render(
-      <ProductImageView url="https://img.test.invalid/a.jpg" altText="Front" fallbackLabel="Shirt" aspectRatio={1.5} />,
-    );
+    await render(<ProductImageView url="https://img.test.invalid/a.jpg" altText="Front" fallbackLabel="Shirt" aspectRatio={1.5} />);
 
-    const image = screen.getByLabelText("Front");
+    const image = screen.getByLabelText('Front');
     expect(image).toBeOnTheScreen();
   });
 

@@ -63,11 +63,7 @@ export function ProductListView() {
 
       <SearchBar value={params.search ?? ''} onSearch={(search) => change({ search })} />
       {categories.data ? (
-        <CategoryFilter
-          categories={categories.data.items}
-          selected={params.category}
-          onSelect={(category) => change({ category })}
-        />
+        <CategoryFilter categories={categories.data.items} selected={params.category} onSelect={(category) => change({ category })} />
       ) : null}
       <View className="flex-row items-center gap-sm">
         <Text className="text-small text-muted">Sort</Text>
@@ -81,9 +77,7 @@ export function ProductListView() {
           <>
             <View accessibilityLiveRegion="polite" className="flex-row gap-xs">
               <Text className="text-small text-muted">{`Showing ${showingRange(data).first}–${showingRange(data).last} of`}</Text>
-              <Text className="text-small text-muted">
-                {data.totalCount === 1 ? '1 product' : `${data.totalCount} products`}
-              </Text>
+              <Text className="text-small text-muted">{data.totalCount === 1 ? '1 product' : `${data.totalCount} products`}</Text>
             </View>
             <FlatList
               key={`columns-${columns}`}
@@ -113,10 +107,7 @@ export function ProductListView() {
             action={{ label: 'Go to first page', onPress: () => change({ page: 1 }) }}
           />
         ) : (
-          <EmptyState
-            message="No products match your search."
-            action={{ label: 'Clear filters', onPress: clearFilters }}
-          />
+          <EmptyState message="No products match your search." action={{ label: 'Clear filters', onPress: clearFilters }} />
         )
       ) : products.isError ? (
         <ErrorState message={userMessage(products.error)} onRetry={() => void products.refetch()} />

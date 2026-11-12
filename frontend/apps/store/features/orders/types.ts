@@ -2,15 +2,7 @@
 
 import type { Money } from '@/features/catalog/types';
 
-export type OrderStatus =
-  | 'PendingPayment'
-  | 'Paid'
-  | 'Processing'
-  | 'Shipped'
-  | 'Delivered'
-  | 'Cancelled'
-  | 'Refunded'
-  | 'Returned';
+export type OrderStatus = 'PendingPayment' | 'Paid' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled' | 'Refunded' | 'Returned';
 
 /** The latest payment attempt (arch 9 orders contract). Null before any attempt. */
 export type PaymentStatus = 'Pending' | 'Succeeded' | 'Failed' | 'PartiallyRefunded' | 'Refunded';

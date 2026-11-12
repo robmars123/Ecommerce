@@ -27,9 +27,7 @@ function OrderRow({ order }: { order: OrderSummary }) {
       <Text className="text-body text-foreground">{statusLabel(order.status)}</Text>
       <Text className="text-body text-foreground">{formatMoney(order.grandTotal)}</Text>
       {/* The list carries no tracking number (arch 9), so only an https link is shown; the detail shows the number. */}
-      {order.trackingUrl?.startsWith('https://') ? (
-        <TrackingLink trackingNumber="" trackingUrl={order.trackingUrl} label="Track" />
-      ) : null}
+      {order.trackingUrl?.startsWith('https://') ? <TrackingLink trackingNumber="" trackingUrl={order.trackingUrl} label="Track" /> : null}
     </View>
   );
 }

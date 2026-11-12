@@ -73,7 +73,10 @@ describe('AdminProductDetailView', () => {
       if (method === 'PUT') return problemResponse(409, { errors: { version: ['changed'] } });
       if (path === '/api/v1/admin/products/a-1') {
         detailFetches += 1;
-        return jsonResponse(200, makeAdminProduct({ version: detailFetches === 1 ? 100 : 101, name: detailFetches === 1 ? 'Linen shirt' : 'Renamed elsewhere' }));
+        return jsonResponse(
+          200,
+          makeAdminProduct({ version: detailFetches === 1 ? 100 : 101, name: detailFetches === 1 ? 'Linen shirt' : 'Renamed elsewhere' }),
+        );
       }
       return undefined;
     });
@@ -96,7 +99,8 @@ describe('AdminProductDetailView', () => {
 
   it('Preview renders the customer product page from the preview endpoint', async () => {
     const spy = mockApi((method, path) => {
-      if (path.endsWith('/preview')) return jsonResponse(200, { product: makeDetail({ name: 'Previewed shirt' }), isActive: false, isVisibleToCustomers: false });
+      if (path.endsWith('/preview'))
+        return jsonResponse(200, { product: makeDetail({ name: 'Previewed shirt' }), isActive: false, isVisibleToCustomers: false });
       if (path === '/api/v1/admin/products/a-1') return jsonResponse(200, makeAdminProduct());
       return undefined;
     });

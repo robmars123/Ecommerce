@@ -40,8 +40,7 @@ afterEach(() => {
 });
 
 const addButton = (name = 'Blue Shirt') => screen.getByRole('button', { name: `Add to Cart: ${name}` });
-const mockDetail = (detail: ProductDetail) =>
-  jest.spyOn(globalThis, 'fetch').mockImplementation(async () => jsonResponse(200, detail));
+const mockDetail = (detail: ProductDetail) => jest.spyOn(globalThis, 'fetch').mockImplementation(async () => jsonResponse(200, detail));
 const render = (item: ProductListItem = makeItem()) => renderRouter(routes(item), { initialUrl: '/' });
 
 describe('ProductCard', () => {

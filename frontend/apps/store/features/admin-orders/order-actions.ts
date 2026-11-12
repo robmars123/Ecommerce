@@ -55,7 +55,9 @@ export function validateShip(carrierCode: string, trackingNumber: string): { car
   const tracking = trackingNumber.trim();
   return {
     ...(carrierCode.trim().length === 0 ? { carrier: 'Enter a carrier code.' } : {}),
-    ...(tracking.length === 0 || tracking.length > MAX_TRACKING ? { tracking: `Enter a tracking number of 1 to ${MAX_TRACKING} characters.` } : {}),
+    ...(tracking.length === 0 || tracking.length > MAX_TRACKING
+      ? { tracking: `Enter a tracking number of 1 to ${MAX_TRACKING} characters.` }
+      : {}),
   };
 }
 

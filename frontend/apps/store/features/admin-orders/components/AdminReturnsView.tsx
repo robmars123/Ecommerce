@@ -41,8 +41,18 @@ function ReturnCard({ request }: { request: ReturnRequestRow }) {
             </Text>
           ) : null}
           <View className="flex-row gap-sm">
-            <ActionButton label={`Approve ${request.orderNumber}`} onPress={() => act('approve')} pending={decide.isPending} disabled={note.trim().length === 0} />
-            <ActionButton label={`Decline ${request.orderNumber}`} onPress={() => act('decline')} pending={decide.isPending} disabled={note.trim().length === 0} />
+            <ActionButton
+              label={`Approve ${request.orderNumber}`}
+              onPress={() => act('approve')}
+              pending={decide.isPending}
+              disabled={note.trim().length === 0}
+            />
+            <ActionButton
+              label={`Decline ${request.orderNumber}`}
+              onPress={() => act('decline')}
+              pending={decide.isPending}
+              disabled={note.trim().length === 0}
+            />
           </View>
         </View>
       ) : null}

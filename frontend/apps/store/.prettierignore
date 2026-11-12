@@ -1,0 +1,9 @@
+node_modules/
+dist/
+web-build/
+.expo/
+coverage/
+assets/
+*.json
+expo-env.d.ts
+nativewind-env.d.ts

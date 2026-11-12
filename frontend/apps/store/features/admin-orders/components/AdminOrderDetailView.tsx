@@ -1,6 +1,6 @@
-import type { ReactNode } from 'react';
-import { Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 
+import { AdminPanel } from '@/components/AdminPanel';
 import { ErrorState } from '@/components/ErrorState';
 import { LoadingState } from '@/components/LoadingState';
 import { ScreenTitle } from '@/components/ScreenTitle';
@@ -13,29 +13,20 @@ import type { AdminOrderDetail } from '../types';
 import { OrderActions } from './OrderActions';
 import { RefundForm } from './RefundForm';
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <View className="gap-xs">
-      <Text accessibilityRole="header" className="text-title font-semibold text-foreground">
-        {title}
-      </Text>
-      {children}
-    </View>
-  );
-}
-
 function Content({ detail }: { detail: AdminOrderDetail }) {
   const { order } = detail;
   return (
     <View className="gap-lg">
-      <View className="gap-xs">
-        <Text className="text-body font-semibold text-foreground">{order.orderNumber}</Text>
-        <Text className="text-small text-muted">{formatOrderDate(order.createdAt)}</Text>
-        <Text className="text-body text-foreground">{statusLabel(order.status)}</Text>
-        <Text className="text-small text-muted">{`Customer ${detail.userId}`}</Text>
-      </View>
+      <AdminPanel>
+        <View className="gap-xs">
+          <Text className="text-body font-semibold text-foreground">{order.orderNumber}</Text>
+          <Text className="text-small text-muted">{formatOrderDate(order.createdAt)}</Text>
+          <Text className="text-body text-foreground">{statusLabel(order.status)}</Text>
+          <Text className="text-small text-muted">{`Customer ${detail.userId}`}</Text>
+        </View>
+      </AdminPanel>
 
-      <Section title="Items">
+      <AdminPanel title="Items">
         {order.items.map((item) => (
           <View key={item.variantId} className="flex-row flex-wrap justify-between gap-sm">
             <Text className="text-body text-foreground">{`${item.name} × ${item.quantity}`}</Text>
@@ -43,9 +34,9 @@ function Content({ detail }: { detail: AdminOrderDetail }) {
           </View>
         ))}
         <Text className="text-body font-semibold text-foreground">{`Total ${formatMoney(order.grandTotal)}`}</Text>
-      </Section>
+      </AdminPanel>
 
-      <Section title="Refunds">
+      <AdminPanel title="Refunds">
         <Text className="text-body text-foreground">{`Refunded ${formatMoney(detail.refundedTotal)}`}</Text>
         <Text className="text-body text-foreground">{`Pending ${formatMoney(detail.pendingTotal)}`}</Text>
         <Text className="text-body text-foreground">{`Remaining ${formatMoney(detail.remaining)}`}</Text>
@@ -55,14 +46,14 @@ function Content({ detail }: { detail: AdminOrderDetail }) {
             <Text className="text-small text-muted">{formatOrderDate(refund.createdAt)}</Text>
           </View>
         ))}
-      </Section>
+      </AdminPanel>
 
       {detail.returnRequests.length > 0 ? (
-        <Section title="Return requests">
+        <AdminPanel title="Return requests">
           {detail.returnRequests.map((request) => (
             <Text key={request.id} className="text-body text-foreground">{`${request.status}: ${request.reason}`}</Text>
           ))}
-        </Section>
+        </AdminPanel>
       ) : null}
 
       <OrderActions detail={detail} />
@@ -76,7 +67,7 @@ export function AdminOrderDetailView({ id }: { id: string }) {
   const query = useAdminOrderQuery(id);
 
   return (
-    <View className="w-full max-w-content flex-1 gap-sm self-center p-lg">
+    <ScrollView contentContainerClassName="w-full max-w-content gap-lg self-center p-lg">
       <ScreenTitle title="Order" />
       {query.data ? (
         <Content detail={query.data} />
@@ -89,6 +80,6 @@ export function AdminOrderDetailView({ id }: { id: string }) {
       ) : (
         <LoadingState />
       )}
-    </View>
+    </ScrollView>
   );
 }

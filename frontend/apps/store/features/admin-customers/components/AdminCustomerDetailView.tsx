@@ -12,7 +12,19 @@ import { formatMoney } from '@/lib/money';
 import { useAdminCustomerQuery } from '../hooks/useAdminCustomerQuery';
 import type { AdminCustomerDetail } from '../types';
 
-function Section({ title, count, shown, empty, children }: { title: string; count: number; shown: number; empty: string; children: ReactNode }) {
+function Section({
+  title,
+  count,
+  shown,
+  empty,
+  children,
+}: {
+  title: string;
+  count: number;
+  shown: number;
+  empty: string;
+  children: ReactNode;
+}) {
   return (
     <View className="gap-xs">
       <Text accessibilityRole="header" className="text-title font-semibold text-foreground">
@@ -33,7 +45,9 @@ function Content({ customer }: { customer: AdminCustomerDetail }) {
         <Text className="text-body text-foreground">{customer.email}</Text>
         <Text className="text-small text-muted">{`Customer since ${formatOrderDate(customer.createdAt)}`}</Text>
         <Text className="text-body text-foreground">{`Orders ${customer.orderCount}`}</Text>
-        {customer.totalSpent !== null ? <Text className="text-body text-foreground">{`Total spent ${formatMoney(customer.totalSpent)}`}</Text> : null}
+        {customer.totalSpent !== null ? (
+          <Text className="text-body text-foreground">{`Total spent ${formatMoney(customer.totalSpent)}`}</Text>
+        ) : null}
       </View>
 
       <Section title="Recent orders" count={customer.orderCount} shown={customer.recentOrders.length} empty="No orders yet.">

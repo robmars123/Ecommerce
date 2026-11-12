@@ -41,7 +41,10 @@ export function useGuestCartMerge(): void {
     const lines = store.lines;
     const key = store.ensureMergeKey();
     try {
-      const response = await mergeCart(lines.map((l) => ({ variantId: l.variantId, quantity: l.quantity })), key);
+      const response = await mergeCart(
+        lines.map((l) => ({ variantId: l.variantId, quantity: l.quantity })),
+        key,
+      );
       queryClient.setQueryData(queryKeys.cart, response.cart);
       const names = new Map(lines.map((l) => [l.variantId, `${l.snapshot.productName} - ${l.snapshot.variantName}`]));
       useMergeResultStore.getState().publish(response.results.map((r) => ({ ...r, name: names.get(r.variantId) ?? 'Item' })));

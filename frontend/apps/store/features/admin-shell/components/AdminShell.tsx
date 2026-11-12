@@ -49,11 +49,7 @@ function Breadcrumb() {
         return (
           <View key={crumb.href} className="flex-row items-center gap-xs">
             {index > 0 ? (
-              <Text
-                accessibilityElementsHidden
-                importantForAccessibility="no-hide-descendants"
-                className="text-caption text-muted"
-              >
+              <Text accessibilityElementsHidden importantForAccessibility="no-hide-descendants" className="text-caption text-muted">
                 ›
               </Text>
             ) : null}

@@ -174,7 +174,12 @@ describe('ProductDetailView navigation and variant details', () => {
     mockDetail(() =>
       jsonResponse(
         200,
-        makeDetail({ related: [makeItem({ id: 'p-2', slug: 'red-shirt', name: 'Red Shirt' }), makeItem({ id: 'p-3', slug: 'green-shirt', name: 'Green Shirt' })] }),
+        makeDetail({
+          related: [
+            makeItem({ id: 'p-2', slug: 'red-shirt', name: 'Red Shirt' }),
+            makeItem({ id: 'p-3', slug: 'green-shirt', name: 'Green Shirt' }),
+          ],
+        }),
       ),
     );
     await render();

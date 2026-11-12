@@ -14,11 +14,7 @@ export function PriceText({ price, compareAtPrice }: PriceTextProps) {
     <View className="flex-row items-baseline gap-sm">
       <Text className="text-title font-bold text-foreground">{formatMoney(price)}</Text>
       {compareAtPrice ? (
-        <Text
-          accessibilityLabel={`Was ${formatMoney(compareAtPrice)}`}
-          className="text-small text-muted"
-          style={styles.compareAt}
-        >
+        <Text accessibilityLabel={`Was ${formatMoney(compareAtPrice)}`} className="text-small text-muted" style={styles.compareAt}>
           {formatMoney(compareAtPrice)}
         </Text>
       ) : null}

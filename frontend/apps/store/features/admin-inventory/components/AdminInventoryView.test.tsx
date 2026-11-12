@@ -58,7 +58,15 @@ describe('AdminInventoryView', () => {
       list: () =>
         makeInventoryPage([
           ROW,
-          makeInventoryItem({ variantId: 'v-2', sku: 'TS-2', variantName: 'Red / S', stockStatus: 'Low', onHand: 3, reserved: 0, available: 3 }),
+          makeInventoryItem({
+            variantId: 'v-2',
+            sku: 'TS-2',
+            variantName: 'Red / S',
+            stockStatus: 'Low',
+            onHand: 3,
+            reserved: 0,
+            available: 3,
+          }),
           makeInventoryItem({ variantId: 'v-3', sku: 'TS-3', stockStatus: 'Out', onHand: 0, reserved: 0, available: 0 }),
           makeInventoryItem({ variantId: 'v-4', sku: 'TS-4', isActive: false, onHand: 5, reserved: 0, available: 5 }),
         ]),
@@ -162,7 +170,9 @@ describe('AdminInventoryView', () => {
     await openAdjust('TS-1', '5', 'Restock');
     await fireEvent.press(screen.getByLabelText('Add stock'));
 
-    expect(await screen.findByText('On hand is now 14, not 10. Someone else changed it. Reload to see the current numbers.')).toBeOnTheScreen();
+    expect(
+      await screen.findByText('On hand is now 14, not 10. Someone else changed it. Reload to see the current numbers.'),
+    ).toBeOnTheScreen();
     expect(gets(spy)).toHaveLength(1);
     expect(screen.getByLabelText('Quantity for TS-1').props.value).toBe('5');
 

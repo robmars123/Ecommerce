@@ -24,7 +24,8 @@ afterEach(() => {
 });
 
 const detailWith = (status: OrderStatus) => makeAdminOrderDetail({ order: makeOrderDetail({ id: 'o-9', status }) });
-const render = (status: OrderStatus) => renderRouterWithQuery({ index: () => <OrderActions detail={detailWith(status)} /> }, { initialUrl: '/' });
+const render = (status: OrderStatus) =>
+  renderRouterWithQuery({ index: () => <OrderActions detail={detailWith(status)} /> }, { initialUrl: '/' });
 const noContent = () => new Response(null, { status: 204 });
 
 describe('OrderActions', () => {
@@ -90,7 +91,10 @@ describe('OrderActions', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Confirm ship' }));
 
     await waitFor(() => expect(spy).toHaveBeenCalledTimes(1));
-    expect(JSON.parse((spy.mock.calls[0][1] as RequestInit).body as string)).toEqual({ carrierCode: 'example-post', trackingNumber: 'T-123' });
+    expect(JSON.parse((spy.mock.calls[0][1] as RequestInit).body as string)).toEqual({
+      carrierCode: 'example-post',
+      trackingNumber: 'T-123',
+    });
   });
 
   it('blocks an override without a reason, then sends the target status with it', async () => {

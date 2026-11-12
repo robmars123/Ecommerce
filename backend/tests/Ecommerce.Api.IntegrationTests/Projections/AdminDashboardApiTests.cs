@@ -76,16 +76,16 @@ public class AdminDashboardApiTests(PostgresFixture postgres)
     public async Task Low_stock_lists_a_variant_at_the_threshold_and_not_one_above_it()
     {
         await using ProjectionEnv e = await ProjectionEnv.StartAsync(postgres);
-        Guid atThreshold = await e.F.Cart.VariantAsync("LOW-5", stock: 5);
-        Guid above = await e.F.Cart.VariantAsync("LOW-6", stock: 6);
+        Guid atThreshold = await e.F.Cart.VariantAsync("LOW-3", stock: 3);
+        Guid above = await e.F.Cart.VariantAsync("LOW-4", stock: 4);
 
         IdentityTestEnv.Api dashboard = await e.OkDashboardAsync();
 
         List<string> skus = dashboard.Json.GetProperty("lowStock").EnumerateArray().Select(l => l.GetProperty("sku").GetString()!).ToList();
-        Assert.Contains("LOW-5", skus);
-        Assert.DoesNotContain("LOW-6", skus);
-        JsonElement row = dashboard.Json.GetProperty("lowStock").EnumerateArray().Single(l => l.GetProperty("sku").GetString() == "LOW-5");
-        Assert.Equal((atThreshold, 5), (row.GetProperty("variantId").GetGuid(), row.GetProperty("available").GetInt32()));
+        Assert.Contains("LOW-3", skus);
+        Assert.DoesNotContain("LOW-4", skus);
+        JsonElement row = dashboard.Json.GetProperty("lowStock").EnumerateArray().Single(l => l.GetProperty("sku").GetString() == "LOW-3");
+        Assert.Equal((atThreshold, 3), (row.GetProperty("variantId").GetGuid(), row.GetProperty("available").GetInt32()));
         Assert.NotEqual(above, row.GetProperty("variantId").GetGuid());
     }
 

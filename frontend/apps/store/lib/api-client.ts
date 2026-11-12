@@ -2,16 +2,7 @@ import { getApiBaseUrl } from './config';
 import { newCorrelationId } from './correlation-id';
 
 export type ApiErrorKind =
-  | 'network'
-  | 'timeout'
-  | 'not-found'
-  | 'validation'
-  | 'unauthorized'
-  | 'forbidden'
-  | 'conflict'
-  | 'client'
-  | 'server'
-  | 'config';
+  'network' | 'timeout' | 'not-found' | 'validation' | 'unauthorized' | 'forbidden' | 'conflict' | 'client' | 'server' | 'config';
 
 export const REQUEST_TIMEOUT_MS = 15_000;
 
@@ -145,9 +136,7 @@ function toRejectedLines(value: unknown): RejectedLine[] | undefined {
   if (!Array.isArray(value)) {
     return undefined;
   }
-  const lines = value.filter(
-    (line): line is RejectedLine => typeof line?.variantId === 'string' && typeof line?.reason === 'string',
-  );
+  const lines = value.filter((line): line is RejectedLine => typeof line?.variantId === 'string' && typeof line?.reason === 'string');
   return lines.length > 0 ? lines : undefined;
 }
 
@@ -221,9 +210,7 @@ async function attempt<T>(spec: RequestSpec, token: string | undefined): Promise
     }
     const body = asRecord(result.parsed ? result.value : undefined);
     const correlationId =
-      (typeof body.correlationId === 'string' ? body.correlationId : undefined) ??
-      response.headers.get('X-Correlation-ID') ??
-      sentId;
+      (typeof body.correlationId === 'string' ? body.correlationId : undefined) ?? response.headers.get('X-Correlation-ID') ?? sentId;
 
     if (!response.ok) {
       throw new ApiError(kindForStatus(response.status), `Request failed with status ${response.status}.`, {

@@ -22,9 +22,7 @@ export function VariantSelector({ variants, selectedId, onSelect }: VariantSelec
   return (
     <View className="gap-sm">
       <Text className="text-small font-semibold text-foreground">
-        {selectedVariant
-          ? `${variantGroupLabel(variants)}: ${variantLabel(selectedVariant)}`
-          : variantGroupLabel(variants)}
+        {selectedVariant ? `${variantGroupLabel(variants)}: ${variantLabel(selectedVariant)}` : variantGroupLabel(variants)}
       </Text>
       <View className="flex-row flex-wrap gap-sm">
         {variants.map((v) => {

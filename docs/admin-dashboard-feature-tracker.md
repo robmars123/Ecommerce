@@ -16,10 +16,10 @@ Match the target screenshot across all admin screens. Rows are ordered MVP-first
 | P2.7 | Search box with grouped results | `admin-shell` | Done |
 | P2.8 | `GET /api/v1/admin/search?q=`: up to 5 each of orders, products and SKUs. `q` 2–100 characters | Admin | Done |
 | **1** | **MVP: every daily admin screen usable and themed (layout only)** | | |
-| P2.34 | Orders list, with status filters from the URL | `admin-orders` | Todo |
-| P2.35 | Order detail | `admin-orders` | Todo |
-| P2.40 | Inventory | `admin-inventory` | Todo |
-| P2.33 | Set `Inventory:LowStockThreshold` to 3 in config | Inventory | Todo |
+| P2.34 | Orders list, with status filters from the URL | `admin-orders` | Done |
+| P2.35 | Order detail | `admin-orders` | Done |
+| P2.40 | Inventory | `admin-inventory` | Done |
+| P2.33 | Set `Inventory:LowStockThreshold` to 3 in config | Inventory | Done |
 | P2.37 | Products list | `admin-catalog` | Todo |
 | P2.38 | Product create and edit | `admin-catalog` | Todo |
 | P2.39 | Categories | `admin-catalog` | Todo |

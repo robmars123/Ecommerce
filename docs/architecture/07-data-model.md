@@ -93,7 +93,7 @@ v1 keeps these in configuration (`appsettings`, overridable by env vars), not in
 
 | Key | Shape | Rule |
 |---|---|---|
-| `Inventory:LowStockThreshold` | int ≥ 1, default **5** | Per variant, available = on_hand − reserved. available ≤ 0 → `Out`; 1 … threshold → `Low`; above → `InStock`. A variant with no `inventory_stock` row is `Out`. Product rollup: best active variant (`InStock` > `Low` > `Out`). From Slice 2, `Unknown` is never emitted; it stays in the v1 enum (§9: v1 is never narrowed) |
+| `Inventory:LowStockThreshold` | int ≥ 1, code default **5**; `appsettings.json` sets **3** from Phase 2 (§13.2) | Per variant, available = on_hand − reserved. available ≤ 0 → `Out`; 1 … threshold → `Low`; above → `InStock`. A variant with no `inventory_stock` row is `Out`. Product rollup: best active variant (`InStock` > `Low` > `Out`). From Slice 2, `Unknown` is never emitted; it stays in the v1 enum (§9: v1 is never narrowed) |
 | `Store:Currency` | ISO 4217, e.g. `USD` | The one store currency. Every variant price and shipping rate must use it; checkout rejects a cart line in another currency (400) |
 | `Shipping:Countries` | ISO 3166-1 alpha-2 list | Ship-to countries. Any other country → 400 at checkout |
 | `Shipping:Methods` | list of `{ code, name, amount, estimatedDays }` | Flat rate per order (not per item or weight) in `Store:Currency`. Codes unique, `^[a-z0-9-]+$`; amount ≥ 0 |

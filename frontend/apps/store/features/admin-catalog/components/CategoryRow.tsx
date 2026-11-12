@@ -54,7 +54,9 @@ export function CategoryRow({ category, parentName, mode, onOpen, onClose }: Cat
   return (
     <View className="gap-sm border-b border-border py-md">
       <Text className="text-body font-semibold text-foreground">{`${category.name} · ${category.slug}`}</Text>
-      <Text className="text-small text-muted">{parentName ? `Under ${parentName}` : category.parentSlug ? `Under ${category.parentSlug}` : 'Top level'}</Text>
+      <Text className="text-small text-muted">
+        {parentName ? `Under ${parentName}` : category.parentSlug ? `Under ${category.parentSlug}` : 'Top level'}
+      </Text>
 
       {mode === null ? (
         <View className="flex-row flex-wrap gap-md">
@@ -66,7 +68,13 @@ export function CategoryRow({ category, parentName, mode, onOpen, onClose }: Cat
       {mode === 'edit' ? (
         <View className="gap-md">
           <TextField label={`New name for ${category.name}`} value={name} onChangeText={setName} error={updateErrors.name?.[0]} />
-          <TextField label={`New slug for ${category.name}`} value={slug} onChangeText={setSlug} error={updateErrors.slug?.[0]} autoCapitalize="none" />
+          <TextField
+            label={`New slug for ${category.name}`}
+            value={slug}
+            onChangeText={setSlug}
+            error={updateErrors.slug?.[0]}
+            autoCapitalize="none"
+          />
           {update.error && !updateErrors.name && !updateErrors.slug ? (
             <Text accessibilityRole="alert" className="text-body text-danger">
               {userMessage(update.error)}

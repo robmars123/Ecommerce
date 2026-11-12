@@ -12,27 +12,14 @@ type ProductImageViewProps = {
   maxWidth?: number;
 };
 
-export function ProductImageView({
-  url,
-  altText,
-  fallbackLabel,
-  aspectRatio = 1,
-  width,
-  maxWidth,
-}: ProductImageViewProps) {
+export function ProductImageView({ url, altText, fallbackLabel, aspectRatio = 1, width, maxWidth }: ProductImageViewProps) {
   const label = altText || fallbackLabel;
   // Runtime values from the API or the caller: an allowed style exception (arch §5.5).
   const box = { aspectRatio, width: width ?? ('100%' as const), maxWidth };
 
   if (!url) {
     return (
-      <View
-        accessible
-        accessibilityRole="image"
-        accessibilityLabel={label}
-        className="rounded-control bg-surface-raised"
-        style={box}
-      />
+      <View accessible accessibilityRole="image" accessibilityLabel={label} className="rounded-control bg-surface-raised" style={box} />
     );
   }
 

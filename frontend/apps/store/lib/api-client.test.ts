@@ -251,11 +251,7 @@ describe('ApiError carries the checkout causes (Slice 4)', () => {
       problemResponse(409, {
         title: 'Some items cannot be ordered',
         type: 'checkout-lines-rejected',
-        lines: [
-          { variantId: 'v-1', reason: 'OutOfStock', available: 0 },
-          { variantId: 'v-2', reason: 'PriceChanged' },
-          { notALine: true },
-        ],
+        lines: [{ variantId: 'v-1', reason: 'OutOfStock', available: 0 }, { variantId: 'v-2', reason: 'PriceChanged' }, { notALine: true }],
       }),
     );
 

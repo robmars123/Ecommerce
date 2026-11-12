@@ -33,8 +33,7 @@ function productUrls(spy: jest.SpyInstance): URL[] {
     .filter((u) => u.pathname === '/api/v1/products');
 }
 
-const render = (initialUrl: string) =>
-  renderRouterWithQuery({ 'products/index': ProductListScreen }, { initialUrl });
+const render = (initialUrl: string) => renderRouterWithQuery({ 'products/index': ProductListScreen }, { initialUrl });
 
 describe('ProductListView', () => {
   it('shows a loading indicator, then the products with price and category', async () => {
@@ -106,7 +105,10 @@ describe('ProductListView', () => {
   it('Next and Previous change the page in the URL and the request', async () => {
     const spy = mockApi((url) => {
       const page = Number(url.searchParams.get('page') ?? '1');
-      return jsonResponse(200, makePage([makeItem({ id: `p-${page}`, slug: `item-${page}`, name: `Item ${page}` })], { page, totalPages: 3, totalCount: 3 }));
+      return jsonResponse(
+        200,
+        makePage([makeItem({ id: `p-${page}`, slug: `item-${page}`, name: `Item ${page}` })], { page, totalPages: 3, totalCount: 3 }),
+      );
     });
     await render('/products');
     await screen.findByRole('link', { name: 'Item 1' });

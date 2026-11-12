@@ -142,7 +142,10 @@ function Details({ onPlaced }: DetailsProps) {
           Your items
         </Text>
         {items.map((item) => (
-          <Text key={item.variantId} className="text-body text-foreground">{`${item.productName} (${item.variantName}) × ${item.quantity}`}</Text>
+          <Text
+            key={item.variantId}
+            className="text-body text-foreground"
+          >{`${item.productName} (${item.variantName}) × ${item.quantity}`}</Text>
         ))}
       </View>
 

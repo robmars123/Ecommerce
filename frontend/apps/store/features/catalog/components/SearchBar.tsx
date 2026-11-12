@@ -63,7 +63,12 @@ export function SearchBar({ value = '', onSearch, onSubmit, debounceMs = SEARCH_
         style={styles.input}
       />
       {text ? (
-        <Pressable accessibilityRole="button" accessibilityLabel="Clear search" onPress={clear} className="min-h-touch min-w-touch items-center justify-center">
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Clear search"
+          onPress={clear}
+          className="min-h-touch min-w-touch items-center justify-center"
+        >
           <Text className="text-body text-foreground">Clear</Text>
         </Pressable>
       ) : null}

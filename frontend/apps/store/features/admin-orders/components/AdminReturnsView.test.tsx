@@ -45,7 +45,9 @@ describe('AdminReturnsView', () => {
 
   it('changing the filter asks the server for that status, and "All" sends none', async () => {
     await signInAs('Admin');
-    const spy = jest.spyOn(globalThis, 'fetch').mockImplementation(async () => jsonResponse(200, makeReturnPage([makeReturnRow({ status: 'Approved' })])));
+    const spy = jest
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(async () => jsonResponse(200, makeReturnPage([makeReturnRow({ status: 'Approved' })])));
     await render();
     await screen.findByText('ORD-2026-000009 · Approved');
 
@@ -84,9 +86,13 @@ describe('AdminReturnsView', () => {
 
   it('decline sends to the decline endpoint', async () => {
     await signInAs('Admin');
-    const spy = jest.spyOn(globalThis, 'fetch').mockImplementation(async (_input, init) =>
-      (init as RequestInit | undefined)?.method === 'POST' ? new Response(null, { status: 204 }) : jsonResponse(200, makeReturnPage([makeReturnRow()])),
-    );
+    const spy = jest
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(async (_input, init) =>
+        (init as RequestInit | undefined)?.method === 'POST'
+          ? new Response(null, { status: 204 })
+          : jsonResponse(200, makeReturnPage([makeReturnRow()])),
+      );
     await render();
     await screen.findByText('ORD-2026-000009 · Requested');
 
@@ -99,9 +105,13 @@ describe('AdminReturnsView', () => {
 
   it('shows a plain message when a decision fails, e.g. someone decided first (409)', async () => {
     await signInAs('Admin');
-    jest.spyOn(globalThis, 'fetch').mockImplementation(async (_input, init) =>
-      (init as RequestInit | undefined)?.method === 'POST' ? problemResponse(409, { title: 'Conflict' }) : jsonResponse(200, makeReturnPage([makeReturnRow()])),
-    );
+    jest
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(async (_input, init) =>
+        (init as RequestInit | undefined)?.method === 'POST'
+          ? problemResponse(409, { title: 'Conflict' })
+          : jsonResponse(200, makeReturnPage([makeReturnRow()])),
+      );
     await render();
     await screen.findByText('ORD-2026-000009 · Requested');
 
@@ -113,9 +123,11 @@ describe('AdminReturnsView', () => {
 
   it('only a Requested return can be decided; a decided one shows its note', async () => {
     await signInAs('Admin');
-    jest.spyOn(globalThis, 'fetch').mockImplementation(async () =>
-      jsonResponse(200, makeReturnPage([makeReturnRow({ status: 'Declined', adminNote: 'Past the window' })])),
-    );
+    jest
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(async () =>
+        jsonResponse(200, makeReturnPage([makeReturnRow({ status: 'Declined', adminNote: 'Past the window' })])),
+      );
     await render();
 
     await screen.findByText('Note: Past the window');
@@ -124,7 +136,9 @@ describe('AdminReturnsView', () => {
 
   it('pages through the list', async () => {
     await signInAs('Admin');
-    const spy = jest.spyOn(globalThis, 'fetch').mockImplementation(async () => jsonResponse(200, makeReturnPage([makeReturnRow()], { totalPages: 2, totalCount: 21 })));
+    const spy = jest
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(async () => jsonResponse(200, makeReturnPage([makeReturnRow()], { totalPages: 2, totalCount: 21 })));
     await render();
     await screen.findByText('Page 1 of 2');
 

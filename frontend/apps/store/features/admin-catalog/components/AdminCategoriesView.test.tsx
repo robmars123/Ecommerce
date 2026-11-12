@@ -58,7 +58,9 @@ describe('AdminCategoriesView', () => {
 
   it('shows an error with a retry that refetches', async () => {
     let fail = true;
-    const spy = jest.spyOn(globalThis, 'fetch').mockImplementation(async () => (fail ? problemResponse(500, {}) : jsonResponse(200, { items: categories })));
+    const spy = jest
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(async () => (fail ? problemResponse(500, {}) : jsonResponse(200, { items: categories })));
     await render();
 
     const retry = await screen.findByRole('button', { name: 'Try again' });
@@ -79,7 +81,9 @@ describe('AdminCategoriesView', () => {
   });
 
   it('edits a category with { slug, name } only and refetches categories and product lists', async () => {
-    const spy = mockApi((method) => (method === 'PUT' ? jsonResponse(200, { slug: 'shirts', name: 'Shirts', parentSlug: 'clothing' }) : undefined));
+    const spy = mockApi((method) =>
+      method === 'PUT' ? jsonResponse(200, { slug: 'shirts', name: 'Shirts', parentSlug: 'clothing' }) : undefined,
+    );
     const client = createTestQueryClient();
     const invalidate = jest.spyOn(client, 'invalidateQueries');
     await render(client);
@@ -118,7 +122,9 @@ describe('AdminCategoriesView', () => {
   });
 
   it('cancels an edit without a request and shows no stale error on reopen', async () => {
-    const spy = mockApi((method) => (method === 'PUT' ? problemResponse(409, { errors: { slug: ['That slug is already used.'] } }) : undefined));
+    const spy = mockApi((method) =>
+      method === 'PUT' ? problemResponse(409, { errors: { slug: ['That slug is already used.'] } }) : undefined,
+    );
     await render();
 
     await fireEvent.press(await screen.findByRole('button', { name: 'Edit Tops' }));
@@ -227,7 +233,9 @@ describe('AdminCategoriesView', () => {
       if (method === 'GET' && pathname === '/api/v1/categories') return jsonResponse(200, { items: current });
       if (method === verb) {
         current = categories.filter((c) => c.slug !== 'tops');
-        return kind === 'delete' ? new Response(null, { status: 204 }) : jsonResponse(200, { slug: 'shirts', name: 'Shirts', parentSlug: 'clothing' });
+        return kind === 'delete'
+          ? new Response(null, { status: 204 })
+          : jsonResponse(200, { slug: 'shirts', name: 'Shirts', parentSlug: 'clothing' });
       }
       return new Response('not mocked', { status: 599 });
     });

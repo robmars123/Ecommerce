@@ -10,11 +10,7 @@ type NavLinkProps = { href: Href; label: string; selected?: boolean; outlined?: 
 
 function NavLink({ href, label, selected = false, outlined = false, badgeCount = null }: NavLinkProps) {
   const hasBadge = badgeCount !== null && badgeCount > 0;
-  const shape = outlined
-    ? 'border border-border'
-    : selected
-      ? 'bg-primary-subtle'
-      : '';
+  const shape = outlined ? 'border border-border' : selected ? 'bg-primary-subtle' : '';
   return (
     <Link href={href} asChild>
       <Pressable
@@ -53,9 +49,7 @@ export function TopNav() {
             </Pressable>
           </Link>
           <NavLink href="/products" label="Shop" selected={pathname.startsWith('/products')} />
-          {session.status === 'signed-in' ? (
-            <NavLink href="/orders" label="Orders" selected={pathname.startsWith('/orders')} />
-          ) : null}
+          {session.status === 'signed-in' ? <NavLink href="/orders" label="Orders" selected={pathname.startsWith('/orders')} /> : null}
         </View>
         <View className="flex-row flex-wrap items-center gap-md">
           <AccountBar />

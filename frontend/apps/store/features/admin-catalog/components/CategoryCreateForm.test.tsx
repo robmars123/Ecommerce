@@ -22,7 +22,9 @@ async function fill(parent = '') {
 
 describe('CategoryCreateForm', () => {
   it('creates a category, sends a null parent when blank, refetches categories and clears the form', async () => {
-    const spy = jest.spyOn(globalThis, 'fetch').mockImplementation(async () => jsonResponse(201, { slug: 'tees', name: 'Tees', parentSlug: null }));
+    const spy = jest
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(async () => jsonResponse(201, { slug: 'tees', name: 'Tees', parentSlug: null }));
     const client = createTestQueryClient();
     const invalidate = jest.spyOn(client, 'invalidateQueries');
     await renderRouterWithQuery({ index: CategoryCreateForm }, { initialUrl: '/', client });
@@ -37,7 +39,9 @@ describe('CategoryCreateForm', () => {
   });
 
   it('shows a bad parent next to the parent field', async () => {
-    jest.spyOn(globalThis, 'fetch').mockImplementation(async () => problemResponse(400, { errors: { parentSlug: ['That parent category does not exist.'] } }));
+    jest
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(async () => problemResponse(400, { errors: { parentSlug: ['That parent category does not exist.'] } }));
     await renderRouterWithQuery({ index: CategoryCreateForm }, { initialUrl: '/' });
 
     await fill('missing');

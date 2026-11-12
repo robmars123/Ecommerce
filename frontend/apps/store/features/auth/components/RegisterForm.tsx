@@ -34,22 +34,13 @@ export function RegisterForm() {
       return;
     }
     setMismatch(false);
-    register.mutate(
-      { displayName: displayName.trim(), email: email.trim(), password },
-      { onSuccess: () => router.replace('/') },
-    );
+    register.mutate({ displayName: displayName.trim(), email: email.trim(), password }, { onSuccess: () => router.replace('/') });
   }
 
   return (
     <View className="gap-md">
       <GuestCartNotice />
-      <TextField
-        label="Name"
-        value={displayName}
-        onChangeText={setDisplayName}
-        error={fieldErrors?.displayName?.[0]}
-        autoComplete="name"
-      />
+      <TextField label="Name" value={displayName} onChangeText={setDisplayName} error={fieldErrors?.displayName?.[0]} autoComplete="name" />
       <TextField
         label="Email"
         value={email}

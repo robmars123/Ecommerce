@@ -49,7 +49,19 @@ describe('AdminOrderDetailView', () => {
   it('lists the return requests of the order', async () => {
     await signInAs('Admin');
     const detail = makeAdminOrderDetail({
-      returnRequests: [{ id: 'r-1', orderId: 'o-9', orderNumber: 'N', status: 'Approved', reason: 'Too small', adminNote: 'ok', items: [], createdAt: '2026-03-10T10:00:00Z', decidedAt: null }],
+      returnRequests: [
+        {
+          id: 'r-1',
+          orderId: 'o-9',
+          orderNumber: 'N',
+          status: 'Approved',
+          reason: 'Too small',
+          adminNote: 'ok',
+          items: [],
+          createdAt: '2026-03-10T10:00:00Z',
+          decidedAt: null,
+        },
+      ],
     });
     jest.spyOn(globalThis, 'fetch').mockImplementation(async () => jsonResponse(200, detail));
 
@@ -68,7 +80,13 @@ describe('AdminOrderDetailView', () => {
           pendingTotal: usd('12.50'),
           remaining: usd('32.50'),
         });
-        return jsonResponse(202, { refundId: 'rf-1', amount: usd('12.50'), status: 'Pending', refundedTotal: usd('0.00'), remaining: usd('32.50') });
+        return jsonResponse(202, {
+          refundId: 'rf-1',
+          amount: usd('12.50'),
+          status: 'Pending',
+          refundedTotal: usd('0.00'),
+          remaining: usd('32.50'),
+        });
       }
       return jsonResponse(200, detail);
     });

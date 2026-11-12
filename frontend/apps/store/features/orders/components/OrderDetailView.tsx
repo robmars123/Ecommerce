@@ -60,9 +60,7 @@ function Content({ order }: { order: OrderDetail }) {
         <Text className="text-body text-foreground">{address.fullName}</Text>
         <Text className="text-body text-foreground">{address.line1}</Text>
         {address.line2 ? <Text className="text-body text-foreground">{address.line2}</Text> : null}
-        <Text className="text-body text-foreground">
-          {[address.city, address.region, address.postalCode].filter(Boolean).join(', ')}
-        </Text>
+        <Text className="text-body text-foreground">{[address.city, address.region, address.postalCode].filter(Boolean).join(', ')}</Text>
         <Text className="text-body text-foreground">{address.country}</Text>
       </Section>
 

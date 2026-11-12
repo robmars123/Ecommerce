@@ -21,15 +21,19 @@ afterEach(() => {
 
 const LoginStub = () => null;
 
-const render = () =>
-  renderRouterWithQuery({ 'orders/index': OrderListScreen, login: LoginStub }, { initialUrl: '/orders' });
+const render = () => renderRouterWithQuery({ 'orders/index': OrderListScreen, login: LoginStub }, { initialUrl: '/orders' });
 
 describe('OrderListView', () => {
   it('shows loading, then each order with number, date, status, total and a link to the detail', async () => {
     await signInAs('Customer');
-    jest.spyOn(globalThis, 'fetch').mockImplementation(async () =>
-      jsonResponse(200, makeOrderPage([makeOrderSummary(), makeOrderSummary({ id: 'o-2', orderNumber: 'ORD-2026-000002', status: 'Delivered' })])),
-    );
+    jest
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(async () =>
+        jsonResponse(
+          200,
+          makeOrderPage([makeOrderSummary(), makeOrderSummary({ id: 'o-2', orderNumber: 'ORD-2026-000002', status: 'Delivered' })]),
+        ),
+      );
 
     await render();
 
@@ -43,12 +47,17 @@ describe('OrderListView', () => {
 
   it('shows a tracking link only for an order that has a tracking URL', async () => {
     await signInAs('Customer');
-    jest.spyOn(globalThis, 'fetch').mockImplementation(async () =>
-      jsonResponse(200, makeOrderPage([
-        makeOrderSummary({ status: 'Shipped', trackingUrl: 'https://tracking.example.com/T-1' }),
-        makeOrderSummary({ id: 'o-2', orderNumber: 'ORD-2026-000002' }),
-      ])),
-    );
+    jest
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(async () =>
+        jsonResponse(
+          200,
+          makeOrderPage([
+            makeOrderSummary({ status: 'Shipped', trackingUrl: 'https://tracking.example.com/T-1' }),
+            makeOrderSummary({ id: 'o-2', orderNumber: 'ORD-2026-000002' }),
+          ]),
+        ),
+      );
 
     await render();
 
@@ -58,9 +67,11 @@ describe('OrderListView', () => {
 
   it('never shows a placeholder word as a tracking number when the URL is not https', async () => {
     await signInAs('Customer');
-    jest.spyOn(globalThis, 'fetch').mockImplementation(async () =>
-      jsonResponse(200, makeOrderPage([makeOrderSummary({ status: 'Shipped', trackingUrl: 'http://tracking.example.com/T-1' })])),
-    );
+    jest
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(async () =>
+        jsonResponse(200, makeOrderPage([makeOrderSummary({ status: 'Shipped', trackingUrl: 'http://tracking.example.com/T-1' })])),
+      );
 
     await render();
 
@@ -95,9 +106,9 @@ describe('OrderListView', () => {
 
   it('asks for the next page from the server', async () => {
     await signInAs('Customer');
-    const spy = jest.spyOn(globalThis, 'fetch').mockImplementation(async () =>
-      jsonResponse(200, makeOrderPage([makeOrderSummary()], { totalCount: 12, totalPages: 2 })),
-    );
+    const spy = jest
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(async () => jsonResponse(200, makeOrderPage([makeOrderSummary()], { totalCount: 12, totalPages: 2 })));
 
     await render();
     await fireEvent.press(await screen.findByRole('button', { name: 'Next' }));

@@ -5,7 +5,13 @@ import type { OrderStatus, RefundStatus } from '@/features/orders/types';
 
 export type AdminCustomerListItem = { id: string; email: string; displayName: string; createdAt: string };
 
-export type AdminCustomerListPage = { items: AdminCustomerListItem[]; page: number; pageSize: number; totalCount: number; totalPages: number };
+export type AdminCustomerListPage = {
+  items: AdminCustomerListItem[];
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+};
 
 export type AdminCustomerOrder = { id: string; orderNumber: string; createdAt: string; status: OrderStatus; grandTotal: Money };
 

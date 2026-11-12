@@ -37,14 +37,14 @@ public class InventoryHostTests(PostgresFixture postgres)
     }
 
     [Fact]
-    public async Task The_default_settings_are_a_threshold_of_5_and_a_30_second_sweep()
+    public async Task The_configured_settings_are_a_threshold_of_3_and_a_30_second_sweep()
     {
         await using Identity.IdentityTestEnv env = await InventoryEnv.StartAsync(postgres);
         using IServiceScope scope = env.Factory.Services.CreateScope();
         Ecommerce.Inventory.Infrastructure.InventoryOptions options =
             scope.ServiceProvider.GetRequiredService<Microsoft.Extensions.Options.IOptions<Ecommerce.Inventory.Infrastructure.InventoryOptions>>().Value;
 
-        Assert.Equal((5, 30), (options.LowStockThreshold, options.ReservationSweepSeconds));
+        Assert.Equal((3, 30), (options.LowStockThreshold, options.ReservationSweepSeconds));
     }
 
     private async Task<(string Cs, string Email, string Secret)> MigratedAsync()
