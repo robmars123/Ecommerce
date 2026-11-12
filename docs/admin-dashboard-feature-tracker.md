@@ -31,9 +31,9 @@ Match the target screenshot across all admin screens. Rows are ordered MVP-first
 | P2.21 | KPI cards with secondary lines; never blank. Support sees no revenue | `admin-dashboard` | Done |
 | P2.29 | Recent orders table restyle | `admin-dashboard` | Done |
 | P2.31 | Low stock panel restyle | `admin-dashboard` | Done |
-| P2.30 | Top products panel restyle | `admin-dashboard` | Todo |
-| P2.24 | Inventory alert banner linking to `/admin/inventory` | `admin-dashboard` | Todo |
-| P2.32 | Quick actions, hidden by role | `admin-dashboard` | Todo |
+| P2.30 | Top products panel restyle | `admin-dashboard` | Done |
+| P2.24 | Inventory alert banner linking to `/admin/inventory` | `admin-dashboard` | Done |
+| P2.32 | Quick actions, hidden by role | `admin-dashboard` | Done |
 | P2.14 | Period filter: Today / 7 days / 30 days | `admin-dashboard` | Todo |
 | P2.15 | Refresh button; keeps old figures on error | `admin-dashboard` | Todo |
 | P2.16 | As-of line: time, period, currency, lag | `admin-dashboard` | Todo |

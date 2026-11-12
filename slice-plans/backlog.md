@@ -54,3 +54,4 @@
 - P2.21 R1 (Rob): `DashboardView.test.tsx` Support test still asserts `queryByText('Sales')` is null; the `Sales` heading no longer exists, so that line is vacuous (the `/Revenue/` line and D1 still guard). Drop or replace it with `queryByLabelText('Revenue')` in the next dashboard row.
 - P2.21 R1 (Rob): `/admin` still shows the Stack header while other admin routes hide it; decide in an admin shell row.
 - P2.21 R1 (Rob): Marco's report quotes M1 red and `cmp` but not the filtered green re-run (plan step 2); green is covered by the full verify test step. Future M-evidence reports quote the filtered green too.
+- P2.30 R1 (Rob): dashboard Low stock rows still link to `/admin/inventory` for Support, and the gate bounces them back to `/admin`. Render them as plain text when `adminRouteDecision(role, '/admin/inventory')` refuses (UX only; the server already returns 403, see S1).

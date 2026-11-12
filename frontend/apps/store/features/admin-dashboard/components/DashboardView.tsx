@@ -7,6 +7,9 @@ import { AdminPanel } from '@/components/AdminPanel';
 import { ErrorState } from '@/components/ErrorState';
 import { LoadingState } from '@/components/LoadingState';
 import { ScreenTitle } from '@/components/ScreenTitle';
+import { adminRouteDecision } from '@/features/auth/admin-access';
+import { useSession } from '@/features/auth/hooks/useSession';
+import type { UserRole } from '@/features/auth/types';
 import { formatOrderDate } from '@/features/orders/status-labels';
 import { userMessage } from '@/lib/api-client';
 import { formatMoney } from '@/lib/money';
@@ -138,11 +141,28 @@ const QUICK_ACTIONS: {
   { href: '/admin/returns', label: 'Returns' },
 ];
 
+function QuickActions({ role }: { role: UserRole | null }) {
+  const actions = QUICK_ACTIONS.filter((a) => adminRouteDecision(role, a.href) === null);
+  if (actions.length === 0) return null;
+  return (
+    <AdminPanel title="Quick actions">
+      <View className="flex-row flex-wrap gap-md">
+        {actions.map((a) => (
+          <Link key={a.href} href={a.href} accessibilityRole="link" asChild>
+            <Text className="min-h-touch rounded-control border border-border px-md py-md text-body text-foreground">{a.label}</Text>
+          </Link>
+        ))}
+      </View>
+    </AdminPanel>
+  );
+}
+
 /** The admin home (arch 8.8.5, app context 4.8). Every figure is what the server returned; "as of" says how fresh it is. */
 export function DashboardView() {
   const [period, setPeriod] = useState<DashboardPeriod>('today');
   const query = useDashboardQuery(period);
   const data = query.data;
+  const role = useSession().user?.role ?? null;
 
   return (
     <ScrollView contentContainerClassName="w-full max-w-content gap-md self-center p-lg">
@@ -165,6 +185,18 @@ export function DashboardView() {
       {data ? (
         <View className="gap-md">
           <Text className="text-small text-muted">{`Figures as of ${formatAsOf(data.asOf)} UTC`}</Text>
+          {data.lowStock.length > 0 && adminRouteDecision(role, '/admin/inventory') === null ? (
+            <Link href="/admin/inventory" asChild>
+              <Pressable
+                accessibilityRole="link"
+                accessibilityLabel="Stock is running low. Review inventory"
+                className="min-h-touch flex-row flex-wrap items-center justify-between gap-sm rounded-card border border-warning bg-surface p-md"
+              >
+                <Text className="text-body font-semibold text-warning">Stock is running low</Text>
+                <Text className="text-small text-primary">Review inventory</Text>
+              </Pressable>
+            </Link>
+          ) : null}
           {data.kpis ? <KpiCards kpis={data.kpis} period={data.period} /> : null}
 
           <Section title="Orders by status">
@@ -176,12 +208,15 @@ export function DashboardView() {
             ))}
           </Section>
 
-          <Section title="Top products">
+          <AdminPanel title="Top products">
             {data.topProducts.length === 0 ? <Text className="text-body text-muted">No sales in this period.</Text> : null}
             {data.topProducts.map((t) => (
-              <Text key={t.productId} className="text-body text-foreground">{`${t.name} · ${t.units} sold`}</Text>
+              <Text
+                key={t.productId}
+                className="border-b border-border py-md text-body text-foreground"
+              >{`${t.name} · ${t.units} sold`}</Text>
             ))}
-          </Section>
+          </AdminPanel>
 
           <AdminPanel title="Low stock">
             {data.lowStock.length === 0 ? <Text className="text-body text-muted">Nothing is running low.</Text> : null}
@@ -202,15 +237,7 @@ export function DashboardView() {
 
       <RecentOrders />
 
-      <Section title="Quick actions">
-        <View className="flex-row flex-wrap gap-md">
-          {QUICK_ACTIONS.map((a) => (
-            <Link key={a.href} href={a.href} accessibilityRole="link" asChild>
-              <Text className="min-h-touch py-md text-body text-foreground">{a.label}</Text>
-            </Link>
-          ))}
-        </View>
-      </Section>
+      <QuickActions role={role} />
     </ScrollView>
   );
 }

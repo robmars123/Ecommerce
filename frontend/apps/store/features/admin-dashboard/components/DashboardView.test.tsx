@@ -235,4 +235,90 @@ describe('DashboardView', () => {
     expect(screen.getByText('Paid in the last 30 days')).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: 'Today' })).toBeSelected();
   });
+
+  it('Q1 shows a Support user only the Orders quick action', async () => {
+    await signInAs('Support');
+    mockApi(makeDashboard({ kpis: null }));
+
+    await render();
+
+    expect(await screen.findByRole('link', { name: 'Orders' })).toBeOnTheScreen();
+    for (const label of ['Add product', 'Categories', 'Inventory', 'Returns']) {
+      expect(screen.queryByRole('link', { name: label })).toBeNull();
+    }
+  });
+
+  it.each([
+    ['Admin', ['Add product', 'Categories', 'Inventory', 'Orders', 'Returns']],
+    ['Support', ['Orders']],
+  ] as const)('Q2 offers %s exactly these quick actions', async (role, expected) => {
+    await signInAs(role);
+    mockApi(makeDashboard({ kpis: role === 'Support' ? null : makeDashboard().kpis }));
+
+    await render();
+
+    await screen.findByText('Quick actions');
+    const visible = ['Add product', 'Categories', 'Inventory', 'Orders', 'Returns'].filter(
+      (label) => screen.queryByRole('link', { name: label }) !== null,
+    );
+    expect(visible).toEqual(expected);
+  });
+
+  it('Q3 opens the orders list from the Support Orders action', async () => {
+    await signInAs('Support');
+    mockApi(makeDashboard({ kpis: null }));
+    await render();
+
+    await fireEvent.press(await screen.findByRole('link', { name: 'Orders' }));
+
+    expect(await screen.findByText('Orders list screen')).toBeOnTheScreen();
+    expect(screen).toHavePathname('/admin/orders');
+  });
+
+  it('B1 shows the low-stock banner to an Admin and opens inventory from it', async () => {
+    await signInAs('Admin');
+    mockApi();
+    await render();
+
+    const banner = await screen.findByRole('link', { name: 'Stock is running low. Review inventory' });
+    expect(banner).toBeOnTheScreen();
+    expect(screen.getByText('Stock is running low')).toBeOnTheScreen();
+    expect(screen.getByText('Review inventory')).toBeOnTheScreen();
+    await fireEvent.press(banner);
+
+    expect(await screen.findByText('Inventory screen')).toBeOnTheScreen();
+    expect(screen).toHavePathname('/admin/inventory');
+  });
+
+  it('B2 shows no banner when nothing is running low', async () => {
+    await signInAs('Admin');
+    mockApi(makeDashboard({ lowStock: [] }));
+    await render();
+
+    await screen.findByText('Nothing is running low.');
+    expect(screen.queryByRole('link', { name: 'Stock is running low. Review inventory' })).toBeNull();
+    expect(screen.queryByText('Stock is running low')).toBeNull();
+  });
+
+  it('B3 hides the banner from Support even when stock is low', async () => {
+    await signInAs('Support');
+    mockApi(makeDashboard({ kpis: null }));
+    await render();
+
+    await screen.findByText('Orders by status');
+    expect(screen.queryByText('Stock is running low')).toBeNull();
+  });
+
+  it('B4 shows no banner before the dashboard has loaded', async () => {
+    await signInAs('Admin');
+    jest.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const { pathname } = new URL(String(input));
+      if (pathname === '/api/v1/admin/dashboard/recent-orders') return jsonResponse(200, makeRecentOrdersPage([]));
+      return problemResponse(500, { title: 'Server error' });
+    });
+    await render();
+
+    await screen.findAllByRole('button', { name: 'Try again' });
+    expect(screen.queryByText('Stock is running low')).toBeNull();
+  });
 });
