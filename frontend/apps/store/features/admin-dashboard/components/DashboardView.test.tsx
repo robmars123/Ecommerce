@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from 'expo-router/testing-library';
+import { fireEvent, screen, waitFor, within } from 'expo-router/testing-library';
 import { Text } from 'react-native';
 
 import AdminDashboardScreen from '@/app/admin/index';
@@ -47,10 +47,19 @@ describe('DashboardView', () => {
 
     await render();
 
-    expect(await screen.findByText('Revenue: $1,234.50')).toBeOnTheScreen();
-    expect(screen.getByText('Orders: 7')).toBeOnTheScreen();
-    expect(screen.getByText('Average order value: $176.36')).toBeOnTheScreen();
-    expect(screen.getByText('Customers: 5 (3 new, 2 returning)')).toBeOnTheScreen();
+    expect(await screen.findByLabelText('Revenue')).toBeOnTheScreen();
+    const revenue = within(screen.getByLabelText('Revenue'));
+    expect(revenue.getByText('$1,234.50')).toBeOnTheScreen();
+    expect(revenue.getByText('Paid minus refunds today')).toBeOnTheScreen();
+    const orders = within(screen.getByLabelText('Orders'));
+    expect(orders.getByText('7')).toBeOnTheScreen();
+    expect(orders.getByText('Paid today')).toBeOnTheScreen();
+    const average = within(screen.getByLabelText('Average order value'));
+    expect(average.getByText('$176.36')).toBeOnTheScreen();
+    expect(average.getByText('Across 7 orders')).toBeOnTheScreen();
+    const customers = within(screen.getByLabelText('Customers'));
+    expect(customers.getByText('5')).toBeOnTheScreen();
+    expect(customers.getByText('3 new · 2 returning')).toBeOnTheScreen();
     expect(screen.getByText('Figures as of Nov 8, 2026, 14:30 UTC')).toBeOnTheScreen();
     expect(screen.getByText('Blue Shirt · 9 sold')).toBeOnTheScreen();
     expect(screen.getByText('Blue Shirt (BS-M) · 2 left')).toBeOnTheScreen();
@@ -125,7 +134,7 @@ describe('DashboardView', () => {
     await signInAs('Admin');
     const spy = mockApi();
     await render();
-    await screen.findByText('Revenue: $1,234.50');
+    await screen.findByText('$1,234.50');
 
     await fireEvent.press(screen.getByRole('button', { name: '30 days' }));
     await waitFor(() => expect(calledUrls(spy).some((u) => u.includes('period=30d'))).toBe(true));
@@ -153,7 +162,7 @@ describe('DashboardView', () => {
     fail = false;
     await fireEvent.press(retry);
 
-    expect(await screen.findByText('Revenue: $1,234.50')).toBeOnTheScreen();
+    expect(await screen.findByText('$1,234.50')).toBeOnTheScreen();
   });
 
   it('lists recent orders and pages through them', async () => {
@@ -178,5 +187,52 @@ describe('DashboardView', () => {
     for (const label of ['Add product', 'Categories', 'Inventory', 'Orders', 'Returns']) {
       expect(await screen.findByRole('link', { name: label })).toBeOnTheScreen();
     }
+  });
+
+  it.each(['Admin', 'Support'] as const)('D1 shows no revenue when the server sent no KPIs (%s)', async (role) => {
+    await signInAs(role);
+    mockApi(makeDashboard({ kpis: null }));
+
+    await render();
+
+    expect(await screen.findByText('Orders by status')).toBeOnTheScreen();
+    for (const label of ['Revenue', 'Orders', 'Average order value', 'Customers']) {
+      expect(screen.queryByLabelText(label)).toBeNull();
+    }
+    expect(screen.queryByText('Paid minus refunds today')).toBeNull();
+  });
+
+  it('D2 never leaves a card blank when the figures are zero', async () => {
+    await signInAs('Admin');
+    const zero = { amount: '0.00', currency: 'USD' };
+    mockApi(
+      makeDashboard({
+        period: 'today',
+        kpis: { revenue: zero, orderCount: 0, averageOrderValue: zero, customers: { total: 0, new: 0, returning: 0 } },
+      }),
+    );
+
+    await render();
+
+    const revenue = within(await screen.findByLabelText('Revenue'));
+    expect(revenue.getByText('$0.00')).toBeOnTheScreen();
+    expect(revenue.getByText('Paid minus refunds today')).toBeOnTheScreen();
+    const orders = within(screen.getByLabelText('Orders'));
+    expect(orders.getByText('0')).toBeOnTheScreen();
+    expect(orders.getByText('No paid orders today')).toBeOnTheScreen();
+    const customers = within(screen.getByLabelText('Customers'));
+    expect(customers.getByText('0')).toBeOnTheScreen();
+    expect(customers.getByText('No customers today')).toBeOnTheScreen();
+  });
+
+  it('D3 words the period from the response, not the selected chip', async () => {
+    await signInAs('Admin');
+    mockApi(makeDashboard({ period: '30d' }));
+
+    await render();
+
+    expect(await screen.findByText('Paid minus refunds in the last 30 days')).toBeOnTheScreen();
+    expect(screen.getByText('Paid in the last 30 days')).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Today' })).toBeSelected();
   });
 });

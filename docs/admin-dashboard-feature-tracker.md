@@ -28,9 +28,9 @@ Match the target screenshot across all admin screens. Rows are ordered MVP-first
 | P2.47 | Light and dark mode on every admin screen | `admin-*` | Done |
 | P2.46 | Phone width: no horizontal scroll | `admin-*` | Done |
 | **2** | **MVP: dashboard `/admin` essentials** | | |
-| P2.21 | KPI cards with secondary lines; never blank. Support sees no revenue | `admin-dashboard` | Todo |
-| P2.29 | Recent orders table restyle | `admin-dashboard` | Todo |
-| P2.31 | Low stock panel restyle | `admin-dashboard` | Todo |
+| P2.21 | KPI cards with secondary lines; never blank. Support sees no revenue | `admin-dashboard` | Done |
+| P2.29 | Recent orders table restyle | `admin-dashboard` | Done |
+| P2.31 | Low stock panel restyle | `admin-dashboard` | Done |
 | P2.30 | Top products panel restyle | `admin-dashboard` | Todo |
 | P2.24 | Inventory alert banner linking to `/admin/inventory` | `admin-dashboard` | Todo |
 | P2.32 | Quick actions, hidden by role | `admin-dashboard` | Todo |

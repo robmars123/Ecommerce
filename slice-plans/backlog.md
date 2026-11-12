@@ -51,3 +51,6 @@
 - P2.41 R1 (Rob): admin customer titles are `Admin · Customers` / `Admin · Customer`; other restyled admin screens use plain titles (`Orders`, `Products`). Align them in a copy row; update any `ScreenTitle` text assertions in the same row.
 - P2.47 plan (Rob): storefront scrims use raw Tailwind palette `bg-black/60` (`app/login.tsx`) and `bg-black/50` (`QuickAddPicker`), not the `scrim` token; move them to `bg-scrim` in a storefront restyle row.
 - P2.47 plan (Rob): `docs/architecture/13.2-decision-log.md` is ~56 KB, far over the ~10 KB per-file guideline; split it by area and add the parts to the index in a docs-only step.
+- P2.21 R1 (Rob): `DashboardView.test.tsx` Support test still asserts `queryByText('Sales')` is null; the `Sales` heading no longer exists, so that line is vacuous (the `/Revenue/` line and D1 still guard). Drop or replace it with `queryByLabelText('Revenue')` in the next dashboard row.
+- P2.21 R1 (Rob): `/admin` still shows the Stack header while other admin routes hide it; decide in an admin shell row.
+- P2.21 R1 (Rob): Marco's report quotes M1 red and `cmp` but not the filtered green re-run (plan step 2); green is covered by the full verify test step. Future M-evidence reports quote the filtered green too.

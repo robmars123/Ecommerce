@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { ActionButton } from '@/components/ActionButton';
+import { AdminPanel } from '@/components/AdminPanel';
 import { ErrorState } from '@/components/ErrorState';
 import { LoadingState } from '@/components/LoadingState';
 import { ScreenTitle } from '@/components/ScreenTitle';
@@ -11,6 +12,7 @@ import { userMessage } from '@/lib/api-client';
 import { formatMoney } from '@/lib/money';
 
 import { useDashboardQuery, useRecentOrdersQuery } from '../hooks/hooks';
+import { kpiCards } from '../kpi-cards';
 import type { Dashboard, DashboardPeriod } from '../types';
 
 const PERIODS: { value: DashboardPeriod; label: string }[] = [
@@ -42,14 +44,21 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function Kpis({ kpis }: { kpis: NonNullable<Dashboard['kpis']> }) {
+function KpiCards({ kpis, period }: { kpis: NonNullable<Dashboard['kpis']>; period: DashboardPeriod }) {
   return (
-    <Section title="Sales">
-      <Text className="text-body text-foreground">{`Revenue: ${formatMoney(kpis.revenue)}`}</Text>
-      <Text className="text-body text-foreground">{`Orders: ${kpis.orderCount}`}</Text>
-      <Text className="text-body text-foreground">{`Average order value: ${formatMoney(kpis.averageOrderValue)}`}</Text>
-      <Text className="text-body text-foreground">{`Customers: ${kpis.customers.total} (${kpis.customers.new} new, ${kpis.customers.returning} returning)`}</Text>
-    </Section>
+    <View className="flex-row flex-wrap gap-md">
+      {kpiCards(kpis, period).map((card) => (
+        <View
+          key={card.label}
+          accessibilityLabel={card.label}
+          className="grow basis-40 gap-xs rounded-card border border-border bg-surface p-lg"
+        >
+          <Text className="text-small text-muted">{card.label}</Text>
+          <Text className="text-heading font-semibold text-foreground">{card.value}</Text>
+          <Text className="text-small text-muted">{card.secondary}</Text>
+        </View>
+      ))}
+    </View>
   );
 }
 
@@ -87,15 +96,15 @@ function RecentOrders() {
   const totalPages = query.data ? Math.max(1, Math.ceil(query.data.totalCount / query.data.pageSize)) : 1;
 
   return (
-    <Section title="Recent orders">
+    <AdminPanel title="Recent orders">
       {query.data ? (
         query.data.items.length === 0 ? (
           <Text className="text-body text-muted">No orders yet.</Text>
         ) : (
-          <View className="gap-xs">
+          <View>
             {query.data.items.map((o) => (
               <Link key={o.id} href={{ pathname: '/admin/orders/[id]', params: { id: o.id } }} accessibilityRole="link" asChild>
-                <Text className="min-h-touch py-md text-body text-foreground">
+                <Text className="min-h-touch border-b border-border py-md text-body text-foreground">
                   {`${o.orderNumber} · ${o.customerEmail} · ${formatOrderDate(o.createdAt)} · ${formatMoney(o.grandTotal)} · ${o.status}`}
                 </Text>
               </Link>
@@ -114,7 +123,7 @@ function RecentOrders() {
       ) : (
         <LoadingState />
       )}
-    </Section>
+    </AdminPanel>
   );
 }
 
@@ -156,7 +165,7 @@ export function DashboardView() {
       {data ? (
         <View className="gap-md">
           <Text className="text-small text-muted">{`Figures as of ${formatAsOf(data.asOf)} UTC`}</Text>
-          {data.kpis ? <Kpis kpis={data.kpis} /> : null}
+          {data.kpis ? <KpiCards kpis={data.kpis} period={data.period} /> : null}
 
           <Section title="Orders by status">
             {data.ordersByStatus.length === 0 ? <Text className="text-body text-muted">No orders yet.</Text> : null}
@@ -174,14 +183,14 @@ export function DashboardView() {
             ))}
           </Section>
 
-          <Section title="Low stock">
+          <AdminPanel title="Low stock">
             {data.lowStock.length === 0 ? <Text className="text-body text-muted">Nothing is running low.</Text> : null}
             {data.lowStock.map((l) => (
               <Link key={l.variantId} href="/admin/inventory" accessibilityRole="link" asChild>
-                <Text className="min-h-touch py-md text-body text-foreground">{`${l.productName} (${l.sku}) · ${l.available} left`}</Text>
+                <Text className="min-h-touch border-b border-border py-md text-body text-foreground">{`${l.productName} (${l.sku}) · ${l.available} left`}</Text>
               </Link>
             ))}
-          </Section>
+          </AdminPanel>
 
           <NeedsAttention attention={data.needsAttention} />
         </View>
