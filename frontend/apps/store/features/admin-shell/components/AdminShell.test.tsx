@@ -7,6 +7,7 @@ import { AdminShell } from '@/features/admin-shell/components/AdminShell';
 import { ADMIN_NAV } from '@/features/admin-shell/nav';
 import { resetSession } from '@/features/auth/session';
 import { sidebarBreakpoint } from '@/lib/design-tokens';
+import { useThemeStore } from '@/lib/theme';
 import { makeSearchResult } from '@/tests/admin-search-fixtures';
 import { jsonResponse, mockFetchRoutes } from '@/tests/fetch-mock';
 import { createTestQueryClient } from '@/tests/render-with-query';
@@ -455,5 +456,23 @@ describe('AdminShell search', () => {
     expect(screen).toHavePathname('/admin/orders');
     expect(screen.queryByLabelText('Search results')).toBeNull();
     expect(screen.getByLabelText('Search admin').props.value).toBe('');
+  });
+});
+
+describe('AdminShell theme toggle', () => {
+  beforeEach(async () => {
+    useThemeStore.setState({ mode: 'dark' });
+    await signInAs('Admin');
+  });
+
+  it.each([1024, 375])('S-T1: at width %s the Dark mode switch flips the theme and leaves the menu closed', async (width) => {
+    await renderShell(width);
+
+    expect(screen.getByRole('switch', { name: 'Dark mode' })).toBeChecked();
+    await fireEvent.press(screen.getByRole('switch', { name: 'Dark mode' }));
+
+    expect(screen.getByRole('switch', { name: 'Dark mode' })).not.toBeChecked();
+    expect(useThemeStore.getState().mode).toBe('light');
+    expect(screen.queryByLabelText('Close menu')).toBeNull();
   });
 });

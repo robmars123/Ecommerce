@@ -7,6 +7,7 @@ import { endSession, resetSession } from '@/features/auth/session';
 import { createTestQueryClient } from '@/tests/render-with-query';
 import { useGuestCartStore } from '@/features/cart/guest-cart-store';
 import { signInAs } from '@/tests/session';
+import { useThemeStore } from '@/lib/theme';
 
 import { TopNav } from './TopNav';
 
@@ -128,5 +129,17 @@ describe('TopNav', () => {
 
       expect(await screen.findByText('99+')).toBeOnTheScreen();
     });
+  });
+});
+
+describe('TopNav theme toggle', () => {
+  beforeEach(() => useThemeStore.setState({ mode: 'dark' }));
+
+  it('N-T1: shows the Dark mode switch and pressing it sets the theme to light', async () => {
+    await renderRouter(routes(), { initialUrl: '/' });
+
+    await fireEvent.press(screen.getByRole('switch', { name: 'Dark mode' }));
+
+    expect(useThemeStore.getState().mode).toBe('light');
   });
 });

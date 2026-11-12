@@ -41,7 +41,7 @@ function ReturnCard({ request }: { request: ReturnRequestRow }) {
               {userMessage(decide.error)}
             </Text>
           ) : null}
-          <View className="flex-row gap-sm">
+          <View className="flex-row flex-wrap gap-sm">
             <ActionButton
               label={`Approve ${request.orderNumber}`}
               onPress={() => act('approve')}
@@ -105,7 +105,7 @@ export function AdminReturnsView() {
         )}
       </AdminPanel>
       {query.data && query.data.items.length > 0 && query.data.totalPages > 1 ? (
-        <View className="flex-row items-center gap-md">
+        <View className="flex-row flex-wrap items-center gap-md">
           <ActionButton label="Previous page" onPress={() => setPage(page - 1)} disabled={page <= 1} />
           <Text className="text-body text-foreground">{`Page ${query.data.page} of ${query.data.totalPages}`}</Text>
           <ActionButton label="Next page" onPress={() => setPage(page + 1)} disabled={page >= query.data.totalPages} />

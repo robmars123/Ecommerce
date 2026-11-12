@@ -49,3 +49,5 @@
 - P2.34 R1 (Rob): `order-list-params.test.ts` P2 iterates `STATUSES` itself, so a status dropped from the list isn't caught; use a literal list of the 8 `OrderStatus` names in the test.
 - P2.36 R1 (Rob): admin `ScrollView` pages (orders, categories, returns) don't set `keyboardShouldPersistTaps`; on native the first tap on Approve/Decline after typing a note may only dismiss the keyboard. Decide `keyboardShouldPersistTaps="handled"` for all admin form screens in one row, with a manual native check.
 - P2.41 R1 (Rob): admin customer titles are `Admin · Customers` / `Admin · Customer`; other restyled admin screens use plain titles (`Orders`, `Products`). Align them in a copy row; update any `ScreenTitle` text assertions in the same row.
+- P2.47 plan (Rob): storefront scrims use raw Tailwind palette `bg-black/60` (`app/login.tsx`) and `bg-black/50` (`QuickAddPicker`), not the `scrim` token; move them to `bg-scrim` in a storefront restyle row.
+- P2.47 plan (Rob): `docs/architecture/13.2-decision-log.md` is ~56 KB, far over the ~10 KB per-file guideline; split it by area and add the parts to the index in a docs-only step.

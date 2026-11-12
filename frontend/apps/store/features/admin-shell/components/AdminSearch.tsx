@@ -7,7 +7,7 @@ import { useDebouncedValue } from '@/features/catalog/hooks/useDebouncedValue';
 import type { UserRole } from '@/features/auth/types';
 import { ErrorState } from '@/components/ErrorState';
 import { LoadingState } from '@/components/LoadingState';
-import { colors } from '@/lib/design-tokens';
+import { useThemeColors } from '@/lib/theme';
 import { queryKeys } from '@/lib/query-keys';
 
 import { fetchAdminSearch } from '../api';
@@ -45,6 +45,7 @@ function SearchResults({ term, role, onNavigate }: ResultsProps) {
 
 /** Top-bar search with an inline results panel. The role filter only hides groups; the API enforces the roles. */
 export function AdminSearch({ role }: { role: UserRole }) {
+  const colors = useThemeColors();
   const [text, setText] = useState('');
   const [isOpen, setOpen] = useState(true);
   const pathname = usePathname();

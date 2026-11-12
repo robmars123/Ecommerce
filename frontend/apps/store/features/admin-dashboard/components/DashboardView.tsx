@@ -101,7 +101,7 @@ function RecentOrders() {
               </Link>
             ))}
             {totalPages > 1 ? (
-              <View className="flex-row items-center gap-md">
+              <View className="flex-row flex-wrap items-center gap-md">
                 <ActionButton label="Previous orders" onPress={() => setPage(page - 1)} disabled={page <= 1} />
                 <Text className="text-body text-foreground">{`Page ${page} of ${totalPages}`}</Text>
                 <ActionButton label="Next orders" onPress={() => setPage(page + 1)} disabled={page >= totalPages} />

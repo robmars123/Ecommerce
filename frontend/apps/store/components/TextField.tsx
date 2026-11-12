@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Text, TextInput, View, type TextInputProps } from 'react-native';
 
-import { colors } from '@/lib/design-tokens';
+import { useThemeColors } from '@/lib/theme';
 
 type TextFieldProps = {
   label: string;
@@ -19,6 +19,7 @@ type TextFieldProps = {
 /** A labelled input with its error under it. The label is the accessible name. */
 export function TextField({ label, value, onChangeText, error, multiline, editable = true, ...inputProps }: TextFieldProps) {
   const [focused, setFocused] = useState(false);
+  const colors = useThemeColors();
   return (
     <View className="gap-xs">
       <Text className="text-small font-semibold text-foreground">{label}</Text>

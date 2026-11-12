@@ -25,8 +25,8 @@ Match the target screenshot across all admin screens. Rows are ordered MVP-first
 | P2.39 | Categories | `admin-catalog` | Done |
 | P2.36 | Returns | `admin-orders` | Done |
 | P2.41 | Customers list and detail | `admin-customers` | Done |
-| P2.47 | Light and dark mode on every admin screen | `admin-*` | Todo |
-| P2.46 | Phone width: no horizontal scroll | `admin-*` | Todo |
+| P2.47 | Light and dark mode on every admin screen | `admin-*` | Done |
+| P2.46 | Phone width: no horizontal scroll | `admin-*` | Done |
 | **2** | **MVP: dashboard `/admin` essentials** | | |
 | P2.21 | KPI cards with secondary lines; never blank. Support sees no revenue | `admin-dashboard` | Todo |
 | P2.29 | Recent orders table restyle | `admin-dashboard` | Todo |
