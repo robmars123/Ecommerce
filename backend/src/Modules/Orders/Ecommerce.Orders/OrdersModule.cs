@@ -58,6 +58,7 @@ public static class OrdersModule
         services.AddScoped<IFulfillmentSagaStore, FulfillmentSagaStore>();
         services.AddScoped<FulfillmentSagaService>();
         services.AddScoped<IOrderReader, OrderReader>();
+        services.AddScoped<IOrderSearch, OrderSearch>();
         services.AddScoped<CheckoutService>();
         services.AddScoped<RetryPaymentService>();
         services.AddScoped<OrderPaymentHandler>();
