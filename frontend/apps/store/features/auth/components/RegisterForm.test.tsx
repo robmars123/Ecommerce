@@ -115,7 +115,11 @@ describe('device cart notice', () => {
 
   it('shows that line when the device holds cart lines', async () => {
     useGuestCartStore.getState().add(
-      { variantId: 'v', productSlug: 's', snapshot: { productName: 'P', variantName: 'V', price: { amount: '1.00', currency: 'USD' }, image: null } },
+      {
+        variantId: 'v',
+        productSlug: 's',
+        snapshot: { productName: 'P', variantName: 'V', price: { amount: '1.00', currency: 'USD' }, image: null },
+      },
       1,
     );
     await render();

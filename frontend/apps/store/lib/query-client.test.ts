@@ -48,9 +48,7 @@ describe('createQueryClient error logging', () => {
   });
 
   it('logs a failed products query once after retries, by static source, without the search term', async () => {
-    const fetchSpy = jest
-      .spyOn(globalThis, 'fetch')
-      .mockImplementation(async () => problemResponse(500, { correlationId: 'corr-9' }));
+    const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(async () => problemResponse(500, { correlationId: 'corr-9' }));
     const client = createQueryClient();
     client.setDefaultOptions({ queries: { ...client.getDefaultOptions().queries, retryDelay: 0 } });
 

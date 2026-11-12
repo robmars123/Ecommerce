@@ -48,9 +48,7 @@ describe('session (web)', () => {
   });
 
   it('restore on web makes exactly one cookie refresh', async () => {
-    const spy = jest
-      .spyOn(globalThis, 'fetch')
-      .mockImplementation(async () => jsonResponse(200, tokens({ refreshToken: null })));
+    const spy = jest.spyOn(globalThis, 'fetch').mockImplementation(async () => jsonResponse(200, tokens({ refreshToken: null })));
 
     await restoreSession();
 

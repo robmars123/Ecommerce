@@ -29,11 +29,7 @@ export function AdminProductDetailView({ id }: { id: string }) {
     return (
       <View className="gap-md p-lg">
         <ScreenTitle title="Admin · Product" />
-        {query.isError ? (
-          <ErrorState message={userMessage(query.error)} onRetry={() => void query.refetch()} />
-        ) : (
-          <LoadingState />
-        )}
+        {query.isError ? <ErrorState message={userMessage(query.error)} onRetry={() => void query.refetch()} /> : <LoadingState />}
       </View>
     );
   }
@@ -49,7 +45,9 @@ export function AdminProductDetailView({ id }: { id: string }) {
     <ScrollView contentContainerClassName="gap-md p-lg">
       <ScreenTitle title="Admin · Product" />
       <Text className="text-title font-semibold text-foreground">{product.name}</Text>
-      {!product.isActive ? <Text className="rounded-control border border-border p-sm text-body font-semibold text-foreground">{NOT_VISIBLE_COPY}</Text> : null}
+      {!product.isActive ? (
+        <Text className="rounded-control border border-border p-sm text-body font-semibold text-foreground">{NOT_VISIBLE_COPY}</Text>
+      ) : null}
 
       <View className="flex-row flex-wrap gap-sm">
         <ActionButton label="Edit" onPress={() => setTab('edit')} disabled={tab === 'edit'} />

@@ -83,13 +83,16 @@ export function OrderActions({ detail }: { detail: AdminOrderDetail }) {
       const found = validateReason(reason);
       setProblems({ reason: found });
       if (!found) {
-        action.mutate({ kind: 'override', toStatus: open === 'override-processing' ? 'Processing' : 'Delivered', reason: reason.trim() }, { onSuccess: close });
+        action.mutate(
+          { kind: 'override', toStatus: open === 'override-processing' ? 'Processing' : 'Delivered', reason: reason.trim() },
+          { onSuccess: close },
+        );
       }
     }
   }
 
   return (
-    <View className="gap-md">
+    <View className="gap-md rounded-card border border-border bg-surface p-lg">
       <Text accessibilityRole="header" className="text-title font-semibold text-foreground">
         Fulfillment
       </Text>

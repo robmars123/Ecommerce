@@ -7,11 +7,7 @@ export function jsonResponse(status: number, body: unknown, headers: Record<stri
   });
 }
 
-export function problemResponse(
-  status: number,
-  body: Record<string, unknown>,
-  headers: Record<string, string> = {},
-): Response {
+export function problemResponse(status: number, body: Record<string, unknown>, headers: Record<string, string> = {}): Response {
   return new Response(JSON.stringify({ status, ...body }), {
     status,
     headers: { 'content-type': 'application/problem+json', ...headers },

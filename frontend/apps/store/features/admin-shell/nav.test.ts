@@ -37,7 +37,10 @@ describe('admin nav', () => {
     const groups = visibleNav('Support');
 
     expect(groups.map((g) => g.title)).toEqual(['Overview', 'Manage']);
-    expect(labels(groups)).toEqual([['Dashboard', 'User Stories'], ['Orders', 'Customers']]);
+    expect(labels(groups)).toEqual([
+      ['Dashboard', 'User Stories'],
+      ['Orders', 'Customers'],
+    ]);
   });
 
   it('N3: Admin sees all 3 groups and all 10 items', () => {

@@ -23,7 +23,16 @@ jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({
 
 async function renderShell(width: number) {
   mockUseWindowDimensions.mockReturnValue({ width, height: 800, scale: 1, fontScale: 1 });
-  return await renderRouter({ index: () => <AdminShell><Text>Body</Text></AdminShell> }, { initialUrl: '/' });
+  return await renderRouter(
+    {
+      index: () => (
+        <AdminShell>
+          <Text>Body</Text>
+        </AdminShell>
+      ),
+    },
+    { initialUrl: '/' },
+  );
 }
 
 async function renderShellWithRoutes(width: number) {
@@ -31,7 +40,11 @@ async function renderShellWithRoutes(width: number) {
   const stub = (name: string) => () => <Text>{`${name} page`}</Text>;
   return await renderRouter(
     {
-      index: () => <AdminShell><Text>Body</Text></AdminShell>,
+      index: () => (
+        <AdminShell>
+          <Text>Body</Text>
+        </AdminShell>
+      ),
       'admin/index': stub('Admin'),
       'admin/orders': stub('Orders'),
       'admin/products': stub('Products'),
@@ -220,7 +233,10 @@ describe('AdminShell footer', () => {
     expect(className.split(' ')).not.toContain('flex-1');
   });
 
-  it.each([['blank', '   '], ['empty', '']])('S16: %s name falls back to the email', async (_case, displayName) => {
+  it.each([
+    ['blank', '   '],
+    ['empty', ''],
+  ])('S16: %s name falls back to the email', async (_case, displayName) => {
     const tokens = makeTokens('Admin');
     await signInAs('Admin', { user: { ...tokens.user, displayName } });
     await renderShell(1024);
@@ -259,7 +275,11 @@ describe('AdminShell footer', () => {
 
 async function renderShellAt(width: number, url: string) {
   mockUseWindowDimensions.mockReturnValue({ width, height: 800, scale: 1, fontScale: 1 });
-  const shell = () => <AdminShell><Text>Body</Text></AdminShell>;
+  const shell = () => (
+    <AdminShell>
+      <Text>Body</Text>
+    </AdminShell>
+  );
   const stub = (name: string) => () => <Text>{`${name} page`}</Text>;
   return await renderRouter(
     {

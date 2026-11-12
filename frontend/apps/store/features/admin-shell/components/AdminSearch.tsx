@@ -80,7 +80,12 @@ export function AdminSearch({ role }: { role: UserRole }) {
           className="min-h-touch flex-1 rounded-input border border-border bg-surface px-lg text-body text-foreground"
         />
         {text ? (
-          <Pressable accessibilityRole="button" accessibilityLabel="Clear search" onPress={reset} className="min-h-touch min-w-touch items-center justify-center">
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Clear search"
+            onPress={reset}
+            className="min-h-touch min-w-touch items-center justify-center"
+          >
             <Text className="text-body text-foreground">Clear</Text>
           </Pressable>
         ) : null}

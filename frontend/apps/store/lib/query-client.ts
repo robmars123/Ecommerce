@@ -34,8 +34,7 @@ export function createQueryClient(): QueryClient {
     // onError runs once per final failure, after retries.
     queryCache: new QueryCache({ onError: (error, query) => logClientError(error, sourceFor(query.queryKey, 'query')) }),
     mutationCache: new MutationCache({
-      onError: (error, _variables, _context, mutation) =>
-        logClientError(error, sourceFor(mutation.options.mutationKey, 'mutation')),
+      onError: (error, _variables, _context, mutation) => logClientError(error, sourceFor(mutation.options.mutationKey, 'mutation')),
     }),
     defaultOptions: {
       queries: {

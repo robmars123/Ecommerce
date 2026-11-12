@@ -33,10 +33,21 @@ export function VariantRowsEditor({ rows, onChange, isEdit, errorFor }: VariantR
         const at = (field: string) => errorFor(`variants[${i}].${field}`);
         return (
           <View key={row.key} className="gap-sm rounded-control border border-border p-md">
-            <TextField label={`Variant ${n} SKU`} value={row.sku} onChangeText={(sku) => update(i, { sku })} error={at('sku')} autoCapitalize="characters" />
+            <TextField
+              label={`Variant ${n} SKU`}
+              value={row.sku}
+              onChangeText={(sku) => update(i, { sku })}
+              error={at('sku')}
+              autoCapitalize="characters"
+            />
             <TextField label={`Variant ${n} name`} value={row.name} onChangeText={(name) => update(i, { name })} error={at('name')} />
             <TextField label={`Variant ${n} size`} value={row.size} onChangeText={(size) => update(i, { size })} error={at('size')} />
-            <TextField label={`Variant ${n} colour`} value={row.colour} onChangeText={(colour) => update(i, { colour })} error={at('colour')} />
+            <TextField
+              label={`Variant ${n} colour`}
+              value={row.colour}
+              onChangeText={(colour) => update(i, { colour })}
+              error={at('colour')}
+            />
             <TextField
               label={`Variant ${n} price`}
               value={row.price}

@@ -9,8 +9,6 @@ export default function ResetPasswordScreen() {
   const value = Array.isArray(token) ? token[0] : token;
 
   return (
-    <FormScreen title="Reset password">
-      {value ? <PasswordResetConfirmForm token={value} /> : <PasswordResetRequestForm />}
-    </FormScreen>
+    <FormScreen title="Reset password">{value ? <PasswordResetConfirmForm token={value} /> : <PasswordResetRequestForm />}</FormScreen>
   );
 }

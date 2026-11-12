@@ -5,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Ecommerce.Api.IntegrationTests.Inventory;
 
-// Test 20: stock indicator thresholds (default threshold 5), no Unknown, and the Catalog list rollup.
+// Test 20: stock indicator thresholds (configured threshold 3), no Unknown, and the Catalog list rollup.
 public class StockStatusTests(PostgresFixture postgres)
 {
     private static async Task<IReadOnlyDictionary<Guid, StockStatus>> ReadAsync(IdentityTestEnv env, params Guid[] ids)
@@ -19,8 +19,8 @@ public class StockStatusTests(PostgresFixture postgres)
     {
         await using IdentityTestEnv env = await InventoryEnv.StartAsync(postgres);
         Guid[] v = await InventoryEnv.AddProductAsync(env, "t20", "T20", ["A", "B", "C", "D", "E", "F"]);
-        await InventoryEnv.SetStockAsync(env, v[0], 6);
-        await InventoryEnv.SetStockAsync(env, v[1], 5);
+        await InventoryEnv.SetStockAsync(env, v[0], 4);
+        await InventoryEnv.SetStockAsync(env, v[1], 3);
         await InventoryEnv.SetStockAsync(env, v[2], 1);
         await InventoryEnv.SetStockAsync(env, v[3], 0);
         await InventoryEnv.SetStockAsync(env, v[4], 3, 3);
@@ -43,7 +43,7 @@ public class StockStatusTests(PostgresFixture postgres)
     {
         await using IdentityTestEnv env = await InventoryEnv.StartAsync(postgres);
         Guid variant = await InventoryEnv.AddVariantAsync(env, "MOVE-1");
-        await InventoryEnv.SetStockAsync(env, variant, 6);
+        await InventoryEnv.SetStockAsync(env, variant, 4);
         Assert.Equal(StockStatus.InStock, (await ReadAsync(env, variant))[variant]);
 
         Assert.True((await InventoryEnv.ReserveAsync(env, Guid.NewGuid(), [new ReservationLine(variant, 1)])).Succeeded);

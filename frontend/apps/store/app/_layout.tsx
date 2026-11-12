@@ -27,14 +27,16 @@ export default function RootLayout() {
       <StatusBar style="light" />
       <GuestCartMergeEffect />
       {/* contentStyle takes a colour value with no className mapping: token-sourced (arch §5.5). */}
-      <Stack screenOptions={{
+      <Stack
+        screenOptions={{
           // The merge result sits right under the header, so it shows wherever sign-in returns to.
           header: () => (
             <>
               <TopNav />
               <MergeResultNotice />
             </>
-          ), contentStyle: { backgroundColor: colors.background },
+          ),
+          contentStyle: { backgroundColor: colors.background },
         }}
       >
         {/* The admin area has its own Stack (and header) inside AdminGate. */}

@@ -98,17 +98,14 @@ const STUB_ROUTES = ROUTES.filter(([, , , built]) => !built);
 describe('routes render under the real root layout', () => {
   // it.each throws on an empty table, and every route is built as of slice 12.2.
   if (STUB_ROUTES.length > 0) {
-    it.each(STUB_ROUTES)(
-      '%s renders at %s with title "%s" as a stub',
-      async (_file, url, title, _built, session) => {
-        if (session) await signInAs(session);
-        await renderRouter('./app', { initialUrl: url });
+    it.each(STUB_ROUTES)('%s renders at %s with title "%s" as a stub', async (_file, url, title, _built, session) => {
+      if (session) await signInAs(session);
+      await renderRouter('./app', { initialUrl: url });
 
-        expect(screen).toHavePathname(url);
-        expect(screen.getAllByRole('header', { name: title }).length).toBeGreaterThanOrEqual(1);
-        expect(screen.getByText('Not built yet.')).toBeOnTheScreen();
-      },
-    );
+      expect(screen).toHavePathname(url);
+      expect(screen.getAllByRole('header', { name: title }).length).toBeGreaterThanOrEqual(1);
+      expect(screen.getByText('Not built yet.')).toBeOnTheScreen();
+    });
   }
 
   it.each(ROUTES.filter(([, , , built]) => built))(

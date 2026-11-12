@@ -20,8 +20,7 @@ afterEach(() => {
   delete process.env.EXPO_PUBLIC_API_BASE_URL;
 });
 
-const render = (client = createTestQueryClient()) =>
-  renderRouterWithQuery({ index: AccountBar }, { initialUrl: '/', client });
+const render = (client = createTestQueryClient()) => renderRouterWithQuery({ index: AccountBar }, { initialUrl: '/', client });
 
 describe('AccountBar', () => {
   it('shows nothing while the session is being restored', async () => {

@@ -14,11 +14,7 @@ export function ProductCard({ item }: { item: ProductListItem }) {
       {/* The card body is the product link; the quick-add button is its sibling, never nested inside it. */}
       <Link href={href} asChild>
         <Pressable accessibilityRole="link" accessibilityLabel={item.name} className="min-h-touch flex-1">
-          <ProductImageView
-            url={item.primaryImage?.url ?? null}
-            altText={item.primaryImage?.altText ?? ''}
-            fallbackLabel={item.name}
-          />
+          <ProductImageView url={item.primaryImage?.url ?? null} altText={item.primaryImage?.altText ?? ''} fallbackLabel={item.name} />
           <View className="gap-xs p-lg">
             {/* Upper-cased by the uppercase class, never in the string. */}
             <Text className="text-caption uppercase tracking-wide text-muted">{item.category.name}</Text>

@@ -56,7 +56,7 @@ export function RefundForm({ detail }: { detail: AdminOrderDetail }) {
   }
 
   return (
-    <View className="gap-md">
+    <View className="gap-md rounded-card border border-border bg-surface p-lg">
       <Text accessibilityRole="header" className="text-title font-semibold text-foreground">
         Refund
       </Text>

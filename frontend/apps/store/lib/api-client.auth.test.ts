@@ -171,7 +171,9 @@ describe('secrecy', () => {
       errors.push(await catchError(apiGet('/a')));
     }
     jest.useFakeTimers();
-    spy.mockImplementationOnce((_url, init) => new Promise((_, reject) => init!.signal!.addEventListener('abort', () => reject(new Error('aborted')))));
+    spy.mockImplementationOnce(
+      (_url, init) => new Promise((_, reject) => init!.signal!.addEventListener('abort', () => reject(new Error('aborted')))),
+    );
     const pending = catchError(apiGet('/a'));
     await jest.advanceTimersByTimeAsync(REQUEST_TIMEOUT_MS);
     errors.push(await pending);

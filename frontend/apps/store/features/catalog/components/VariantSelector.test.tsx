@@ -4,10 +4,7 @@ import { VariantSelector, variantGroupLabel } from './VariantSelector';
 import { makeVariant } from '@/tests/fixtures';
 
 describe('VariantSelector', () => {
-  const variants = [
-    makeVariant({ id: 'v-1', name: 'Small' }),
-    makeVariant({ id: 'v-2', name: '', size: 'L', colour: 'Red' }),
-  ];
+  const variants = [makeVariant({ id: 'v-1', name: 'Small' }), makeVariant({ id: 'v-2', name: '', size: 'L', colour: 'Red' })];
 
   it('marks the selected variant and labels by name, or size and colour when unnamed', async () => {
     await render(<VariantSelector variants={variants} selectedId="v-2" onSelect={jest.fn()} />);

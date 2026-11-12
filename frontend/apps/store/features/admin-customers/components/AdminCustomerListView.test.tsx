@@ -124,11 +124,13 @@ describe('AdminCustomerListView', () => {
 
   it('L4 shows the error, not page 1 rows, when page 2 fails', async () => {
     await signInAs('Admin');
-    const spy = jest.spyOn(globalThis, 'fetch').mockImplementation(async (input) =>
-      new URL(String(input)).searchParams.get('page') === '2'
-        ? problemResponse(500, { title: 'boom' })
-        : jsonResponse(200, makeCustomerPage(rows, { totalPages: 3, totalCount: 50 })),
-    );
+    const spy = jest
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(async (input) =>
+        new URL(String(input)).searchParams.get('page') === '2'
+          ? problemResponse(500, { title: 'boom' })
+          : jsonResponse(200, makeCustomerPage(rows, { totalPages: 3, totalCount: 50 })),
+      );
     await render();
     await screen.findByText(/Ann Lee/);
 

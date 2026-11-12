@@ -81,6 +81,6 @@ Runner: Jest (`jest-expo` preset) + React Native Testing Library + `expo-router/
 - **Backend:** `dotnet test` fails when any test project discovers zero tests (`TreatNoTestsAsError` in `backend/tests/test.runsettings`). Coverage is collected (`Code Coverage`, cobertura) and uploaded as an artifact with TRX results — **no percentage gate** (quality bar §5).
 - **Frontend:** `npm test -- --ci --coverage` (Jest fails on zero tests by default; `--passWithNoTests` is banned). Coverage is uploaded as an artifact — no percentage gate.
 - **Hygiene step (frontend job):** fails on any test file under `app/` and on any focused test (`it.only`, `test.only`, `describe.only`, `fit`, `fdescribe`), because a focused test silently drops every other test.
-- **Not gated:** lint and formatting (style never blocks, quality bar §3); skipped tests are a review check (quality bar §4.2). **One exception (owner decision, §13.2):** C# `var` is a build error (`.editorconfig` IDE0008 + `EnforceCodeStyleInBuild`), so `dotnet build` enforces explicit types.
+- **Not gated:** lint and formatting (style never blocks, quality bar §3); skipped tests are a review check (quality bar §4.2). **One exception (owner decision, §13.2):** C# `var` is a build error (`.editorconfig` IDE0008 + `EnforceCodeStyleInBuild`), so `dotnet build` enforces explicit types. **Second exception (owner request, §13.2 "Prettier for the frontend"):** `verify.sh` step `format` runs `npm run format:check` in `frontend/apps/store`; CI is unchanged.
 
 

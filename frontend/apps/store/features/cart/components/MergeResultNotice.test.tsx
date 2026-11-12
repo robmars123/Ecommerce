@@ -29,7 +29,10 @@ describe('MergeResultNotice', () => {
       { variantId: 'd', outcome: 'Capped', quantity: 10, reason: 'LimitReached', name: 'Mug - Blue' },
     ]);
 
-    await renderRouter(routes(() => <MergeResultNotice />), { initialUrl: '/' });
+    await renderRouter(
+      routes(() => <MergeResultNotice />),
+      { initialUrl: '/' },
+    );
 
     expect(screen.getByText('Blue Shirt - Medium: 5 in your cart')).toBeOnTheScreen();
     expect(screen.getByText('Red Hat - One size: reduced to 4 (not enough in stock)')).toBeOnTheScreen();
@@ -42,7 +45,10 @@ describe('MergeResultNotice', () => {
 
   it('View cart goes to /cart', async () => {
     useMergeResultStore.getState().publish([{ variantId: 'a', outcome: 'Kept', quantity: 1, reason: null, name: 'Blue Shirt - Medium' }]);
-    await renderRouter(routes(() => <MergeResultNotice />), { initialUrl: '/' });
+    await renderRouter(
+      routes(() => <MergeResultNotice />),
+      { initialUrl: '/' },
+    );
 
     await fireEvent.press(screen.getByRole('link', { name: 'View cart' }));
 
@@ -52,7 +58,10 @@ describe('MergeResultNotice', () => {
   it('a failure says the cart is still on this device and Try again calls the retry', async () => {
     const retry = jest.fn();
     useMergeResultStore.getState().fail(retry);
-    await renderRouter(routes(() => <MergeResultNotice />), { initialUrl: '/' });
+    await renderRouter(
+      routes(() => <MergeResultNotice />),
+      { initialUrl: '/' },
+    );
 
     expect(screen.getByText(/still saved on this device/)).toBeOnTheScreen();
     await fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
@@ -61,7 +70,10 @@ describe('MergeResultNotice', () => {
   });
 
   it('shows nothing when there is no result', async () => {
-    await renderRouter(routes(() => <MergeResultNotice />), { initialUrl: '/' });
+    await renderRouter(
+      routes(() => <MergeResultNotice />),
+      { initialUrl: '/' },
+    );
 
     expect(screen.queryByRole('button', { name: 'Dismiss' })).toBeNull();
   });
@@ -69,12 +81,19 @@ describe('MergeResultNotice', () => {
 
 describe('GuestCartNotice', () => {
   it('appears only while this device holds cart lines', async () => {
-    await renderRouter(routes(() => <GuestCartNotice />), { initialUrl: '/' });
+    await renderRouter(
+      routes(() => <GuestCartNotice />),
+      { initialUrl: '/' },
+    );
     expect(screen.queryByText(/will be added to your account/)).toBeNull();
 
     await act(async () => {
       useGuestCartStore.getState().add(
-        { variantId: 'v', productSlug: 's', snapshot: { productName: 'P', variantName: 'V', price: { amount: '1.00', currency: 'USD' }, image: null } },
+        {
+          variantId: 'v',
+          productSlug: 's',
+          snapshot: { productName: 'P', variantName: 'V', price: { amount: '1.00', currency: 'USD' }, image: null },
+        },
         1,
       );
     });
@@ -88,14 +107,20 @@ describe('MergeResultNotice layout', () => {
 
   it('keeps its content in the same centred column as the top bar', async () => {
     useMergeResultStore.getState().publish([{ variantId: 'a', outcome: 'Kept', quantity: 1, reason: null, name: 'Blue Shirt - Medium' }]);
-    await renderRouter(routes(() => <MergeResultNotice />), { initialUrl: '/' });
+    await renderRouter(
+      routes(() => <MergeResultNotice />),
+      { initialUrl: '/' },
+    );
 
     expect(classesOf('merge-notice-content')).toEqual(expect.arrayContaining(['w-full', 'max-w-content', 'self-center', 'px-lg']));
   });
 
   it('does the same for the failure notice', async () => {
     useMergeResultStore.setState({ results: null, failed: true, retry: () => undefined });
-    await renderRouter(routes(() => <MergeResultNotice />), { initialUrl: '/' });
+    await renderRouter(
+      routes(() => <MergeResultNotice />),
+      { initialUrl: '/' },
+    );
 
     expect(classesOf('merge-notice-content')).toEqual(expect.arrayContaining(['w-full', 'max-w-content', 'self-center', 'px-lg']));
   });

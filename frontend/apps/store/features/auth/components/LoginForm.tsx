@@ -25,10 +25,7 @@ export function LoginForm() {
   const fieldErrors = error instanceof ApiError ? error.fieldErrors : undefined;
 
   function submit() {
-    login.mutate(
-      { email: email.trim(), password },
-      { onSuccess: () => router.replace(safeReturnTo(returnTo) as never) },
-    );
+    login.mutate({ email: email.trim(), password }, { onSuccess: () => router.replace(safeReturnTo(returnTo) as never) });
   }
 
   function cancel() {
@@ -67,7 +64,12 @@ export function LoginForm() {
         </Text>
       ) : null}
       <ActionButton label="Sign in" onPress={submit} pending={login.isPending} />
-      <Pressable accessibilityRole="button" accessibilityLabel="Cancel" onPress={cancel} className="min-h-touch items-center justify-center">
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Cancel"
+        onPress={cancel}
+        className="min-h-touch items-center justify-center"
+      >
         <Text className="text-body font-semibold text-foreground">Cancel</Text>
       </Pressable>
       <Link href="/reset-password" asChild>

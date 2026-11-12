@@ -41,28 +41,37 @@ describe('breadcrumbFor', () => {
   });
 
   it.each([
-    '/', '', '/products', '/admin/foo', '/admin/orders/a/b', '/admin/categories/x', '/admin/inventory/x',
-    '/admin/returns/x', '/admin//', '/admin/analytics', '/admin/settings', '/administrator',
+    '/',
+    '',
+    '/products',
+    '/admin/foo',
+    '/admin/orders/a/b',
+    '/admin/categories/x',
+    '/admin/inventory/x',
+    '/admin/returns/x',
+    '/admin//',
+    '/admin/analytics',
+    '/admin/settings',
+    '/administrator',
   ])('B3: unknown path %j gives no crumbs', (path) => {
     expect(breadcrumbFor(path)).toEqual([]);
   });
 
-  it.each([['/admin/', '/admin'], ['/admin/orders/', '/admin/orders'], ['/admin/orders/abc/', '/admin/orders/abc']])(
-    'B4: trailing slash %s equals %s',
-    (withSlash, without) => {
-      expect(breadcrumbFor(withSlash)).toEqual(breadcrumbFor(without));
-      expect(breadcrumbFor(without).length).toBeGreaterThan(0);
-    },
-  );
+  it.each([
+    ['/admin/', '/admin'],
+    ['/admin/orders/', '/admin/orders'],
+    ['/admin/orders/abc/', '/admin/orders/abc'],
+  ])('B4: trailing slash %s equals %s', (withSlash, without) => {
+    expect(breadcrumbFor(withSlash)).toEqual(breadcrumbFor(without));
+    expect(breadcrumbFor(without).length).toBeGreaterThan(0);
+  });
 
   it.each(dynamic)('B5: %s never shows the id as a label', (path) => {
     for (const crumb of breadcrumbFor(path)) expect(crumb.label).not.toContain(GUID);
   });
 
   it.each(['Admin', 'Support'] as const)('B6: %s never gets a crumb to a page it cannot open', (role) => {
-    const paths = [
-      '/admin', ...sections.map(([, href]) => href), ...dynamic.map(([path]) => path), '/admin/products/new',
-    ];
+    const paths = ['/admin', ...sections.map(([, href]) => href), ...dynamic.map(([path]) => path), '/admin/products/new'];
     for (const path of paths) {
       if (adminRouteDecision(role, path) !== null) continue;
       for (const crumb of breadcrumbFor(path)) expect(adminRouteDecision(role, crumb.href)).toBeNull();

@@ -2,7 +2,7 @@
 # Local mirror of CI (.github/workflows/ci.yml) and quality-bar §4.
 # One line per step; full logs in artifacts/verify/<step>.log; a failing step prints its last 40 lines.
 # Usage: bash scripts/verify.sh [step ...] | changed
-# Steps (default = all except docker): secrets hygiene build test drift expo-check tsc jest export docker
+# Steps (default = all except docker): secrets hygiene format build test drift expo-check tsc jest export docker
 # "changed" picks steps from the working-tree diff (inner loop). The full run is the gate before any report.
 # Env: VERIFY_CONFIGURATION (default Release; Release avoids a Debug build locked by a running debugger).
 set -uo pipefail
@@ -49,6 +49,7 @@ step_test()       { dotnet test Ecommerce.slnx -c "$cfg"; }
 step_drift()      { dotnet tool restore >/dev/null && dotnet tool run dotnet-ef migrations has-pending-model-changes \
                       --project backend/src/Ecommerce.Persistence --startup-project backend/src/Ecommerce.Api --configuration "$cfg"; }
 step_expo-check() { cd "$app" && npx expo install --check; }
+step_format()     { cd "$app" && npm run format:check; }
 step_tsc()        { cd "$app" && npx tsc --noEmit && echo "tsc clean"; }
 step_jest()       { cd "$app" && npm test -- --ci; }
 step_export()     { cd "$app" && npx expo export --platform web; }
@@ -63,6 +64,7 @@ summary_of() {
     jest)   echo '^(Tests|Test Suites):' ;;
     export) echo 'Exported|App exported' ;;
     expo-check) echo 'up to date|should be updated|expected version' ;;
+    format) echo 'Prettier code style|Code style issues' ;;
     *)      echo '.' ;;
   esac
 }
@@ -74,12 +76,12 @@ changed_steps() {
   if grep -qE '^(backend/|Directory\.|Ecommerce\.slnx|global\.json|\.config/)' <<<"$files"; then s+=(build test); fi
   if grep -qE '^backend/src/(Ecommerce\.Persistence|Modules/[^/]+/[^/]+/Infrastructure/Persistence)/' <<<"$files"; then s+=(drift); fi
   if grep -qE '^frontend/apps/store/package(-lock)?\.json' <<<"$files"; then s+=(expo-check); fi
-  if grep -qE '^frontend/' <<<"$files"; then s+=(tsc jest export); fi
+  if grep -qE '^frontend/' <<<"$files"; then s+=(format tsc jest export); fi
   echo "${s[@]}"
 }
 
 steps=("$@")
-[ ${#steps[@]} -eq 0 ] && steps=(secrets hygiene build test drift expo-check tsc jest export)
+[ ${#steps[@]} -eq 0 ] && steps=(secrets hygiene format build test drift expo-check tsc jest export)
 if [ "${steps[*]}" = "changed" ]; then read -ra steps <<<"$(changed_steps)"; echo "changed → ${steps[*]}"; fi
 
 failed=()

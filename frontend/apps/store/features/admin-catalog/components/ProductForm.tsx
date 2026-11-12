@@ -59,7 +59,13 @@ export function ProductForm({ mode, initial, onSubmit, pending, error, onReload 
 
       <TextField label="Name" value={state.name} onChangeText={(v) => set('name', v)} error={errorFor('name')} />
       <TextField label="Slug" value={state.slug} onChangeText={(v) => set('slug', v)} error={errorFor('slug')} autoCapitalize="none" />
-      <TextField label="Description" value={state.description} onChangeText={(v) => set('description', v)} error={errorFor('description')} multiline />
+      <TextField
+        label="Description"
+        value={state.description}
+        onChangeText={(v) => set('description', v)}
+        error={errorFor('description')}
+        multiline
+      />
       <TextField
         label="Category slug"
         value={state.categorySlug}

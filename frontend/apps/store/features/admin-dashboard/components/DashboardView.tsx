@@ -63,10 +63,18 @@ function NeedsAttention({ attention }: { attention: Dashboard['needsAttention'] 
         </Link>
       ) : null}
       {attention.deadLetters.map((d) => (
-        <Text key={d.consumer} accessibilityRole="alert" className="text-body text-danger">{`${d.consumer}: ${d.count} failed events need attention`}</Text>
+        <Text
+          key={d.consumer}
+          accessibilityRole="alert"
+          className="text-body text-danger"
+        >{`${d.consumer}: ${d.count} failed events need attention`}</Text>
       ))}
       {attention.laggingProjectors.map((p) => (
-        <Text key={p.name} accessibilityRole="alert" className="text-body text-danger">{`${p.name} is ${p.lagSeconds} seconds behind`}</Text>
+        <Text
+          key={p.name}
+          accessibilityRole="alert"
+          className="text-body text-danger"
+        >{`${p.name} is ${p.lagSeconds} seconds behind`}</Text>
       ))}
       {quiet ? <Text className="text-body text-muted">Nothing needs attention.</Text> : null}
     </Section>
@@ -110,7 +118,10 @@ function RecentOrders() {
   );
 }
 
-const QUICK_ACTIONS: { href: '/admin/products/new' | '/admin/categories' | '/admin/inventory' | '/admin/orders' | '/admin/returns'; label: string }[] = [
+const QUICK_ACTIONS: {
+  href: '/admin/products/new' | '/admin/categories' | '/admin/inventory' | '/admin/orders' | '/admin/returns';
+  label: string;
+}[] = [
   { href: '/admin/products/new', label: 'Add product' },
   { href: '/admin/categories', label: 'Categories' },
   { href: '/admin/inventory', label: 'Inventory' },

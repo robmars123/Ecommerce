@@ -66,9 +66,11 @@ describe('AdminProductCreateView', () => {
   });
 
   it('shows the server field errors next to the fields on a 400, and stays on the form', async () => {
-    jest.spyOn(globalThis, 'fetch').mockImplementation(async () =>
-      problemResponse(400, { errors: { name: ['Name is required.'], 'variants[0].price.amount': ['Price is not valid.'] } }),
-    );
+    jest
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(async () =>
+        problemResponse(400, { errors: { name: ['Name is required.'], 'variants[0].price.amount': ['Price is not valid.'] } }),
+      );
     await render();
 
     await fillValid();
@@ -80,7 +82,9 @@ describe('AdminProductCreateView', () => {
   });
 
   it('shows a duplicate slug conflict on the slug field', async () => {
-    jest.spyOn(globalThis, 'fetch').mockImplementation(async () => problemResponse(409, { errors: { slug: ['A product with this slug already exists.'] } }));
+    jest
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(async () => problemResponse(409, { errors: { slug: ['A product with this slug already exists.'] } }));
     await render();
 
     await fillValid();

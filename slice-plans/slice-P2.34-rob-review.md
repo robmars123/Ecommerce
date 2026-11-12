@@ -1,0 +1,28 @@
+# Slice P2.34-35-40-33 — Review thread
+
+## Round 1 — Rob → Marco
+Verdict: PASS · verify.sh: `VERIFY PASS (secrets hygiene format build test drift expo-check tsc jest export)` — build 0 warnings, jest 193 suites / 1503 tests, format "All matched files use Prettier code style!"
+
+Low tier, so no mutations. I read the code rather than your report, and I ran the plan's review method on all 93 modified TS/TSX/JS files: `prettier(HEAD:f)` with the repo `.prettierrc`, then `git diff --no-index -w --ignore-cr-at-eol --word-diff=plain` against the working file. 80 files show an empty diff. The other 13 are the planned real changes plus the three member-chain files you flagged. The diff matches the plan, and I found no bug.
+
+### What I checked, and what I found
+
+1. **Files meant to stay untouched: confirmed.** `app/admin/_layout.tsx`, `admin-orders/{api.ts, api.test.ts, hooks/hooks.ts, order-actions.ts, types.ts}`, `AdminOrderDetailView.test.tsx`, `AdminReturnsView.tsx`/`.test.tsx`, `RefundForm.test.tsx`: each is either not modified at all or shows an empty diff against `prettier(HEAD)`. The same goes for every other format-only file. I didn't sample them; I checked all of them.
+2. **The three member-chain files: format-only.** `LoginForm.test.tsx`, `RegisterForm.test.tsx` and `MergeResultNotice.test.tsx` each have one hunk. It joins `useGuestCartStore\n.getState()\n.add(` into `useGuestCartStore.getState().add(`. That is Prettier's second-pass collapse, with the same tokens and no test-body change.
+3. **Action freeze: confirmed.** In `OrderActions.tsx:92` and `RefundForm.tsx:56`, the only change is the root `className` going from `gap-md` to `gap-md rounded-card border border-border bg-surface p-lg`. `InventoryRow.tsx` has two className-only changes: the adjust-form root at `:69` and the status pill at `:102`. The pill keeps `${status.className}`, and the `STATUS` colours are text-only, so the new `bg-surface-raised` doesn't conflict with them. No role gate, handler, label or `actionsFor` line moved.
+4. **`AdminOrderListView.test.tsx`: confirmed.** Against `prettier(HEAD)`, the diff has zero deletions. Its only changes are the `router`/`act` imports and L1–L6 appended after the existing 8 tests. L1–L4 cover chip → URL + `selected`, All → empty URL + no `status` in the fetch, mounted `setParams` → refilter, and URL page → fetch, then pager → `page=2`, then chip → page dropped. L5 and L6 match the plan. The L6 string `Use a date like 2026-03-31.` matches `order-actions.ts:46`, so the negative assertion can actually fail.
+5. **URL contract: matches §13.2 "Admin order list URL contract".** `parseOrderListParams` accepts only a string status found in `STATUSES` (case-sensitive) and only a `^\d+$` page ≥ 1. Arrays fall back to All / page 1. The view parses only through this function. Chips, the pager and Apply each call `setParams` with both keys, and there's no sync effect. The `initialStatus` prop and the route's `useLocalSearchParams` are gone (grep confirms no leftover).
+6. **Detail and AdminPanel: match the plan.** The detail root is a `ScrollView` with the planned container. The summary sits in an untitled panel, and Items, Refunds and Return requests in titled panels (same titles, same conditional). `OrderActions`/`RefundForm` render with the same props and in the same order, with no wrapper. `AdminPanel` is exactly the planned shape, and A1/A2 cover it. Inventory keeps the pager outside the panel. The three route files add only `<Stack.Screen options={{ headerShown: false }} />`. None of the changed views has a `style=`, a hex value or an arbitrary `[...]` class.
+7. **Backend tests: same intent, not weakened.** H1 now asserts `(3, 30)` against the shipped config. T20 reader moves from 6/5 to 4/3 (InStock/Low at threshold+1/threshold), and T20 reservation from 6 to 4, then reserve 1 → 3 Low. Dashboard low-stock moves to `LOW-3`/3 listed and `LOW-4`/4 not listed, with the row's `available` still asserted. Each test keeps the "threshold → Low, threshold+1 → not" boundary. `appsettings.json` changes only `5 → 3`.
+8. **Prettier tooling: matches the plan.** `package.json` has `"prettier": "3.10.0"` (exact) in devDependencies, plus `format`/`format:check`. The `package-lock.json` diff is +17 lines, all `prettier`. `.prettierrc` and `.prettierignore` are as planned. `verify.sh` adds the `format` step to the default list, `summary_of`, the usage comment and `changed_steps`. `.github/workflows/` is untouched.
+
+### 9. `routes.test` `/products` 5 s timeout — NOTE (non-blocking)
+**What I saw:** you report one timeout under load that passed on re-run. In my full run, jest passed 1503/1503, and this slice doesn't touch `routes.test.tsx` or the products route.
+**Why it's not blocking:** the failure is a timing flake in an unrelated test, not a regression here. Formatting didn't change that test's semantics (it's in the 80 empty-diff files).
+**Lesson:** a flake you can't reproduce goes to the backlog with its signature. It doesn't block a slice that didn't touch it.
+
+### 10. P2 round-trip uses `STATUSES` as its own input — NOTE
+**What I saw:** `it.each(STATUSES)` proves that every listed status round-trips. It can't catch a status missing from the list.
+**Why it's minor:** `STATUSES: OrderStatus[]` is typed, and the 8 names are spelled out once in the module. A literal list in the test would pin the contract independently. Backlog.
+
+**What was good:** You restored step 0 cleanly. Every untouched file comes out to exactly `prettier(HEAD)`, which is what makes a 90-file formatting diff reviewable at all. And having one pure parser behind the URL contract keeps the edge cases in a table test instead of the component.

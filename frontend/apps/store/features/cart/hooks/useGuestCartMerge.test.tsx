@@ -141,7 +141,10 @@ describe('useGuestCartMerge', () => {
   it('keeps one request in flight however often it re-renders', async () => {
     let release: (response: Response) => void = () => {};
     const spy = jest.spyOn(globalThis, 'fetch').mockImplementation(
-      () => new Promise<Response>((resolve) => { release = resolve; }),
+      () =>
+        new Promise<Response>((resolve) => {
+          release = resolve;
+        }),
     );
     await signInAs('Customer');
     addLine();

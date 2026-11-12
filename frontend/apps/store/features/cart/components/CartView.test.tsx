@@ -71,9 +71,9 @@ describe('CartView (signed in)', () => {
     await signInAs('Customer');
     const before = makeCart([makeCartLine({ quantity: 2 })]);
     const after = makeCart([makeCartLine({ quantity: 3, unitPrice: usd('26.00'), lineTotal: usd('78.00') })], '78.00');
-    const spy = jest.spyOn(globalThis, 'fetch').mockImplementation(async (_url, init) =>
-      jsonResponse(200, init?.method === 'PUT' ? after : before),
-    );
+    const spy = jest
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(async (_url, init) => jsonResponse(200, init?.method === 'PUT' ? after : before));
 
     await render();
     await screen.findByText('Line total $49.00');
@@ -89,9 +89,11 @@ describe('CartView (signed in)', () => {
   it('on a 409 shows how many are available and refetches, so the old quantity is not kept', async () => {
     await signInAs('Customer');
     let current = makeCart([makeCartLine({ quantity: 2 })]);
-    const spy = jest.spyOn(globalThis, 'fetch').mockImplementation(async (_url, init) =>
-      init?.method === 'PUT' ? problemResponse(409, { title: 'Not enough stock', available: 2 }) : jsonResponse(200, current),
-    );
+    const spy = jest
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(async (_url, init) =>
+        init?.method === 'PUT' ? problemResponse(409, { title: 'Not enough stock', available: 2 }) : jsonResponse(200, current),
+      );
 
     await render();
     await screen.findByText('Line total $49.00');
@@ -106,9 +108,11 @@ describe('CartView (signed in)', () => {
   it('remove sends DELETE and refetches the cart', async () => {
     await signInAs('Customer');
     let current = makeCart([makeCartLine()]);
-    const spy = jest.spyOn(globalThis, 'fetch').mockImplementation(async (_url, init) =>
-      init?.method === 'DELETE' ? new Response(null, { status: 204 }) : jsonResponse(200, current),
-    );
+    const spy = jest
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(async (_url, init) =>
+        init?.method === 'DELETE' ? new Response(null, { status: 204 }) : jsonResponse(200, current),
+      );
 
     await render();
     await screen.findByText('Blue Shirt');

@@ -10,9 +10,7 @@ describe('PriceText', () => {
   });
 
   it('shows the compare-at price struck through with an accessible "Was" label', async () => {
-    await render(
-      <PriceText price={{ amount: '24.50', currency: 'USD' }} compareAtPrice={{ amount: '30.00', currency: 'USD' }} />,
-    );
+    await render(<PriceText price={{ amount: '24.50', currency: 'USD' }} compareAtPrice={{ amount: '30.00', currency: 'USD' }} />);
     const was = screen.getByLabelText('Was $30.00');
     expect(was).toBeOnTheScreen();
     expect(was).toHaveStyle({ textDecorationLine: 'line-through' });

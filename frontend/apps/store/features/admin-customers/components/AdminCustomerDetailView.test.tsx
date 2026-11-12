@@ -105,7 +105,13 @@ describe('AdminCustomerDetailView', () => {
     await signInAs('Admin');
     serve(
       makeCustomerDetail({
-        orderCount: 0, recentOrders: [], returnCount: 0, recentReturns: [], refundCount: 0, recentRefunds: [], totalSpent: usd('0.00'),
+        orderCount: 0,
+        recentOrders: [],
+        returnCount: 0,
+        recentReturns: [],
+        refundCount: 0,
+        recentRefunds: [],
+        totalSpent: usd('0.00'),
       }),
     );
 

@@ -69,7 +69,7 @@ function AdjustForm({ item, onClose, onReload }: { item: AdminInventoryItem; onC
   }
 
   return (
-    <View className="gap-md">
+    <View className="gap-md rounded-control bg-surface-raised p-md">
       <TextField
         label={`Quantity for ${item.sku}`}
         value={quantity}
@@ -102,7 +102,7 @@ export function InventoryRow({ item, open, onOpen, onClose, onReload }: Inventor
       <Text className="text-small text-muted">{`SKU ${item.sku}`}</Text>
       <Text className="text-body text-foreground">{`On hand ${item.onHand} · Reserved ${item.reserved} · Available ${item.available}`}</Text>
       <View className="flex-row flex-wrap gap-md">
-        <Text className={`text-small ${status.className}`}>{status.text}</Text>
+        <Text className={`rounded-pill bg-surface-raised px-sm text-small ${status.className}`}>{status.text}</Text>
         {item.isActive ? null : <Text className="text-small text-muted">Inactive</Text>}
       </View>
 

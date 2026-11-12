@@ -1,4 +1,10 @@
-import type { AdminOrderDetail, AdminOrderListItem, AdminOrderListPage, ReturnListPage, ReturnRequestRow } from '@/features/admin-orders/types';
+import type {
+  AdminOrderDetail,
+  AdminOrderListItem,
+  AdminOrderListPage,
+  ReturnListPage,
+  ReturnRequestRow,
+} from '@/features/admin-orders/types';
 
 import { makeOrderDetail } from './order-fixtures';
 

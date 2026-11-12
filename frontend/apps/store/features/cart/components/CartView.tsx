@@ -83,7 +83,9 @@ function GuestCart() {
           onRemove={() => remove(line.variantId)}
         />
       ))}
-      <Text className="text-small text-muted">Prices are estimates until you sign in. Your cart will be checked and added to your account.</Text>
+      <Text className="text-small text-muted">
+        Prices are estimates until you sign in. Your cart will be checked and added to your account.
+      </Text>
       <Link href={{ pathname: '/login', params: { returnTo: '/cart' } }} asChild>
         <Text accessibilityRole="link" className="min-h-touch py-md text-body font-semibold text-foreground">
           Sign in to continue

@@ -86,11 +86,7 @@ export function AdminProductListView() {
         })}
       </View>
       {categories.data ? (
-        <CategoryFilter
-          categories={categories.data.items}
-          selected={params.category}
-          onSelect={(slug) => change({ category: slug })}
-        />
+        <CategoryFilter categories={categories.data.items} selected={params.category} onSelect={(slug) => change({ category: slug })} />
       ) : null}
 
       {data ? (
@@ -99,12 +95,7 @@ export function AdminProductListView() {
         ) : (
           <View className="gap-xs">
             {data.items.map((item) => (
-              <Link
-                key={item.id}
-                href={{ pathname: '/admin/products/[id]', params: { id: item.id } }}
-                accessibilityRole="link"
-                asChild
-              >
+              <Link key={item.id} href={{ pathname: '/admin/products/[id]', params: { id: item.id } }} accessibilityRole="link" asChild>
                 <Text className="min-h-touch py-md text-body text-foreground">
                   {`${item.name} · ${item.isActive ? 'Active' : 'Not published'} · ${item.activeVariantCount}/${item.variantCount} variants active${item.price ? ` · ${formatMoney(item.price)}` : ''}`}
                 </Text>
@@ -126,7 +117,6 @@ export function AdminProductListView() {
           onNext={() => change({ page: data.page + 1 })}
         />
       ) : null}
-
     </ScrollView>
   );
 }

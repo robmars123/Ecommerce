@@ -45,9 +45,7 @@ describe('OrderDetailView', () => {
     await render();
     await screen.findByText('ORD-2026-000001');
 
-    const labels = screen
-      .getAllByText(/^(Awaiting payment|Paid|Processing|Shipped)$/)
-      .map((node) => node.props.children as string);
+    const labels = screen.getAllByText(/^(Awaiting payment|Paid|Processing|Shipped)$/).map((node) => node.props.children as string);
     // The header status line comes first ("Shipped"), then the timeline rows in sequence.
     expect(labels.slice(1)).toEqual(['Awaiting payment', 'Paid', 'Processing', 'Shipped']);
   });

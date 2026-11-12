@@ -50,10 +50,10 @@ describe('useProductsQuery', () => {
     });
     const client = createTestQueryClient();
 
-    const { result, rerender } = await renderHook(
-      ({ page }: { page: number }) => useProductsQuery({ page, pageSize: 20 }),
-      { wrapper: queryWrapper(client), initialProps: { page: 1 } },
-    );
+    const { result, rerender } = await renderHook(({ page }: { page: number }) => useProductsQuery({ page, pageSize: 20 }), {
+      wrapper: queryWrapper(client),
+      initialProps: { page: 1 },
+    });
     await waitFor(() => expect(result.current.data?.items[0].name).toBe('Blue Shirt'));
 
     await rerender({ page: 2 });

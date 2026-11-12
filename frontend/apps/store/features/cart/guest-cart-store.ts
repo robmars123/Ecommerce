@@ -56,8 +56,7 @@ export function createGuestCartStore() {
                 ? state.lines.filter((l) => l.variantId !== variantId)
                 : state.lines.map((l) => (l.variantId === variantId ? { ...l, quantity: clamp(quantity) } : l)),
           })),
-        remove: (variantId) =>
-          set((state) => ({ mergeKey: null, lines: state.lines.filter((l) => l.variantId !== variantId) })),
+        remove: (variantId) => set((state) => ({ mergeKey: null, lines: state.lines.filter((l) => l.variantId !== variantId) })),
         clearAfterMerge: () => set({ lines: [], mergeKey: null }),
         ensureMergeKey: () => {
           const existing = get().mergeKey;

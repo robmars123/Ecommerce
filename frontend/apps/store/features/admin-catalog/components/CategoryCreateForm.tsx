@@ -34,7 +34,13 @@ export function CategoryCreateForm() {
       </Text>
       <TextField label="Category name" value={name} onChangeText={setName} error={fieldErrors.name?.[0]} />
       <TextField label="Category slug" value={slug} onChangeText={setSlug} error={fieldErrors.slug?.[0]} autoCapitalize="none" />
-      <TextField label="Parent category slug" value={parentSlug} onChangeText={setParentSlug} error={fieldErrors.parentSlug?.[0]} autoCapitalize="none" />
+      <TextField
+        label="Parent category slug"
+        value={parentSlug}
+        onChangeText={setParentSlug}
+        error={fieldErrors.parentSlug?.[0]}
+        autoCapitalize="none"
+      />
       {create.error && Object.keys(fieldErrors).length === 0 ? (
         <Text accessibilityRole="alert" className="text-body text-danger">
           {userMessage(create.error)}

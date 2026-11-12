@@ -30,12 +30,7 @@ export function ProductDetailContent({ product, hideAddToCart }: ProductDetailCo
       <Stack.Screen options={{ title: product.name }} />
       <View className="gap-xl lg:flex-row">
         <View className="gap-md lg:flex-1">
-          <ProductImageView
-            url={mainImage?.url ?? null}
-            altText={mainImage?.altText ?? ''}
-            fallbackLabel={product.name}
-            maxWidth={560}
-          />
+          <ProductImageView url={mainImage?.url ?? null} altText={mainImage?.altText ?? ''} fallbackLabel={product.name} maxWidth={560} />
           {product.images.length > 1 ? (
             <View className="flex-row flex-wrap gap-sm">
               {product.images.map((image, index) => (

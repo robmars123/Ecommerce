@@ -114,7 +114,12 @@ export function PaymentStep({ orderId, initialSecret, placedTotal, startConfirmi
               <ActionButton label="Check out again" onPress={onCheckoutAgain} />
             </View>
           ) : secret && !declined ? (
-            <PaymentForm key={formKey} clientSecret={secret} returnPath={`/checkout?orderId=${encodeURIComponent(orderId)}`} onResult={onResult} />
+            <PaymentForm
+              key={formKey}
+              clientSecret={secret}
+              returnPath={`/checkout?orderId=${encodeURIComponent(orderId)}`}
+              onResult={onResult}
+            />
           ) : (
             <View className="gap-md">
               {retry.error ? (
