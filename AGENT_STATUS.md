@@ -5,9 +5,9 @@ Agents update this at the **start and end of every task**.
 
 | Agent | Status | Slice | Task | Fix round | Updated |
 |---|---|---|---|---|---|
-| Marco (developer) | 🟢 AVAILABLE | P2.37-38-39 | Built, verify PASS | 0 | 2026-11-12 |
+| Marco (developer) | 🟢 AVAILABLE | P2.36 | Built, verify PASS | 0 | 2026-11-12 |
 | Shin (developer 2) | 🟢 AVAILABLE | — | Ready | 0 | 2026-11-08 18:45 |
-| Rob (architect, on demand) | 🟢 AVAILABLE | P2.37-38-39 | Review PASS | 0 | 2026-11-12 |
+| Rob (architect, on demand) | 🟢 AVAILABLE | P2.36 | Review PASS | 0 | 2026-11-12 |
 
 **Rules**
 

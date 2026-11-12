@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { ActionButton } from '@/components/ActionButton';
+import { AdminPanel } from '@/components/AdminPanel';
 import { ErrorState } from '@/components/ErrorState';
 import { LoadingState } from '@/components/LoadingState';
 import { ScreenTitle } from '@/components/ScreenTitle';
@@ -24,7 +25,7 @@ function ReturnCard({ request }: { request: ReturnRequestRow }) {
   }
 
   return (
-    <View className="gap-sm rounded-control border border-border p-md">
+    <View className="gap-sm border-b border-border py-md">
       <Text className="text-body font-semibold text-foreground">{`${request.orderNumber} · ${request.status}`}</Text>
       <Text className="text-small text-muted">{formatOrderDate(request.createdAt)}</Text>
       {request.items.map((item) => (
@@ -33,7 +34,7 @@ function ReturnCard({ request }: { request: ReturnRequestRow }) {
       <Text className="text-body text-foreground">{`Reason: ${request.reason}`}</Text>
       {request.adminNote ? <Text className="text-small text-muted">{`Note: ${request.adminNote}`}</Text> : null}
       {open ? (
-        <View className="gap-sm">
+        <View className="gap-sm rounded-control bg-surface-raised p-md">
           <TextField label={`Decision note for ${request.orderNumber}`} value={note} onChangeText={setNote} />
           {decide.error ? (
             <Text accessibilityRole="alert" className="text-body text-danger">
@@ -66,7 +67,7 @@ export function AdminReturnsView() {
   const query = useReturnsQuery(status, page);
 
   return (
-    <View className="w-full max-w-content flex-1 gap-md self-center p-lg">
+    <ScrollView contentContainerClassName="w-full max-w-content gap-lg self-center p-lg">
       <ScreenTitle title="Returns" />
       <View className="flex-row flex-wrap gap-sm">
         {FILTERS.map((filter) => (
@@ -78,34 +79,38 @@ export function AdminReturnsView() {
               setStatus(filter);
               setPage(1);
             }}
-            className={`min-h-touch justify-center rounded-control border px-md ${filter === status ? 'border-primary' : 'border-border'}`}
+            className={`min-h-touch min-w-touch justify-center rounded-pill border px-md ${filter === status ? 'border-primary bg-primary-subtle' : 'border-border bg-surface'}`}
           >
-            <Text className="text-body text-foreground">{filter === 'all' ? 'All' : filter}</Text>
+            <Text className={`text-body ${filter === status ? 'font-semibold text-primary-text' : 'text-foreground'}`}>
+              {filter === 'all' ? 'All' : filter}
+            </Text>
           </Pressable>
         ))}
       </View>
-      {query.data ? (
-        query.data.items.length === 0 ? (
-          <Text className="text-body text-muted">No return requests.</Text>
+      <AdminPanel>
+        {query.data ? (
+          query.data.items.length === 0 ? (
+            <Text className="text-body text-muted">No return requests.</Text>
+          ) : (
+            <View>
+              {query.data.items.map((request) => (
+                <ReturnCard key={request.id} request={request} />
+              ))}
+            </View>
+          )
+        ) : query.isError ? (
+          <ErrorState message={userMessage(query.error)} onRetry={() => void query.refetch()} />
         ) : (
-          <View className="gap-md">
-            {query.data.items.map((request) => (
-              <ReturnCard key={request.id} request={request} />
-            ))}
-            {query.data.totalPages > 1 ? (
-              <View className="flex-row items-center gap-md">
-                <ActionButton label="Previous page" onPress={() => setPage(page - 1)} disabled={page <= 1} />
-                <Text className="text-body text-foreground">{`Page ${query.data.page} of ${query.data.totalPages}`}</Text>
-                <ActionButton label="Next page" onPress={() => setPage(page + 1)} disabled={page >= query.data.totalPages} />
-              </View>
-            ) : null}
-          </View>
-        )
-      ) : query.isError ? (
-        <ErrorState message={userMessage(query.error)} onRetry={() => void query.refetch()} />
-      ) : (
-        <LoadingState />
-      )}
-    </View>
+          <LoadingState />
+        )}
+      </AdminPanel>
+      {query.data && query.data.items.length > 0 && query.data.totalPages > 1 ? (
+        <View className="flex-row items-center gap-md">
+          <ActionButton label="Previous page" onPress={() => setPage(page - 1)} disabled={page <= 1} />
+          <Text className="text-body text-foreground">{`Page ${query.data.page} of ${query.data.totalPages}`}</Text>
+          <ActionButton label="Next page" onPress={() => setPage(page + 1)} disabled={page >= query.data.totalPages} />
+        </View>
+      ) : null}
+    </ScrollView>
   );
 }
