@@ -1,6 +1,7 @@
 import { Link, useLocalSearchParams, useRouter } from 'expo-router';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
+import { AdminPanel } from '@/components/AdminPanel';
 import { EmptyState } from '@/components/EmptyState';
 import { ErrorState } from '@/components/ErrorState';
 import { LoadingState } from '@/components/LoadingState';
@@ -59,55 +60,65 @@ export function AdminProductListView() {
   const data = products.data;
 
   return (
-    <ScrollView contentContainerClassName="gap-md p-lg">
+    <ScrollView contentContainerClassName="w-full max-w-content gap-lg self-center p-lg">
       <ScreenTitle title="Admin · Products" />
-      <Link href="/admin/products/new" accessibilityRole="link" asChild>
-        <Text className="min-h-touch py-md text-body text-foreground">Add product</Text>
-      </Link>
-      <Link href="/admin/categories" accessibilityRole="link" asChild>
-        <Text className="min-h-touch py-md text-body text-foreground">Categories</Text>
-      </Link>
-
-      <SearchBar value={params.search ?? ''} onSearch={(text) => change({ search: text || undefined })} />
       <View className="flex-row flex-wrap gap-sm">
-        {STATUSES.map((s) => {
-          const selected = (params.status ?? 'all') === s.value;
-          return (
-            <Pressable
-              key={s.value}
-              accessibilityRole="button"
-              accessibilityState={{ selected }}
-              onPress={() => change({ status: s.value })}
-              className={`min-h-touch min-w-touch justify-center rounded-control border px-md ${selected ? 'border-2 border-selected' : 'border-border'}`}
-            >
-              <Text className="text-body text-foreground">{s.label}</Text>
-            </Pressable>
-          );
-        })}
+        <Link href="/admin/products/new" accessibilityRole="link" asChild>
+          <Text className="min-h-touch rounded-control border border-border bg-surface px-md py-md text-body text-foreground">
+            Add product
+          </Text>
+        </Link>
+        <Link href="/admin/categories" accessibilityRole="link" asChild>
+          <Text className="min-h-touch rounded-control border border-border bg-surface px-md py-md text-body text-foreground">
+            Categories
+          </Text>
+        </Link>
       </View>
-      {categories.data ? (
-        <CategoryFilter categories={categories.data.items} selected={params.category} onSelect={(slug) => change({ category: slug })} />
-      ) : null}
 
-      {data ? (
-        data.items.length === 0 ? (
-          <EmptyState message="No products match." />
+      <AdminPanel>
+        <SearchBar value={params.search ?? ''} onSearch={(text) => change({ search: text || undefined })} />
+        <View className="flex-row flex-wrap gap-sm">
+          {STATUSES.map((s) => {
+            const selected = (params.status ?? 'all') === s.value;
+            return (
+              <Pressable
+                key={s.value}
+                accessibilityRole="button"
+                accessibilityState={{ selected }}
+                onPress={() => change({ status: s.value })}
+                className={`min-h-touch min-w-touch justify-center rounded-pill border px-md ${selected ? 'border-primary bg-primary-subtle' : 'border-border bg-surface'}`}
+              >
+                <Text className={selected ? 'text-body font-semibold text-primary-text' : 'text-body text-foreground'}>{s.label}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+        {categories.data ? (
+          <CategoryFilter categories={categories.data.items} selected={params.category} onSelect={(slug) => change({ category: slug })} />
+        ) : null}
+      </AdminPanel>
+
+      <AdminPanel>
+        {data ? (
+          data.items.length === 0 ? (
+            <EmptyState message="No products match." />
+          ) : (
+            <View className="gap-xs">
+              {data.items.map((item) => (
+                <Link key={item.id} href={{ pathname: '/admin/products/[id]', params: { id: item.id } }} accessibilityRole="link" asChild>
+                  <Text className="min-h-touch border-b border-border py-md text-body text-foreground">
+                    {`${item.name} · ${item.isActive ? 'Active' : 'Not published'} · ${item.activeVariantCount}/${item.variantCount} variants active${item.price ? ` · ${formatMoney(item.price)}` : ''}`}
+                  </Text>
+                </Link>
+              ))}
+            </View>
+          )
+        ) : products.isError ? (
+          <ErrorState message={userMessage(products.error)} onRetry={() => void products.refetch()} />
         ) : (
-          <View className="gap-xs">
-            {data.items.map((item) => (
-              <Link key={item.id} href={{ pathname: '/admin/products/[id]', params: { id: item.id } }} accessibilityRole="link" asChild>
-                <Text className="min-h-touch py-md text-body text-foreground">
-                  {`${item.name} · ${item.isActive ? 'Active' : 'Not published'} · ${item.activeVariantCount}/${item.variantCount} variants active${item.price ? ` · ${formatMoney(item.price)}` : ''}`}
-                </Text>
-              </Link>
-            ))}
-          </View>
-        )
-      ) : products.isError ? (
-        <ErrorState message={userMessage(products.error)} onRetry={() => void products.refetch()} />
-      ) : (
-        <LoadingState />
-      )}
+          <LoadingState />
+        )}
+      </AdminPanel>
 
       {data ? (
         <Pagination

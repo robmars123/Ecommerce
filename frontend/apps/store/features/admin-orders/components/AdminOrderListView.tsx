@@ -143,7 +143,7 @@ export function AdminOrderListView() {
         )}
       </AdminPanel>
       {query.data && query.data.items.length > 0 && query.data.totalPages > 1 ? (
-        <View className="flex-row items-center gap-md">
+        <View className="flex-row flex-wrap items-center gap-md">
           <ActionButton label="Previous page" onPress={() => goTo(page - 1)} disabled={page <= 1} />
           <Text className="text-body text-foreground">{`Page ${query.data.page} of ${query.data.totalPages}`}</Text>
           <ActionButton label="Next page" onPress={() => goTo(page + 1)} disabled={page >= query.data.totalPages} />

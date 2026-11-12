@@ -43,9 +43,9 @@ const light = {
 module.exports = {
   // Numeric px for the rare JS-prop cases (the arch 5.5 Tests fallback); utilities use the px strings below.
   touch,
-  // Dark is the shipped palette; `colors` stays exported as the dark theme (one source, Tailwind consumes it).
-  colors: dark,
-  // Both modes share one key set. Light has no consumer yet (switching is a later row).
+  // Tailwind colour utilities compile to these CSS variables; ThemeRoot sets them from `themes[mode]` (arch 5.5).
+  colorVariables: Object.fromEntries(Object.keys(dark).map((key) => [key, `var(--color-${key})`])),
+  // Both modes share one key set.
   themes: { dark, light },
   sidebarBreakpoint: 768,
   spacing: {

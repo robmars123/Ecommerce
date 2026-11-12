@@ -7,6 +7,7 @@ import type { SessionUser } from '@/features/auth/types';
 import { AdminSearch } from '@/features/admin-shell/components/AdminSearch';
 import { breadcrumbFor } from '@/features/admin-shell/breadcrumb';
 import { visibleNav, type NavGroup } from '@/features/admin-shell/nav';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { sidebarBreakpoint } from '@/lib/design-tokens';
 
 type AdminShellProps = { children: ReactNode };
@@ -76,7 +77,7 @@ type SidebarProps = { groups: NavGroup[]; user: SessionUser | null; onNavigate?:
 function Sidebar({ groups, user, onNavigate, onClose }: SidebarProps) {
   return (
     <View accessibilityLabel="Admin navigation" className="h-full w-sidebar max-w-full gap-xl bg-surface p-lg">
-      <View className="flex-row items-center justify-between gap-md">
+      <View className="flex-row flex-wrap items-center justify-between gap-md">
         <Brand />
         {onClose ? (
           <Pressable
@@ -151,6 +152,7 @@ export function AdminShell({ children }: AdminShellProps) {
                 <AdminSearch role={user.role} />
               </View>
             ) : null}
+            <ThemeToggle />
           </View>
           {children}
         </View>
@@ -171,7 +173,8 @@ export function AdminShell({ children }: AdminShellProps) {
           >
             <Text className="text-body text-foreground">Menu</Text>
           </Pressable>
-          <Text className="text-body font-bold text-foreground">Store Admin</Text>
+          <Text className="flex-1 text-body font-bold text-foreground">Store Admin</Text>
+          <ThemeToggle />
         </View>
         <Breadcrumb />
         {user ? <AdminSearch role={user.role} /> : null}

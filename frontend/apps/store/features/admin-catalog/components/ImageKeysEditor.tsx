@@ -23,7 +23,7 @@ export function ImageKeysEditor({ rows, onChange, errorFor }: ImageKeysEditorPro
         Images
       </Text>
       {rows.map((row, i) => (
-        <View key={row.key} className="gap-sm rounded-control border border-border p-md">
+        <View key={row.key} className="gap-sm rounded-control border border-border bg-surface-raised p-md">
           <TextField
             label={`Image ${i + 1} storage key`}
             value={row.storageKey}

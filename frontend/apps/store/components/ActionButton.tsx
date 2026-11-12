@@ -17,7 +17,7 @@ export function ActionButton({ label, onPress, disabled, pending }: ActionButton
       accessibilityState={{ disabled: isDisabled, busy: Boolean(pending) }}
       disabled={isDisabled}
       onPress={onPress}
-      className={`min-h-touch min-w-touch items-center justify-center rounded-control border border-primary bg-primary px-lg ${isDisabled ? 'opacity-50' : ''}`}
+      className={`min-h-touch min-w-touch max-w-full items-center justify-center rounded-control border border-primary bg-primary px-lg ${isDisabled ? 'opacity-50' : ''}`}
     >
       <Text className="text-body font-semibold text-primary-foreground">{label}</Text>
     </Pressable>

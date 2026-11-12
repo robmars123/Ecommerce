@@ -6,7 +6,7 @@ module.exports = {
   presets: [require('nativewind/preset')],
   theme: {
     extend: {
-      colors: tokens.colors,
+      colors: tokens.colorVariables,
       spacing: tokens.spacing,
       fontSize: tokens.fontSize,
       borderRadius: tokens.borderRadius,

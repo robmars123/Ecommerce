@@ -6,6 +6,8 @@ import { AccountBar } from '@/features/auth/components/AccountBar';
 import { useSession } from '@/features/auth/hooks/useSession';
 import { useCartCount } from '@/features/cart/hooks/useCartCount';
 
+import { ThemeToggle } from './ThemeToggle';
+
 type NavLinkProps = { href: Href; label: string; selected?: boolean; outlined?: boolean; badgeCount?: number | null };
 
 function NavLink({ href, label, selected = false, outlined = false, badgeCount = null }: NavLinkProps) {
@@ -53,6 +55,7 @@ export function TopNav() {
         </View>
         <View className="flex-row flex-wrap items-center gap-md">
           <AccountBar />
+          <ThemeToggle />
           <NavLink href="/cart" label="Cart" selected={pathname.startsWith('/cart')} outlined badgeCount={cartCount} />
         </View>
       </View>

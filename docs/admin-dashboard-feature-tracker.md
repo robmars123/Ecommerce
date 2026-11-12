@@ -20,13 +20,13 @@ Match the target screenshot across all admin screens. Rows are ordered MVP-first
 | P2.35 | Order detail | `admin-orders` | Done |
 | P2.40 | Inventory | `admin-inventory` | Done |
 | P2.33 | Set `Inventory:LowStockThreshold` to 3 in config | Inventory | Done |
-| P2.37 | Products list | `admin-catalog` | Todo |
-| P2.38 | Product create and edit | `admin-catalog` | Todo |
-| P2.39 | Categories | `admin-catalog` | Todo |
-| P2.36 | Returns | `admin-orders` | Todo |
-| P2.41 | Customers list and detail | `admin-customers` | Todo |
-| P2.47 | Light and dark mode on every admin screen | `admin-*` | Todo |
-| P2.46 | Phone width: no horizontal scroll | `admin-*` | Todo |
+| P2.37 | Products list | `admin-catalog` | Done |
+| P2.38 | Product create and edit | `admin-catalog` | Done |
+| P2.39 | Categories | `admin-catalog` | Done |
+| P2.36 | Returns | `admin-orders` | Done |
+| P2.41 | Customers list and detail | `admin-customers` | Done |
+| P2.47 | Light and dark mode on every admin screen | `admin-*` | Done |
+| P2.46 | Phone width: no horizontal scroll | `admin-*` | Done |
 | **2** | **MVP: dashboard `/admin` essentials** | | |
 | P2.21 | KPI cards with secondary lines; never blank. Support sees no revenue | `admin-dashboard` | Todo |
 | P2.29 | Recent orders table restyle | `admin-dashboard` | Todo |

@@ -1,4 +1,4 @@
-import { colors, sidebarBreakpoint, themes, width } from '@/lib/design-tokens';
+import { colorVariables, sidebarBreakpoint, themes, width } from '@/lib/design-tokens';
 
 const HEX = /^#[0-9a-f]{6}([0-9a-f]{2})?$/i;
 
@@ -31,11 +31,13 @@ describe('design tokens', () => {
     }
   });
 
-  it('T2: colors is the dark theme and keeps every key the app used before', () => {
-    expect(colors).toBe(themes.dark);
+  it('T2: every key the app used before resolves to a CSS variable in both themes', () => {
     for (const key of LEGACY_KEYS) {
       expect(themes.dark).toHaveProperty(key);
+      expect(themes.light).toHaveProperty(key);
+      expect(colorVariables[key]).toBe(`var(--color-${key})`);
     }
+    expect(Object.keys(colorVariables).sort()).toEqual(Object.keys(themes.dark).sort());
   });
 
   it('T3: sidebar breakpoint is positive and the sidebar fits the narrowest phone', () => {

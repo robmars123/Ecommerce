@@ -32,7 +32,7 @@ export function VariantRowsEditor({ rows, onChange, isEdit, errorFor }: VariantR
         const n = i + 1;
         const at = (field: string) => errorFor(`variants[${i}].${field}`);
         return (
-          <View key={row.key} className="gap-sm rounded-control border border-border p-md">
+          <View key={row.key} className="gap-sm rounded-control border border-border bg-surface-raised p-md">
             <TextField
               label={`Variant ${n} SKU`}
               value={row.sku}

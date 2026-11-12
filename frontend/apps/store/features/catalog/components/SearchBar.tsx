@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { colors } from '@/lib/design-tokens';
+import { useThemeColors } from '@/lib/theme';
 
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 
@@ -19,6 +19,7 @@ type SearchBarProps = {
 
 export function SearchBar({ value = '', onSearch, onSubmit, debounceMs = SEARCH_DEBOUNCE_MS }: SearchBarProps) {
   const [text, setText] = useState(value);
+  const colors = useThemeColors();
   const lastEmitted = useRef(value.trim());
   const debounced = useDebouncedValue(text, debounceMs);
 

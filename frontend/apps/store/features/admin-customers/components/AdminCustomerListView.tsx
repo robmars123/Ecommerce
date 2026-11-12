@@ -1,6 +1,7 @@
 import { Link, useLocalSearchParams, useRouter } from 'expo-router';
 import { ScrollView, Text, View } from 'react-native';
 
+import { AdminPanel } from '@/components/AdminPanel';
 import { EmptyState } from '@/components/EmptyState';
 import { ErrorState } from '@/components/ErrorState';
 import { LoadingState } from '@/components/LoadingState';
@@ -33,29 +34,33 @@ export function AdminCustomerListView() {
   const data = customers.data;
 
   return (
-    <ScrollView contentContainerClassName="gap-md p-lg">
+    <ScrollView contentContainerClassName="w-full max-w-content gap-lg self-center p-lg">
       <ScreenTitle title="Admin · Customers" />
-      <SearchBar value={search ?? ''} onSearch={(text) => change({ search: text || undefined, page: 1 })} />
+      <AdminPanel>
+        <SearchBar value={search ?? ''} onSearch={(text) => change({ search: text || undefined, page: 1 })} />
+      </AdminPanel>
 
-      {data ? (
-        data.items.length === 0 ? (
-          <EmptyState message="No customers match." />
+      <AdminPanel>
+        {data ? (
+          data.items.length === 0 ? (
+            <EmptyState message="No customers match." />
+          ) : (
+            <View>
+              {data.items.map((item) => (
+                <Link key={item.id} href={{ pathname: '/admin/customers/[id]', params: { id: item.id } }} accessibilityRole="link" asChild>
+                  <Text className="min-h-touch border-b border-border py-md text-body text-foreground">
+                    {`${item.displayName} · ${item.email} · Joined ${formatOrderDate(item.createdAt)}`}
+                  </Text>
+                </Link>
+              ))}
+            </View>
+          )
+        ) : customers.isError ? (
+          <ErrorState message={userMessage(customers.error)} onRetry={() => void customers.refetch()} />
         ) : (
-          <View className="gap-xs">
-            {data.items.map((item) => (
-              <Link key={item.id} href={{ pathname: '/admin/customers/[id]', params: { id: item.id } }} accessibilityRole="link" asChild>
-                <Text className="min-h-touch py-md text-body text-foreground">
-                  {`${item.displayName} · ${item.email} · Joined ${formatOrderDate(item.createdAt)}`}
-                </Text>
-              </Link>
-            ))}
-          </View>
-        )
-      ) : customers.isError ? (
-        <ErrorState message={userMessage(customers.error)} onRetry={() => void customers.refetch()} />
-      ) : (
-        <LoadingState />
-      )}
+          <LoadingState />
+        )}
+      </AdminPanel>
 
       {data && (data.totalPages > 1 || page > 1) ? (
         <Pagination

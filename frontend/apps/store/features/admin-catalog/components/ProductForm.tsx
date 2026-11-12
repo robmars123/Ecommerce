@@ -38,9 +38,9 @@ export function ProductForm({ mode, initial, onSubmit, pending, error, onReload 
   }
 
   return (
-    <View className="gap-md">
+    <View className="gap-lg">
       {isStale ? (
-        <View className="gap-sm rounded-control border border-border p-md">
+        <View className="gap-sm rounded-control border border-danger bg-surface-raised p-md">
           <Text accessibilityRole="alert" className="text-body text-danger">
             {STALE_VERSION_COPY}
           </Text>
