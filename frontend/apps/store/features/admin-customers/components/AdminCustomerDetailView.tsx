@@ -2,6 +2,7 @@ import { Link } from 'expo-router';
 import type { ReactNode } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 
+import { AdminPanel } from '@/components/AdminPanel';
 import { ErrorState } from '@/components/ErrorState';
 import { LoadingState } from '@/components/LoadingState';
 import { ScreenTitle } from '@/components/ScreenTitle';
@@ -26,13 +27,10 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <View className="gap-xs">
-      <Text accessibilityRole="header" className="text-title font-semibold text-foreground">
-        {title}
-      </Text>
+    <AdminPanel title={title}>
       {shown === 0 ? <Text className="text-body text-muted">{empty}</Text> : children}
       {count > shown ? <Text className="text-small text-muted">{`Showing ${shown} of ${count}`}</Text> : null}
-    </View>
+    </AdminPanel>
   );
 }
 
@@ -40,20 +38,22 @@ function Section({
 function Content({ customer }: { customer: AdminCustomerDetail }) {
   return (
     <View className="gap-lg">
-      <View className="gap-xs">
-        <Text className="text-body font-semibold text-foreground">{customer.displayName}</Text>
-        <Text className="text-body text-foreground">{customer.email}</Text>
-        <Text className="text-small text-muted">{`Customer since ${formatOrderDate(customer.createdAt)}`}</Text>
-        <Text className="text-body text-foreground">{`Orders ${customer.orderCount}`}</Text>
-        {customer.totalSpent !== null ? (
-          <Text className="text-body text-foreground">{`Total spent ${formatMoney(customer.totalSpent)}`}</Text>
-        ) : null}
-      </View>
+      <AdminPanel>
+        <View className="gap-xs">
+          <Text className="text-body font-semibold text-foreground">{customer.displayName}</Text>
+          <Text className="text-body text-foreground">{customer.email}</Text>
+          <Text className="text-small text-muted">{`Customer since ${formatOrderDate(customer.createdAt)}`}</Text>
+          <Text className="text-body text-foreground">{`Orders ${customer.orderCount}`}</Text>
+          {customer.totalSpent !== null ? (
+            <Text className="text-body text-foreground">{`Total spent ${formatMoney(customer.totalSpent)}`}</Text>
+          ) : null}
+        </View>
+      </AdminPanel>
 
       <Section title="Recent orders" count={customer.orderCount} shown={customer.recentOrders.length} empty="No orders yet.">
         {customer.recentOrders.map((order) => (
           <Link key={order.id} href={{ pathname: '/admin/orders/[id]', params: { id: order.id } }} accessibilityRole="link" asChild>
-            <Text className="min-h-touch py-md text-body text-foreground">
+            <Text className="min-h-touch border-b border-border py-md text-body text-foreground">
               {`${order.orderNumber} · ${formatOrderDate(order.createdAt)} · ${statusLabel(order.status)} · ${formatMoney(order.grandTotal)}`}
             </Text>
           </Link>
@@ -62,7 +62,7 @@ function Content({ customer }: { customer: AdminCustomerDetail }) {
 
       <Section title="Recent returns" count={customer.returnCount} shown={customer.recentReturns.length} empty="No returns.">
         {customer.recentReturns.map((ret) => (
-          <View key={ret.id} className="flex-row flex-wrap justify-between gap-sm">
+          <View key={ret.id} className="flex-row flex-wrap justify-between gap-sm border-b border-border py-sm">
             <Text className="text-body text-foreground">{`${ret.orderNumber} · ${ret.status} · ${ret.reason}`}</Text>
             <Text className="text-small text-muted">{formatOrderDate(ret.createdAt)}</Text>
           </View>
@@ -71,7 +71,7 @@ function Content({ customer }: { customer: AdminCustomerDetail }) {
 
       <Section title="Recent refunds" count={customer.refundCount} shown={customer.recentRefunds.length} empty="No refunds.">
         {customer.recentRefunds.map((refund) => (
-          <View key={refund.id} className="flex-row flex-wrap justify-between gap-sm">
+          <View key={refund.id} className="flex-row flex-wrap justify-between gap-sm border-b border-border py-sm">
             <Text className="text-body text-foreground">
               {`${refund.orderNumber} · ${formatMoney(refund.amount)} · ${refundStatusLabel(refund.status)}${refund.automatic ? ' · Automatic' : ''}`}
             </Text>
@@ -87,7 +87,7 @@ export function AdminCustomerDetailView({ id }: { id: string }) {
   const query = useAdminCustomerQuery(id);
 
   return (
-    <ScrollView contentContainerClassName="w-full max-w-content gap-sm self-center p-lg">
+    <ScrollView contentContainerClassName="w-full max-w-content gap-lg self-center p-lg">
       <ScreenTitle title="Admin · Customer" />
       {query.data ? (
         <Content customer={query.data} />

@@ -24,7 +24,7 @@ Match the target screenshot across all admin screens. Rows are ordered MVP-first
 | P2.38 | Product create and edit | `admin-catalog` | Done |
 | P2.39 | Categories | `admin-catalog` | Done |
 | P2.36 | Returns | `admin-orders` | Done |
-| P2.41 | Customers list and detail | `admin-customers` | Todo |
+| P2.41 | Customers list and detail | `admin-customers` | Done |
 | P2.47 | Light and dark mode on every admin screen | `admin-*` | Todo |
 | P2.46 | Phone width: no horizontal scroll | `admin-*` | Todo |
 | **2** | **MVP: dashboard `/admin` essentials** | | |
