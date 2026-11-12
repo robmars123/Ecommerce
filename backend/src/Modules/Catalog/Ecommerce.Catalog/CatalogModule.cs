@@ -41,6 +41,7 @@ public static class CatalogModule
         services.AddSingleton<IImageStorage, SpacesImageStorage>();
         services.AddScoped<ICatalogReadStore, CatalogReadStore>();
         services.AddScoped<IProductReader, ProductReader>();
+        services.AddScoped<ICatalogSearch, CatalogSearch>();
         services.AddScoped<CatalogBrowseService>();
         services.AddScoped<CatalogSalesProjector>();
         services.AddScoped<IProjector>(sp => sp.GetRequiredService<CatalogSalesProjector>());

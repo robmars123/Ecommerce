@@ -63,6 +63,7 @@ export const queryKeys = {
       list: (search: string | undefined, page: number) => ['admin', 'customers', 'list', { ...(search ? { search } : {}), page }] as const,
       detail: (id: string) => ['admin', 'customers', 'detail', id] as const,
     },
+    search: (q: string) => ['admin', 'search', q] as const,
     dashboard: (period: string) => ['admin', 'dashboard', period] as const,
     recentOrders: (page: number) => ['admin', 'dashboard', 'recent-orders', page] as const,
     returns: {

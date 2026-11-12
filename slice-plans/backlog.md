@@ -37,3 +37,9 @@
 - P2.6 (manual, Nathaniel): eyeball the breadcrumb at 1280 px (top bar height) and 390/320 px (phone wrap) on :8081.
 - P2.6 R1 (Rob): `tests/app/admin.test.tsx` F7b "signed out" (first test, cold `renderRouter('./app')`) hit the 5 s Jest timeout once under full-verify load; passed on rerun and in Rob's full run. If it recurs: per-describe timeout or a `beforeAll` router warm-up; never blind retries.
 - P2.6 R1 (Rob): during the 320 px manual check, confirm the current crumb (`numberOfLines={1}`, no `shrink`) doesn't overflow; add `shrink` to that `Text` only if it does.
+- [ ] Manual check: P2.7 admin search at 1280 and 390 px, light and dark, web :8081 (expect the error state until P2.8). For Nathaniel.
+- P2.7 R1 (Rob): admin search shows the previous term's groups for up to 300 ms after deleting to 1 char; optional tightening: show the hint while `searchTerm(text) === null` regardless of the debounced value.
+- P2.7 R1 (Rob): `tests/settle.ts` uses a 3 × 10 ms real-clock wait under fake timers; if AdminSearch/AdminShell suites flake under full-verify load, switch to `jest.useFakeTimers({ doNotFake: ['nextTick','setImmediate'] })` rather than lengthening the wait.
+- P2.8 R1 (Rob, pre-existing flake): `AdminDashboardApiTests.An_automatic_refund_leaves_revenue_unchanged...` fails when real UTC time is within ~16 min of 00:00 (test advances the clock +16 min; `IdentityTestEnv` clock starts at real `UtcNow`, so the refund lands on the next day). Fix: start that test's clock at a fixed instant (e.g. noon UTC), not real now.
+- P2.8 R1 (Rob): `AdminSearchTerm.TryParse` could declare `[NotNullWhen(false)] out string? error` and drop the `error!` in `AdminSearchController`.
+- P2.8 R1 (Rob): LIKE-escape helper is now duplicated in Identity `Repositories.cs`, Orders `OrderSearch`, Catalog `CatalogSearch`; extract to SharedKernel with a unit test if a fourth call site appears.

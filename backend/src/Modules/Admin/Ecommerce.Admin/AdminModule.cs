@@ -19,6 +19,7 @@ public static class AdminModule
         services.AddScoped<IDashboardStore, DashboardStore>();
         services.AddScoped<DashboardQueryService>();
         services.AddScoped<CustomerQueryService>();
+        services.AddScoped<AdminSearchService>();
         return services;
     }
 }

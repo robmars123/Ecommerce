@@ -1,10 +1,16 @@
-import { fireEvent, renderRouter, screen, within } from 'expo-router/testing-library';
+import { act, fireEvent, renderRouter, screen, within } from 'expo-router/testing-library';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { Slot } from 'expo-router';
 import { Text } from 'react-native';
 
 import { AdminShell } from '@/features/admin-shell/components/AdminShell';
 import { ADMIN_NAV } from '@/features/admin-shell/nav';
 import { resetSession } from '@/features/auth/session';
 import { sidebarBreakpoint } from '@/lib/design-tokens';
+import { makeSearchResult } from '@/tests/admin-search-fixtures';
+import { jsonResponse, mockFetchRoutes } from '@/tests/fetch-mock';
+import { createTestQueryClient } from '@/tests/render-with-query';
+import { settleFetch } from '@/tests/settle';
 import { makeTokens, signInAs } from '@/tests/session';
 
 jest.mock('expo-secure-store');
@@ -343,5 +349,91 @@ describe('AdminShell breadcrumb', () => {
     expect(screen.queryByLabelText('Breadcrumb')).toBeNull();
     expect(screen.getByText('Store Admin')).toBeTruthy();
     expect(screen.getByText('Body')).toBeTruthy();
+  });
+});
+
+/** One AdminShell mounted in the layout around a Slot, like the real app, so navigation does not remount it. */
+async function renderShellWithQueryAt(width: number, url: string) {
+  mockUseWindowDimensions.mockReturnValue({ width, height: 800, scale: 1, fontScale: 1 });
+  const client = createTestQueryClient();
+  const layout = () => (
+    <QueryClientProvider client={client}>
+      <AdminShell>
+        <Slot />
+      </AdminShell>
+    </QueryClientProvider>
+  );
+  const stub = (name: string) => () => <Text>{`${name} page`}</Text>;
+  return await renderRouter(
+    {
+      _layout: layout,
+      index: stub('Home'),
+      'admin/index': stub('Admin'),
+      'admin/orders/index': stub('Orders'),
+      'admin/orders/[id]': stub('Order'),
+      'admin/products/index': stub('Products'),
+    },
+    { initialUrl: url },
+  );
+}
+
+describe('AdminShell search', () => {
+  beforeEach(() => {
+    process.env.EXPO_PUBLIC_API_BASE_URL = 'http://api.test.invalid:5080';
+  });
+  afterEach(() => {
+    jest.useRealTimers();
+    jest.restoreAllMocks();
+    delete process.env.EXPO_PUBLIC_API_BASE_URL;
+  });
+
+  it('S26: wide, the search input renders without a QueryClient', async () => {
+    await signInAs('Admin');
+    await renderShell(1024);
+
+    expect(screen.getByLabelText('Search admin')).toBeTruthy();
+    expect(screen.getByText('Store Admin')).toBeTruthy();
+    expect(screen.getByText('Body')).toBeTruthy();
+  });
+
+  it('S27: narrow, the search input is visible with the menu closed', async () => {
+    await signInAs('Admin');
+    await renderShellAt(390, '/admin/orders');
+
+    expect(screen.getByLabelText('Search admin')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Open menu' })).toBeCollapsed();
+    expect(screen.getByLabelText('Breadcrumb')).toBeTruthy();
+  });
+
+  it('S28: narrow, typing shows results and pressing one navigates with the menu closed', async () => {
+    jest.useFakeTimers();
+    await signInAs('Admin');
+    mockFetchRoutes({ '/api/v1/admin/search': () => jsonResponse(200, makeSearchResult()) });
+    await renderShellWithQueryAt(390, '/admin/orders');
+
+    await fireEvent.changeText(screen.getByLabelText('Search admin'), 'ab');
+    await act(() => jest.advanceTimersByTimeAsync(300));
+    await settleFetch();
+    await fireEvent.press(within(screen.getByLabelText('Search results')).getByRole('link', { name: '1001 · Paid' }));
+
+    expect(screen).toHavePathname('/admin/orders/o1');
+    expect(screen.queryByLabelText('Admin navigation')).toBeNull();
+  });
+
+  it('S29: wide, a sidebar navigation clears the open results', async () => {
+    jest.useFakeTimers();
+    await signInAs('Admin');
+    mockFetchRoutes({ '/api/v1/admin/search': () => jsonResponse(200, makeSearchResult()) });
+    await renderShellWithQueryAt(1024, '/admin');
+
+    await fireEvent.changeText(screen.getByLabelText('Search admin'), 'ab');
+    await act(() => jest.advanceTimersByTimeAsync(300));
+    await settleFetch();
+    expect(screen.getByLabelText('Search results')).toBeTruthy();
+    await fireEvent.press(within(screen.getByLabelText('Admin navigation')).getByRole('link', { name: 'Orders' }));
+
+    expect(screen).toHavePathname('/admin/orders');
+    expect(screen.queryByLabelText('Search results')).toBeNull();
+    expect(screen.getByLabelText('Search admin').props.value).toBe('');
   });
 });
