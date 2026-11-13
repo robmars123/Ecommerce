@@ -16,7 +16,7 @@ import { useOrderLiveStatus } from '../hooks/useOrderLiveStatus';
 import { useOrderQuery } from '../hooks/useOrderQuery';
 import { orderDetailLayout } from '../layout';
 import { formatOrderDate, paymentStatusLabel, paymentTone, refundStatusLabel, statusLabel, statusTone } from '../status-labels';
-import type { OrderDetail, OrderItem } from '../types';
+import type { OrderAlert, OrderDetail, OrderItem } from '../types';
 import { OrderTimeline } from './OrderTimeline';
 import { ReturnRequestForm } from './ReturnRequestForm';
 import { StatusPill } from './StatusPill';
@@ -195,6 +195,7 @@ function Header({ order, compact }: { order: OrderDetail; compact: boolean }) {
         {order.paymentStatus ? (
           <StatusPill tone={paymentTone(order.paymentStatus)} label={`Payment: ${paymentStatusLabel(order.paymentStatus)}`} />
         ) : null}
+        {order.statusNote ? <Text className="self-center text-ui-sm text-muted">{order.statusNote.pillNote}</Text> : null}
       </View>
       <ReorderResult reorder={reorder} />
     </Panel>
@@ -222,12 +223,26 @@ function ItemRow({ item, last, compact }: { item: OrderItem; last: boolean; comp
   );
 }
 
+function CancellationAlert({ alert }: { alert: OrderAlert }) {
+  return (
+    <View
+      accessible
+      accessibilityLabel={`${alert.title}. ${alert.message}`}
+      className="gap-xs rounded-panel border border-danger-border bg-danger-subtle px-lg py-md"
+    >
+      <Text className="text-ui font-bold text-danger">{alert.title}</Text>
+      <Text className="text-ui text-foreground">{alert.message}</Text>
+    </View>
+  );
+}
+
 function Content({ order, twoColumn, compact }: { order: OrderDetail; twoColumn: boolean; compact: boolean }) {
   const address = order.shippingAddress;
   return (
     <View className="gap-lg">
       <Breadcrumb orderNumber={order.orderNumber} />
       <Header order={order} compact={compact} />
+      {order.statusNote?.alert ? <CancellationAlert alert={order.statusNote.alert} /> : null}
 
       <View className={`gap-lg ${twoColumn ? 'flex-row items-start' : ''}`}>
         <View className="min-w-0 flex-1 gap-lg">

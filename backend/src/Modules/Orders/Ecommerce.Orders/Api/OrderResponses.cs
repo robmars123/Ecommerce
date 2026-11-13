@@ -49,7 +49,8 @@ internal sealed record OrderDetailResponse(
     IReadOnlyList<TimelineEntryResponse> Timeline,
     IReadOnlyList<ShipmentResponse> Shipments,
     string? PaymentStatus,
-    IReadOnlyList<RefundResponse> Refunds);
+    IReadOnlyList<RefundResponse> Refunds,
+    OrderStatusNote? StatusNote);
 
 internal static class OrderResponseMapping
 {
@@ -82,7 +83,8 @@ internal static class OrderResponseMapping
             o.Timeline.Select(t => new TimelineEntryResponse(t.FromStatus?.ToString(), t.ToStatus.ToString(), t.At, t.Reason)).ToList(),
             view.Shipments.Select(s => new ShipmentResponse(s.CarrierName, s.TrackingNumber, s.TrackingUrl, s.ShippedAt, s.DeliveredAt)).ToList(),
             view.PaymentStatus,
-            view.Refunds.Select(r => new RefundResponse(MoneyResponse.From(r.Amount, o.Currency), r.Status, r.CreatedAt)).ToList());
+            view.Refunds.Select(r => new RefundResponse(MoneyResponse.From(r.Amount, o.Currency), r.Status, r.CreatedAt)).ToList(),
+            OrderStatusNotes.For(o.Status, o.Timeline));
     }
 }
 

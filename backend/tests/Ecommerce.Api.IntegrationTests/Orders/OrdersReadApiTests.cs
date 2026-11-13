@@ -185,4 +185,74 @@ public class OrdersReadApiTests(PostgresFixture postgres)
         Assert.Equal("retired-carrier", shipment.GetProperty("carrierName").GetString());
         Assert.Equal(JsonValueKind.Null, shipment.GetProperty("trackingUrl").ValueKind);
     }
+
+    private const string ExpiredPill = "Payment not completed in time";
+
+    private static IReadOnlyList<SeedHistory> ExpiredHistory(DateTimeOffset t0) =>
+    [
+        new SeedHistory(null, "PendingPayment", t0),
+        new SeedHistory("PendingPayment", "Cancelled", t0.AddMinutes(16), "reservation-expired"),
+    ];
+
+    [Fact]
+    public async Task P2_50_an_expired_order_returns_the_cancellation_alert_and_pill_note()
+    {
+        await using IdentityTestEnv env = await OrdersEnv.StartAsync(postgres);
+        User a = await env.AddUserAsync("a@example.test");
+        string token = await env.AccessTokenAsync("a@example.test");
+        Guid order = await OrderSeed.InsertAsync(
+            OrdersEnv.ConnectionString(env), a.Id, "Cancelled", env.Clock.UtcNow, history: ExpiredHistory(env.Clock.UtcNow));
+
+        IdentityTestEnv.Api r = await env.GetAsync($"/api/v1/orders/{order}", token);
+
+        Assert.Equal(HttpStatusCode.OK, r.Status);
+        JsonElement note = r.Json.GetProperty("statusNote");
+        Assert.Equal(ExpiredPill, note.GetProperty("pillNote").GetString());
+        Assert.Equal("This order was cancelled", note.GetProperty("alert").GetProperty("title").GetString());
+        Assert.Equal(
+            "We held your items while you paid, but payment was not completed before the hold ran out, so we released them and cancelled the order. Nothing will ship. If a payment went through after that, we refund it automatically.",
+            note.GetProperty("alert").GetProperty("message").GetString());
+    }
+
+    [Fact]
+    public async Task P2_50_a_refunded_order_returns_a_pill_note_and_a_null_alert()
+    {
+        await using IdentityTestEnv env = await OrdersEnv.StartAsync(postgres);
+        User a = await env.AddUserAsync("a@example.test");
+        string token = await env.AccessTokenAsync("a@example.test");
+        Guid order = await OrderSeed.InsertAsync(OrdersEnv.ConnectionString(env), a.Id, "Refunded", env.Clock.UtcNow);
+
+        JsonElement note = (await env.GetAsync($"/api/v1/orders/{order}", token)).Json.GetProperty("statusNote");
+
+        Assert.Equal("Refunded in full to your original payment method", note.GetProperty("pillNote").GetString());
+        Assert.Equal(JsonValueKind.Null, note.GetProperty("alert").ValueKind);
+    }
+
+    [Fact]
+    public async Task P2_50_a_paid_order_has_a_null_status_note()
+    {
+        await using IdentityTestEnv env = await OrdersEnv.StartAsync(postgres);
+        User a = await env.AddUserAsync("a@example.test");
+        string token = await env.AccessTokenAsync("a@example.test");
+        Guid order = await OrderSeed.InsertAsync(OrdersEnv.ConnectionString(env), a.Id, "Paid", env.Clock.UtcNow);
+
+        Assert.Equal(JsonValueKind.Null, (await env.GetAsync($"/api/v1/orders/{order}", token)).Json.GetProperty("statusNote").ValueKind);
+    }
+
+    [Fact]
+    public async Task P2_50_another_customers_cancelled_order_is_403_without_the_note()
+    {
+        await using IdentityTestEnv env = await OrdersEnv.StartAsync(postgres);
+        User a = await env.AddUserAsync("a@example.test");
+        User b = await env.AddUserAsync("b@example.test");
+        string tokenA = await env.AccessTokenAsync("a@example.test");
+        Guid orderB = await OrderSeed.InsertAsync(
+            OrdersEnv.ConnectionString(env), b.Id, "Cancelled", env.Clock.UtcNow, history: ExpiredHistory(env.Clock.UtcNow));
+
+        IdentityTestEnv.Api r = await env.GetAsync($"/api/v1/orders/{orderB}", tokenA);
+
+        Assert.Equal(HttpStatusCode.Forbidden, r.Status);
+        Assert.DoesNotContain(ExpiredPill, r.Text);
+        Assert.NotEqual(a.Id, b.Id);
+    }
 }

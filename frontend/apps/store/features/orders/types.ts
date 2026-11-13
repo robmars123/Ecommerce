@@ -67,6 +67,10 @@ export type ReturnItemBody = { variantId: string; quantity: number };
 
 export type ReturnRequestBody = { items: ReturnItemBody[]; reason: string };
 
+export type OrderAlert = { title: string; message: string };
+
+export type StatusNote = { pillNote: string; alert: OrderAlert | null };
+
 export type OrderDetail = {
   id: string;
   orderNumber: string;
@@ -84,4 +88,5 @@ export type OrderDetail = {
   shipments: Shipment[];
   paymentStatus: PaymentStatus | null;
   refunds: Refund[];
+  statusNote: StatusNote | null;
 };
