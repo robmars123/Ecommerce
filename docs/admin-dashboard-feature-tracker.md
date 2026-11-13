@@ -55,10 +55,10 @@ Match the target screenshot across all admin screens. Rows are ordered MVP-first
 | P2.17 | Export: `GET /api/v1/admin/dashboard/export?period=` returns CSV. Admin only | Admin | Done |
 | P2.45 | Support gets 403 on export, trend and settings, and never sees revenue | API, `admin-*` | Done |
 | **5** | **Later: nice-to-have** | | |
-| P2.18 | Tabs: Overview, User Stories, Acceptance Criteria | `admin-dashboard` | Todo |
-| P2.19 | User Stories tab: US-01–US-08 (static) | `admin-dashboard` | Todo |
-| P2.20 | Acceptance Criteria tab (static) | `admin-dashboard` | Todo |
-| P2.9 | "Live store" pill: shows whether the SignalR connection is up (deprioritized) | `admin-shell` | Todo |
+| P2.18 | Tabs: Overview, User Stories, Acceptance Criteria | `admin-dashboard` | Done |
+| P2.19 | User Stories tab: US-01–US-08 (static) | `admin-dashboard` | Done |
+| P2.20 | Acceptance Criteria tab (static) | `admin-dashboard` | Done |
+| P2.9 | "Live store" pill: shows whether the SignalR connection is up (deprioritized) | `admin-shell` | Done |
 | **C** | **Customer order detail: [feature] items from `docs/design-refs/northline-order-detail.md` (storefront, not admin)** | | |
 | P2.48 | Copy order number button in the order header | `orders` | Todo |
 | P2.49 | Reorder: put the order's items back in the cart | `orders`, Cart | Todo |

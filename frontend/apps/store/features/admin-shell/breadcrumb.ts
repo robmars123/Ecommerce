@@ -9,7 +9,7 @@ const DETAIL_LABELS: Record<string, string> = {
 };
 
 function navCrumb(href: string): Crumb | null {
-  const item = ADMIN_NAV.flatMap((group) => group.items).find((i) => i.ready && i.href === href);
+  const item = ADMIN_NAV.flatMap((group) => group.items).find((i) => i.href === href);
   return item ? { label: item.label, href: item.href } : null;
 }
 

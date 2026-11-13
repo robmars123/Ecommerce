@@ -12,4 +12,7 @@ jest.mock('@stripe/stripe-react-native', () => ({
 
 // The live status socket opens a real connection (Slice 6). Screen tests never do: lib/realtime.test.ts and the live-status
 // tests replace this mock with their own.
-jest.mock('@/lib/realtime', () => ({ subscribeToOrderStatus: jest.fn(() => () => undefined) }));
+jest.mock('@/lib/realtime', () => ({
+  subscribeToOrderStatus: jest.fn(() => () => undefined),
+  subscribeToConnectionState: jest.fn(() => () => undefined),
+}));

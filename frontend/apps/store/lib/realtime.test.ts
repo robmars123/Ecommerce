@@ -11,6 +11,8 @@ const created: {
   options: { accessTokenFactory: () => string; withCredentials: boolean };
   handlers: Record<string, Handler>;
   reconnected?: Handler;
+  reconnecting?: Handler;
+  closed?: Handler;
   start: jest.Mock;
   stop: jest.Mock;
   logLevel?: unknown;
@@ -51,6 +53,12 @@ jest.mock('@microsoft/signalr', () => ({
         onreconnected: (handler: Handler) => {
           state.reconnected = handler;
         },
+        onreconnecting: (handler: Handler) => {
+          state.reconnecting = handler;
+        },
+        onclose: (handler: Handler) => {
+          state.closed = handler;
+        },
         start: state.start,
         stop: state.stop,
       };
@@ -59,7 +67,7 @@ jest.mock('@microsoft/signalr', () => ({
 }));
 
 // eslint-disable-next-line import/first
-import { subscribeToOrderStatus } from './realtime';
+import { subscribeToConnectionState, subscribeToOrderStatus } from './realtime';
 
 beforeEach(() => {
   created.length = 0;
@@ -143,6 +151,96 @@ describe('subscribeToOrderStatus', () => {
     await Promise.resolve();
 
     expect(created[0].start).toHaveBeenCalledTimes(1);
+    off();
+  });
+});
+
+const flush = async (): Promise<void> => {
+  await Promise.resolve();
+  await Promise.resolve();
+};
+
+describe('subscribeToConnectionState', () => {
+  it('R1 gives false at once, then true after start resolves', async () => {
+    const listener = jest.fn();
+    const off = subscribeToConnectionState(listener);
+
+    expect(listener.mock.calls).toEqual([[false]]);
+    await flush();
+    expect(listener.mock.calls).toEqual([[false], [true]]);
+    off();
+  });
+
+  it('R2 goes false on reconnecting and true on reconnected, and order subscribers still get null', async () => {
+    const state = jest.fn();
+    const order = jest.fn();
+    const offState = subscribeToConnectionState(state);
+    const offOrder = subscribeToOrderStatus(order);
+    await flush();
+
+    created[0].reconnecting?.();
+    expect(state).toHaveBeenLastCalledWith(false);
+    created[0].reconnected?.();
+    expect(state).toHaveBeenLastCalledWith(true);
+    expect(order).toHaveBeenCalledWith(null);
+    offOrder();
+    offState();
+  });
+
+  it('R3 goes false on close and on a failed start, without throwing', async () => {
+    const closing = jest.fn();
+    const offA = subscribeToConnectionState(closing);
+    await flush();
+    created[0].closed?.();
+    expect(closing).toHaveBeenLastCalledWith(false);
+    offA();
+
+    mockStartFails = true;
+    const failing = jest.fn();
+    const offB = subscribeToConnectionState(failing);
+    await flush();
+    expect(failing.mock.calls).toEqual([[false]]);
+    offB();
+  });
+
+  it('R4 shares one connection with order subscribers and stops it once, when both sets are empty', () => {
+    const offOrder = subscribeToOrderStatus(jest.fn());
+    const offState = subscribeToConnectionState(jest.fn());
+
+    expect(created).toHaveLength(1);
+    offOrder();
+    expect(created[0].stop).not.toHaveBeenCalled();
+    offState();
+    expect(created[0].stop).toHaveBeenCalledTimes(1);
+  });
+
+  it('R5 ignores events from a connection that is no longer the current one', async () => {
+    const listener = jest.fn();
+    const off = subscribeToConnectionState(listener);
+    await flush();
+    off();
+    const again = jest.fn();
+    const offAgain = subscribeToConnectionState(again);
+    await flush();
+    expect(created).toHaveLength(2);
+    expect(again).toHaveBeenLastCalledWith(true);
+
+    created[0].closed?.();
+    created[0].reconnecting?.();
+
+    expect(again).toHaveBeenLastCalledWith(true);
+    expect(again.mock.calls).toEqual([[false], [true]]);
+    offAgain();
+  });
+
+  it('R6 gives false and builds no connection without an API base URL', () => {
+    delete process.env.EXPO_PUBLIC_API_BASE_URL;
+    const listener = jest.fn();
+
+    const off = subscribeToConnectionState(listener);
+
+    expect(listener.mock.calls).toEqual([[false]]);
+    expect(created).toHaveLength(0);
     off();
   });
 });

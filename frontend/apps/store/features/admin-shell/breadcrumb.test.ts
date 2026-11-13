@@ -76,11 +76,15 @@ describe('breadcrumbFor', () => {
     }
   });
 
-  it('B7: every ready nav item is the section crumb from its own label and href', () => {
-    const ready = ADMIN_NAV.flatMap((group) => group.items).filter((item) => item.ready);
-    expect(ready.length).toBeGreaterThan(0);
-    for (const item of ready) {
+  it('B7: every nav item without a query is the section crumb from its own label and href', () => {
+    const plain = ADMIN_NAV.flatMap((group) => group.items).filter((item) => !item.href.includes('?'));
+    expect(plain.length).toBeGreaterThan(0);
+    for (const item of plain) {
       expect(breadcrumbFor(item.href).slice(-1)[0]).toEqual({ label: item.label, href: item.href });
     }
+  });
+
+  it('B8: /admin is the Dashboard crumb only, whatever the tab', () => {
+    expect(breadcrumbFor('/admin')).toEqual([{ label: 'Dashboard', href: '/admin' }]);
   });
 });

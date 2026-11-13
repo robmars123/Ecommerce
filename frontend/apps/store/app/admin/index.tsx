@@ -1,5 +1,5 @@
-import { DashboardView } from '@/features/admin-dashboard/components/DashboardView';
+import { AdminDashboardScreen } from '@/features/admin-dashboard/components/AdminDashboardScreen';
 
-export default function AdminDashboardScreen() {
-  return <DashboardView />;
+export default function AdminIndexScreen() {
+  return <AdminDashboardScreen />;
 }

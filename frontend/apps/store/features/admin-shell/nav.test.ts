@@ -3,31 +3,31 @@ import { ADMIN_NAV, visibleNav } from './nav';
 const labels = (groups: { items: { label: string }[] }[]) => groups.map((g) => g.items.map((i) => i.label));
 
 describe('admin nav', () => {
-  it('N1: the table has the planned groups, order, labels, hrefs and ready flags', () => {
+  it('N1: the table has the planned groups, order, labels, and hrefs', () => {
     expect(ADMIN_NAV).toEqual([
       {
         title: 'Overview',
         items: [
-          { label: 'Dashboard', href: '/admin', ready: true },
-          { label: 'User Stories', href: '/admin', ready: false },
+          { label: 'Dashboard', href: '/admin' },
+          { label: 'User Stories', href: '/admin?tab=stories' },
         ],
       },
       {
         title: 'Manage',
         items: [
-          { label: 'Orders', href: '/admin/orders', ready: true },
-          { label: 'Products', href: '/admin/products', ready: true },
-          { label: 'Categories', href: '/admin/categories', ready: true },
-          { label: 'Inventory', href: '/admin/inventory', ready: true },
-          { label: 'Returns', href: '/admin/returns', ready: true },
-          { label: 'Customers', href: '/admin/customers', ready: true },
+          { label: 'Orders', href: '/admin/orders' },
+          { label: 'Products', href: '/admin/products' },
+          { label: 'Categories', href: '/admin/categories' },
+          { label: 'Inventory', href: '/admin/inventory' },
+          { label: 'Returns', href: '/admin/returns' },
+          { label: 'Customers', href: '/admin/customers' },
         ],
       },
       {
         title: 'Insights',
         items: [
-          { label: 'Analytics', href: '/admin/analytics', ready: true },
-          { label: 'Settings', href: '/admin/settings', ready: true },
+          { label: 'Analytics', href: '/admin/analytics' },
+          { label: 'Settings', href: '/admin/settings' },
         ],
       },
     ]);

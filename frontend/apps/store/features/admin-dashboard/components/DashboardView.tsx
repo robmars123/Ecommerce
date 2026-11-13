@@ -1,5 +1,5 @@
 import { Link, Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
 
 import { ActionButton } from '@/components/ActionButton';
@@ -177,7 +177,7 @@ function QuickActions({ role }: { role: UserRole | null }) {
 }
 
 /** The admin home (arch 8.8.5, app context 4.8). Every figure is what the server returned; "as of" says how fresh it is. */
-export function DashboardView({ now = () => new Date() }: { now?: () => Date } = {}) {
+export function DashboardView({ now = () => new Date(), tabs }: { now?: () => Date; tabs?: ReactNode } = {}) {
   const params = useLocalSearchParams<{ period?: string | string[] }>();
   const router = useRouter();
   const period = parseDashboardPeriod(params.period);
@@ -229,6 +229,7 @@ export function DashboardView({ now = () => new Date() }: { now?: () => Date } =
           <ActionButton label="Refresh" onPress={refresh} pending={query.isFetching} pill />
         </View>
       </View>
+      {tabs}
 
       {data ? (
         <View className="gap-gutter">

@@ -76,3 +76,7 @@
 - P2-tier4 R1 (Rob): `DashboardView` shows `Export failed:` only inside the dashboard `data` branch, so an export error while the dashboard itself is in error is silent. Move the line next to the header buttons if that matters.
 - P2-tier4 R1 (Rob): `status-buckets.ts` comment says the type places every status "exactly once"; the type only checks names, the test enforces the once. Fix the wording.
 - P2-tier4 R1 (Rob): `AnalyticsView` sets `Stack.Screen options={{ title }}` while the route file sets `headerShown: false`; drop one (Settings uses `ScreenTitle`).
+- P2-tier5 plan (Rob): User Stories tab has no priority filter row (css §8 `.filter-row`) and no count pill on the nav/tab (css §9); add if Nathaniel wants the full screenshot.
+- P2-tier5 plan (Rob): the Live store pill stays offline after a failed first `start()` (automatic reconnect only covers drops after connecting); add a retry if admins report a stuck "offline".
+- P2-tier5 plan (Rob): `.p-high`/`.p-med` dark text tones (#fca5a5, #fcd34d) map to `danger`/`warning` tokens; add tokens only if the difference matters.
+- P2-tier5 R1 (Rob): at 390 px the narrow top bar holds Menu, "Store Admin", the "Live store · offline" pill and the theme toggle in one row; S30 checks presence only. Add a no-overflow check (or shorten the offline text at narrow width) if it wraps on a small phone.
