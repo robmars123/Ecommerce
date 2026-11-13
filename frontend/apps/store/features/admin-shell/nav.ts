@@ -26,8 +26,8 @@ export const ADMIN_NAV: readonly NavGroup[] = [
   {
     title: 'Insights',
     items: [
-      { label: 'Analytics', href: '/admin/analytics', ready: false },
-      { label: 'Settings', href: '/admin/settings', ready: false },
+      { label: 'Analytics', href: '/admin/analytics', ready: true },
+      { label: 'Settings', href: '/admin/settings', ready: true },
     ],
   },
 ];

@@ -70,3 +70,9 @@
 - P2-style-orders R1 (Rob): web check of `/orders` and `/orders/<id>` not run (375/800/1280, `scrollWidth` at 375, light/dark, hover URL on the list row link, `.font-mono` class present in the DOM). Nathaniel to check manually. The earlier P2-style item "`webFontFamily.mono` has no consumer" is closed by this slice.
 - P2-style-orders R1 (Rob): if another `renderRouter` test file times out on its first cold load, cap jest workers in `scripts/verify.sh` (`--maxWorkers=50%`) instead of adding per-file timeouts one by one.
 - P2-style-orders R1 (Rob): `OrderDetailView.test.tsx` first O7 test is titled "both links lead back to /orders" but presses only "Orders"; rename it.
+- P2-tier4 plan (Rob): `docs/architecture/09-api.md` is ~11.7 KB with no `###` boundary; split it (e.g. public vs admin endpoints) in a docs slice and add the file to the index.
+- P2-tier4 R1 (Rob): `RevenueTrendPanel` treats a 200 body without `buckets` as an error only because old `DashboardView.test.tsx` mocks answer `/trend` with dashboard JSON. When that file is next touched, give its `mockApi` a `/trend` route and drop the `Array.isArray` guard.
+- P2-tier4 R1 (Rob): web `saveTextFile` revokes the object URL right after `click()`; older Safari can cancel the download. If a Safari user reports an empty download, revoke on a `setTimeout(…, 0)`.
+- P2-tier4 R1 (Rob): `DashboardView` shows `Export failed:` only inside the dashboard `data` branch, so an export error while the dashboard itself is in error is silent. Move the line next to the header buttons if that matters.
+- P2-tier4 R1 (Rob): `status-buckets.ts` comment says the type places every status "exactly once"; the type only checks names, the test enforces the once. Fix the wording.
+- P2-tier4 R1 (Rob): `AnalyticsView` sets `Stack.Screen options={{ title }}` while the route file sets `headerShown: false`; drop one (Settings uses `ScreenTitle`).

@@ -120,6 +120,14 @@ async function readJson(response: Response): Promise<ParsedBody> {
   }
 }
 
+async function readText(response: Response): Promise<string> {
+  try {
+    return await response.text();
+  } catch {
+    return '';
+  }
+}
+
 function asRecord(value: unknown): Record<string, unknown> {
   return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {};
 }
@@ -149,6 +157,8 @@ type RequestSpec = {
   auth: 'bearer' | 'none';
   refreshTransport?: 'cookie' | 'body';
   headers?: Record<string, string>;
+  /** `text` returns the raw body of a 2xx (a CSV export); errors still parse as problem JSON. */
+  responseType?: 'json' | 'text';
 };
 
 /** One HTTP attempt. Returns the parsed body or throws an ApiError. */
@@ -173,7 +183,8 @@ async function attempt<T>(spec: RequestSpec, token: string | undefined): Promise
 
   try {
     const sentId = newCorrelationId();
-    const headers: Record<string, string> = { ...spec.headers, Accept: 'application/json', 'X-Correlation-ID': sentId };
+    const accept = spec.responseType === 'text' ? 'text/csv' : 'application/json';
+    const headers: Record<string, string> = { ...spec.headers, Accept: accept, 'X-Correlation-ID': sentId };
     if (spec.body !== undefined) {
       headers['Content-Type'] = 'application/json';
     }
@@ -203,6 +214,13 @@ async function attempt<T>(spec: RequestSpec, token: string | undefined): Promise
       throw new ApiError('network', 'The request could not be completed.', { correlationId: sentId });
     }
 
+    const rawText = spec.responseType === 'text' && response.ok ? await readText(response) : undefined;
+    if (rawText !== undefined) {
+      if (timedOut) {
+        throw new ApiError('timeout', 'The request timed out.', { correlationId: sentId });
+      }
+      return rawText as T;
+    }
     const result = await readJson(response);
     // The timer can fire while the body is still being read.
     if (timedOut) {
@@ -262,6 +280,18 @@ export function apiGet<T>(path: string, options: ApiGetOptions = {}): Promise<T>
     params: options.params,
     signal: options.signal,
     auth: options.auth ?? 'bearer',
+  });
+}
+
+/** GET that returns the body as text (the CSV export). Same auth, 401 refresh, timeout and error kinds as `apiGet`. */
+export function apiGetText(path: string, options: ApiGetOptions = {}): Promise<string> {
+  return execute<string>({
+    method: 'GET',
+    path,
+    params: options.params,
+    signal: options.signal,
+    auth: options.auth ?? 'bearer',
+    responseType: 'text',
   });
 }
 

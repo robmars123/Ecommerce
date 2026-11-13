@@ -3,7 +3,9 @@ import { useStripe } from '@stripe/stripe-react-native';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import * as SecureStore from 'expo-secure-store';
 
-import { PaymentForm, refreshTokenStorage, refreshTokenTransport } from './platform';
+import { Share } from 'react-native';
+
+import { PaymentForm, refreshTokenStorage, refreshTokenTransport, saveTextFile } from './platform';
 
 jest.mock('expo-secure-store');
 jest.mock('expo-constants', () => ({ expoConfig: { name: 'Ecommerce Store' } }));
@@ -102,5 +104,16 @@ describe('PaymentForm (native payment sheet)', () => {
 
     expect(screen.getByRole('alert')).toHaveTextContent('Card payments are not configured in this build.');
     expect(screen.queryByRole('button', { name: 'Pay now' })).not.toBeOnTheScreen();
+  });
+});
+
+describe('saveTextFile (native)', () => {
+  it('opens the share sheet with the file name as title and the text as the message', async () => {
+    const share = jest.spyOn(Share, 'share').mockResolvedValue({ action: 'sharedAction', activityType: undefined });
+
+    await saveTextFile('dashboard-7d.csv', 'text/csv', 'a,b\r\n');
+
+    expect(share).toHaveBeenCalledWith({ title: 'dashboard-7d.csv', message: 'a,b\r\n' });
+    share.mockRestore();
   });
 });

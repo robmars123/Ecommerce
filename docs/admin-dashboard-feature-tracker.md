@@ -45,15 +45,15 @@ Match the target screenshot across all admin screens. Rows are ordered MVP-first
 | **4** | **Post-MVP: charts, insights, settings, export** | | |
 | P2.23 | Orders card: cancelled and completed (Delivered) in the period | Admin, `admin-dashboard` | Done |
 | P2.22 | "vs previous period" chip; the API adds previous revenue | Admin, `admin-dashboard` | Done |
-| P2.25 | Revenue trend API: hourly buckets for Today, daily for 7 and 30 days, from the projection. Admin only | Admin | Todo |
-| P2.26 | Revenue trend line chart with TOTAL, ORDERS and "View report →" | `admin-dashboard` | Todo |
-| P2.27 | Orders-by-status donut with legend, % and empty state | `admin-dashboard` | Todo |
-| P2.28 | Group the 8 statuses into 4 legend buckets (display only); tapping a bucket filters orders | `admin-dashboard` | Todo |
-| P2.42 | `/admin/analytics`: trend and top products. Admin only | `admin-analytics` | Todo |
-| P2.44 | `GET /api/v1/admin/settings` | Admin | Todo |
-| P2.43 | `/admin/settings`: currency and threshold, read-only. Admin only | `admin-settings` | Todo |
-| P2.17 | Export: `GET /api/v1/admin/dashboard/export?period=` returns CSV. Admin only | Admin | Todo |
-| P2.45 | Support gets 403 on export, trend and settings, and never sees revenue | API, `admin-*` | Todo |
+| P2.25 | Revenue trend API: hourly buckets for Today, daily for 7 and 30 days, from the projection. Admin only | Admin | Done |
+| P2.26 | Revenue trend line chart with TOTAL, ORDERS and "View report →" | `admin-dashboard` | Done |
+| P2.27 | Orders-by-status donut with legend, % and empty state | `admin-dashboard` | Done |
+| P2.28 | Group the 8 statuses into 4 legend buckets (display only); tapping a bucket filters orders | `admin-dashboard` | Done |
+| P2.42 | `/admin/analytics`: trend and top products. Admin only | `admin-analytics` | Done |
+| P2.44 | `GET /api/v1/admin/settings` | Admin | Done |
+| P2.43 | `/admin/settings`: currency and threshold, read-only. Admin only | `admin-settings` | Done |
+| P2.17 | Export: `GET /api/v1/admin/dashboard/export?period=` returns CSV. Admin only | Admin | Done |
+| P2.45 | Support gets 403 on export, trend and settings, and never sees revenue | API, `admin-*` | Done |
 | **5** | **Later: nice-to-have** | | |
 | P2.18 | Tabs: Overview, User Stories, Acceptance Criteria | `admin-dashboard` | Todo |
 | P2.19 | User Stories tab: US-01–US-08 (static) | `admin-dashboard` | Todo |

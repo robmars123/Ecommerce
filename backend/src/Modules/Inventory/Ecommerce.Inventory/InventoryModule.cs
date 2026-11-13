@@ -32,6 +32,7 @@ public static class InventoryModule
         services.AddScoped<IInventoryStore, InventoryStore>();
         services.AddScoped<IInventoryReserver, InventoryReserver>();
         services.AddScoped<IInventoryReader, InventoryStockReader>();
+        services.AddSingleton<IInventorySettingsReader, InventorySettingsReader>();
         services.AddScoped<InventoryAdminService>();
         services.AddScoped<ReservationExpiryService>();
         services.AddHostedService<ReservationExpiryWorker>();

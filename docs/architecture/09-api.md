@@ -27,6 +27,7 @@ Base `/api/v1`. Errors are Problem Details (`application/problem+json`). Lists a
 | `GET /admin/returns` · `POST /admin/returns/{id}/approve` · `decline` | Admin | Reason required |
 | `GET /admin/customers` · `GET /admin/customers/{id}` | Admin, Support | Read-only. Support sees no revenue KPIs |
 | `GET /admin/search?q=` | Admin, Support | ≤ 5 each of orders, products, SKUs; Support gets no products or SKUs. §13.2 "Admin search UI and contract" |
+| `GET /admin/dashboard/trend?period=` · `GET /admin/dashboard/export?period=` · `GET /admin/settings` | Admin | Revenue trend (hourly today, daily 7d/30d, UTC; Σ buckets = KPI revenue) · same series as CSV · `{ currency, lowStockThreshold }`, read-only. §13.2 "Admin dashboard tier 4" |
 
 **Catalog read contract (Slice 1a):**
 - **Visible** = `is_active` and ≥ 1 active variant; otherwise list-excluded and detail 404 (also 404 for a malformed slug).

@@ -4,7 +4,7 @@ import Constants from 'expo-constants';
 import * as Linking from 'expo-linking';
 import * as SecureStore from 'expo-secure-store';
 import { useState } from 'react';
-import { Text, View } from 'react-native';
+import { Share, Text, View } from 'react-native';
 
 import { ActionButton } from '@/components/ActionButton';
 
@@ -13,6 +13,11 @@ import type { PaymentFormProps } from './platform';
 
 const REFRESH_TOKEN_KEY = 'ecommerce.refreshToken';
 const SHEET_CANCELED = 'Canceled';
+
+/** Opens the share sheet with the text (React Native core; no file-system package). */
+export async function saveTextFile(fileName: string, _mimeType: string, text: string): Promise<void> {
+  await Share.share({ title: fileName, message: text });
+}
 
 export function refreshTokenTransport(): 'cookie' | 'body' {
   return 'body';

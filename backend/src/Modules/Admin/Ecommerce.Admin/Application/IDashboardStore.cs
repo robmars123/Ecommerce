@@ -7,4 +7,7 @@ internal interface IDashboardStore
 
     /// <summary>Gross paid, refunds succeeded and customers over [from, to] (cash basis, Slice 6b D9).</summary>
     Task<DashboardKpis> ReadKpisAsync(DateTimeOffset from, DateTimeOffset to, CancellationToken ct);
+
+    /// <summary>Paid times and actor refund times over [from, to], the same predicates as <see cref="ReadKpisAsync"/> (P2-tier4 D2).</summary>
+    Task<RevenueEvents> ReadRevenueEventsAsync(DateTimeOffset from, DateTimeOffset to, CancellationToken ct);
 }

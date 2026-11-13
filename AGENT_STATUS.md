@@ -5,9 +5,9 @@ Agents update this at the **start and end of every task**.
 
 | Agent | Status | Slice | Task | Fix round | Updated |
 |---|---|---|---|---|---|
-| Marco (developer) | 🟢 AVAILABLE | - | Round 1 fix done, verify PASS | 0 | 2026-11-12 |
+| Marco (developer) | 🟢 AVAILABLE | P2-tier4 | Build done, verify PASS | 0 | 2026-11-12 |
 | Shin (developer 2) | 🟢 AVAILABLE | — | Ready | 0 | 2026-11-08 18:45 |
-| Rob (architect, on demand) | 🟢 AVAILABLE | P2-style-orders | Review R1 BLOCKED (jest timeout) → slice-plans/slice-P2-style-orders-rob-review.md | 0 | 2026-11-12 |
+| Rob (architect, on demand) | 🟢 AVAILABLE | P2-tier4 | Review R1 BLOCKED → slice-plans/slice-P2-tier4-rob-review.md | 0 | 2026-11-13 |
 
 **Rules**
 

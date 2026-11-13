@@ -50,8 +50,6 @@ describe('breadcrumbFor', () => {
     '/admin/inventory/x',
     '/admin/returns/x',
     '/admin//',
-    '/admin/analytics',
-    '/admin/settings',
     '/administrator',
   ])('B3: unknown path %j gives no crumbs', (path) => {
     expect(breadcrumbFor(path)).toEqual([]);

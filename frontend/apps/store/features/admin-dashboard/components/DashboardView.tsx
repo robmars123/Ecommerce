@@ -12,14 +12,20 @@ import type { UserRole } from '@/features/auth/types';
 import { formatOrderDate } from '@/features/orders/status-labels';
 import { userMessage } from '@/lib/api-client';
 import { formatMoney } from '@/lib/money';
+import { saveTextFile } from '@/lib/platform';
 
-import { useDashboardQuery, useRecentOrdersQuery } from '../hooks/hooks';
+import { fetchDashboardExport } from '../api';
+import { useDashboardQuery, useRecentOrdersQuery, useRevenueTrendQuery } from '../hooks/hooks';
 import { asOfParts } from '../as-of';
 import { greeting } from '../greeting';
 import { kpiCards } from '../kpi-cards';
 import { dashboardLayout, type DashboardLayout } from '../layout';
-import { parseDashboardPeriod, PERIODS } from '../period';
+import { parseDashboardPeriod } from '../period';
 import type { Dashboard, DashboardPeriod } from '../types';
+import { OrdersByStatusPanel } from './OrdersByStatusPanel';
+import { PeriodSwitch } from './PeriodSwitch';
+import { RevenueTrendPanel } from './RevenueTrendPanel';
+import { TopProductsPanel } from './TopProductsPanel';
 
 function AsOfLine({ data }: { data: Dashboard }) {
   const parts = asOfParts(data);
@@ -181,6 +187,28 @@ export function DashboardView({ now = () => new Date() }: { now?: () => Date } =
   const user = useSession().user;
   const role = user?.role ?? null;
   const layout = dashboardLayout(useWindowDimensions().width);
+  // Revenue over time is Admin only (D9): the trend, the chart, View report and Export all sit behind this one gate.
+  const isAdmin = adminRouteDecision(role, '/admin/analytics') === null;
+  const trendQuery = useRevenueTrendQuery(period, isAdmin);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+
+  async function exportCsv() {
+    setExporting(true);
+    setExportError(null);
+    try {
+      await saveTextFile(`dashboard-${period}.csv`, 'text/csv', await fetchDashboardExport(period));
+    } catch (error) {
+      setExportError(`Export failed: ${userMessage(error)}`);
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  function refresh() {
+    void query.refetch();
+    if (isAdmin) void trendQuery.refetch();
+  }
 
   return (
     <ScrollView contentContainerClassName={`w-full gap-gutter ${layout.wide ? 'px-page pb-[36px]' : 'px-lg pb-[28px]'}`}>
@@ -196,22 +224,9 @@ export function DashboardView({ now = () => new Date() }: { now?: () => Date } =
           <Text className="mt-[6px] max-w-[620px] text-ui text-muted">{greeting(now(), user?.displayName)}</Text>
         </View>
         <View className="flex-row flex-wrap items-center gap-sm">
-          <View className="flex-row rounded-pill border border-border bg-surface p-[3px] web:shadow-card">
-            {PERIODS.map((p) => (
-              <Pressable
-                key={p.value}
-                accessibilityRole="button"
-                accessibilityState={{ selected: p.value === period }}
-                onPress={() => choosePeriod(p.value)}
-                className={`min-h-touch justify-center rounded-pill px-[14px] ${p.value === period ? 'bg-selected' : ''}`}
-              >
-                <Text className={`text-ui-sm font-semibold ${p.value === period ? 'text-selected-foreground' : 'text-muted'}`}>
-                  {p.label}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-          <ActionButton label="Refresh" onPress={() => void query.refetch()} pending={query.isFetching} pill />
+          <PeriodSwitch period={period} onChange={choosePeriod} />
+          {isAdmin ? <ActionButton label="Export CSV" onPress={() => void exportCsv()} pending={exporting} pill /> : null}
+          <ActionButton label="Refresh" onPress={refresh} pending={query.isFetching} pill />
         </View>
       </View>
 
@@ -223,6 +238,11 @@ export function DashboardView({ now = () => new Date() }: { now?: () => Date } =
             </Text>
           ) : null}
           <AsOfLine data={data} />
+          {exportError ? (
+            <Text accessibilityRole="alert" className="text-meta text-danger">
+              {exportError}
+            </Text>
+          ) : null}
           {data.lowStock.length > 0 && adminRouteDecision(role, '/admin/inventory') === null ? (
             <Link href="/admin/inventory" asChild>
               <Pressable
@@ -244,26 +264,13 @@ export function DashboardView({ now = () => new Date() }: { now?: () => Date } =
             />
           ) : null}
 
-          <Panel title="Orders by status">
-            {data.ordersByStatus.length === 0 ? <Text className="text-ui-sm text-muted">No orders yet.</Text> : null}
-            {data.ordersByStatus.map((s) => (
-              <Link key={s.status} href={{ pathname: '/admin/orders', params: { status: s.status } }} accessibilityRole="link" asChild>
-                <Text className="min-h-touch border-b border-border py-sm text-ui-sm text-foreground web:border-dashed">{`${s.status}: ${s.count}`}</Text>
-              </Link>
-            ))}
-          </Panel>
+          {isAdmin ? <RevenueTrendPanel period={period} reportLink /> : null}
+
+          <OrdersByStatusPanel ordersByStatus={data.ordersByStatus} showPercent={isAdmin} />
 
           <View className={layout.panelsSideBySide ? 'flex-row flex-wrap gap-gutter' : 'gap-gutter'}>
             <View className={layout.panelsSideBySide ? 'min-w-0 grow-[115] basis-0' : ''}>
-              <Panel title="Top products">
-                {data.topProducts.length === 0 ? <Text className="text-ui-sm text-muted">No sales in this period.</Text> : null}
-                {data.topProducts.map((t) => (
-                  <Text
-                    key={t.productId}
-                    className="border-b border-border py-[11px] text-ui text-foreground"
-                  >{`${t.name} · ${t.units} sold`}</Text>
-                ))}
-              </Panel>
+              <TopProductsPanel products={data.topProducts} />
             </View>
             <View className={layout.panelsSideBySide ? 'min-w-0 grow-[85] basis-0' : ''}>
               <Panel title="Low stock">

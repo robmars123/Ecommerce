@@ -55,13 +55,15 @@ async function renderShellWithRoutes(width: number) {
       'admin/inventory': stub('Inventory'),
       'admin/returns': stub('Returns'),
       'admin/customers': stub('Customers'),
+      'admin/analytics': stub('Analytics'),
+      'admin/settings': stub('Settings'),
     },
     { initialUrl: '/' },
   );
 }
 
 const readyItems = ADMIN_NAV.flatMap((group) => group.items).filter((item) => item.ready);
-const notReadyLabels = ['User Stories', 'Analytics', 'Settings'];
+const notReadyLabels = ['User Stories'];
 
 afterEach(() => resetSession());
 
@@ -139,11 +141,11 @@ describe('AdminShell', () => {
     expect(className.split(' ')).not.toContain('flex-1');
   });
 
-  it('S8: Admin sees the three headers in order and 7 working links', async () => {
+  it('S8: Admin sees the three headers in order and 9 working links', async () => {
     const first = await renderShellWithRoutes(1024);
 
     expect(screen.getAllByRole('header').map((h) => h.props.children)).toEqual(['Overview', 'Manage', 'Insights']);
-    expect(screen.getAllByRole('link')).toHaveLength(7);
+    expect(screen.getAllByRole('link')).toHaveLength(9);
     await first.unmount();
 
     // The shell sits on the index route in this harness, so each link is pressed on a fresh render.

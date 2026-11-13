@@ -4,7 +4,7 @@ import * as SecureStore from 'expo-secure-store';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 
-import { PaymentForm, refreshTokenStorage, refreshTokenTransport } from './platform';
+import { PaymentForm, refreshTokenStorage, refreshTokenTransport, saveTextFile } from './platform';
 
 jest.mock('expo-secure-store');
 
@@ -133,5 +133,24 @@ describe('PaymentForm (web payment element)', () => {
 
     expect(container.textContent).toContain('Card payments are not configured in this build.');
     expect(payButton()).toBeNull();
+  });
+});
+
+describe('saveTextFile (web)', () => {
+  it('clicks a download anchor for an object URL of the text and revokes the URL', async () => {
+    const createObjectURL = jest.fn(() => 'blob:csv-1');
+    const revokeObjectURL = jest.fn();
+    Object.assign(URL, { createObjectURL, revokeObjectURL });
+    const clicked: { href: string; download: string }[] = [];
+    const click = jest.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
+      clicked.push({ href: this.href, download: this.download });
+    });
+
+    await saveTextFile('dashboard-7d.csv', 'text/csv', 'a,b\r\n');
+
+    expect(clicked).toEqual([{ href: 'blob:csv-1', download: 'dashboard-7d.csv' }]);
+    expect((createObjectURL.mock.calls[0] as unknown[])[0]).toBeInstanceOf(Blob);
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:csv-1');
+    click.mockRestore();
   });
 });

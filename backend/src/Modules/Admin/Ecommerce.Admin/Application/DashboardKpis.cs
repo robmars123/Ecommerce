@@ -13,6 +13,8 @@ internal sealed record DashboardPeriod(string Name, int Days)
         _ => null,
     };
 
+    public string Granularity => Days == 1 ? "hour" : "day";
+
     public DateTimeOffset From(DateTimeOffset now) => new(now.UtcDateTime.Date.AddDays(1 - Days), TimeSpan.Zero);
 
     /// <summary>The previous window has the same elapsed time one period earlier, so it never overlaps the current one (P2.22 D1).</summary>
