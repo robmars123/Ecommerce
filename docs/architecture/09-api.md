@@ -27,6 +27,7 @@ Base `/api/v1`. Errors are Problem Details (`application/problem+json`). Lists a
 | `GET /admin/returns` · `POST /admin/returns/{id}/approve` · `decline` | Admin | Reason required |
 | `GET /admin/customers` · `GET /admin/customers/{id}` | Admin, Support | Read-only. Support sees no revenue KPIs |
 | `GET /admin/search?q=` | Admin, Support | ≤ 5 each of orders, products, SKUs; Support gets no products or SKUs. §13.2 "Admin search UI and contract" |
+| `GET /admin/dashboard/trend?period=` · `GET /admin/dashboard/export?period=` · `GET /admin/settings` | Admin | Revenue trend (hourly today, daily 7d/30d, UTC; Σ buckets = KPI revenue) · same series as CSV · `{ currency, lowStockThreshold }`, read-only. §13.2 "Admin dashboard tier 4" |
 
 **Catalog read contract (Slice 1a):**
 - **Visible** = `is_active` and ≥ 1 active variant; otherwise list-excluded and detail 404 (also 404 for a malformed slug).
@@ -65,6 +66,6 @@ Base `/api/v1`. Errors are Problem Details (`application/problem+json`). Lists a
 
 **Orders contract (Slice 5):**
 - `GET /orders?page=&pageSize=` — the caller's orders only, newest first (`created_at DESC, id`): `{ items: [{ id, orderNumber, createdAt, status, grandTotal, trackingUrl }], page, pageSize, totalCount, totalPages }`. `trackingUrl` is null until shipped.
-- `GET /orders/{id}` — items (snapshots), totals, shipping address and method snapshot, `paymentStatus` (latest attempt), `timeline: [{ fromStatus, toStatus, at, reason? }]` from `order_status_history` ascending (internal actor IDs never exposed), `shipments: [{ carrierName, trackingNumber, trackingUrl, shippedAt, deliveredAt }]`, `refunds: [{ amount, status, createdAt }]`. Another customer's order → 403 (test 7).
+- `GET /orders/{id}` — items (snapshots, plus display-only `image: { url, altText } | null` and `colour: string | null` read from Catalog at request time, §13.2 "Order item display fields"; the checkout response items do not carry them), totals, shipping address and method snapshot, `paymentStatus` (latest attempt), `payment: { method: "card", amountDue, captured } | null` (server-computed, null before any attempt, §13.2 "Order payment card"), `timeline: [{ fromStatus, toStatus, at, reason?, description }]` from `order_status_history` ascending (internal actor IDs never exposed; `description` is server-derived copy, §13.2 "Timeline entry description"), `shipments: [{ carrierName, trackingNumber, trackingUrl, shippedAt, deliveredAt }]`, `refunds: [{ amount, status, createdAt }]`, `statusNote: { pillNote, alert: { title, message } | null } | null` (server-derived copy, §13.2 "Order status note"). Another customer's order → 403 (test 7).
 
 **Refund contract (Slice 6):** `POST /admin/orders/{id}/refund` with `Idempotency-Key`, body `{ amount: { amount, currency }, reason }` (reason 1–500 chars; currency = the order's). → 202 `{ refundId, amount, status: Pending, refundedTotal, remaining }`. Over the ceiling or illegal state → 409; same key, different body → 409. Rules: §8.5.

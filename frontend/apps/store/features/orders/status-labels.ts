@@ -36,6 +36,10 @@ export function paymentTone(status: PaymentStatus): StatusTone {
   return status === 'Pending' ? 'warning' : status === 'Succeeded' ? 'success' : status === 'Failed' ? 'danger' : 'neutral';
 }
 
+export function paymentMethodLabel(method: string): string {
+  return method === 'card' ? 'Card' : method;
+}
+
 const PAYMENT_LABELS: Record<PaymentStatus, string> = {
   Pending: 'Awaiting payment',
   Succeeded: 'Paid',
@@ -61,4 +65,12 @@ const REFUND_LABELS: Record<RefundStatus, string> = {
 
 export function refundStatusLabel(status: RefundStatus): string {
   return REFUND_LABELS[status] ?? status;
+}
+
+const CANCELLED_TOTALS_NOTE =
+  'No payment is kept for this order. It was cancelled before payment was confirmed, and any payment that went through late is refunded automatically.';
+
+/** Note under the Total; only Cancelled has one (13.2 "Order totals note"). */
+export function totalsNote(status: OrderStatus): string | null {
+  return status === 'Cancelled' ? CANCELLED_TOTALS_NOTE : null;
 }

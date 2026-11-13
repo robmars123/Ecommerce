@@ -8,7 +8,8 @@ import { makeCart, makeCartLine, usd } from '@/tests/cart-fixtures';
 import { jsonResponse, problemResponse } from '@/tests/fetch-mock';
 import { renderedPaymentForms } from '@/tests/mock-payment-form';
 import { makeOrderDetail } from '@/tests/order-fixtures';
-import { renderRouterWithQuery } from '@/tests/render-with-query';
+import { queryKeys } from '@/lib/query-keys';
+import { createTestQueryClient, renderRouterWithQuery } from '@/tests/render-with-query';
 import { signInAs } from '@/tests/session';
 
 import type { CheckoutResponse, ShippingMethodsResponse } from '../types';
@@ -484,6 +485,34 @@ describe('CheckoutView: payment', () => {
     await render('/checkout?orderId=o-1');
 
     expect(await screen.findByText('Payment received')).toBeOnTheScreen();
+  });
+
+  const renderWith = (client: ReturnType<typeof createTestQueryClient>) =>
+    renderRouterWithQuery(
+      { checkout: CheckoutScreen, 'orders/[id]': () => <Text>Order page</Text>, cart: () => <Text>Cart page</Text> },
+      { initialUrl: '/checkout?orderId=o-1', client },
+    );
+
+  it('T14: once the server says the order is paid, the cart query is invalidated (the header badge refetches)', async () => {
+    mockApi({ ...baseHandlers(), 'GET /api/v1/orders/o-1': () => jsonResponse(200, makeOrderDetail({ status: 'Paid' })) });
+    const client = createTestQueryClient();
+    client.setQueryData(queryKeys.cart, makeCart());
+
+    await renderWith(client);
+
+    expect(await screen.findByText('Payment received')).toBeOnTheScreen();
+    await waitFor(() => expect(client.getQueryState(queryKeys.cart)?.isInvalidated).toBe(true));
+  });
+
+  it('T15: while the order is still PendingPayment the cart query is not invalidated', async () => {
+    mockApi({ ...baseHandlers(), 'GET /api/v1/orders/o-1': () => jsonResponse(200, makeOrderDetail({ status: 'PendingPayment' })) });
+    const client = createTestQueryClient();
+    client.setQueryData(queryKeys.cart, makeCart());
+
+    await renderWith(client);
+
+    expect(await screen.findByRole('button', { name: 'Continue to payment' })).toBeOnTheScreen();
+    expect(client.getQueryState(queryKeys.cart)?.isInvalidated).toBe(false);
   });
 });
 

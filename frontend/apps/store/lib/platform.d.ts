@@ -27,3 +27,6 @@ export declare const refreshTokenStorage: {
   set(token: string): Promise<void>;
   clear(): Promise<void>;
 };
+
+/** Hands a text file to the user: a download on web, the share sheet on native (the dashboard CSV export). */
+export declare function saveTextFile(fileName: string, mimeType: string, text: string): Promise<void>;

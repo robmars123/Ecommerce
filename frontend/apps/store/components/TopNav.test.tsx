@@ -1,12 +1,15 @@
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
-import { fireEvent, renderRouter, screen } from 'expo-router/testing-library';
+import { act, fireEvent, renderRouter, screen } from 'expo-router/testing-library';
 import { Text } from 'react-native';
 
 import { endSession, resetSession } from '@/features/auth/session';
 import { createTestQueryClient } from '@/tests/render-with-query';
 import { useGuestCartStore } from '@/features/cart/guest-cart-store';
 import { signInAs } from '@/tests/session';
+import { makeCart, makeCartLine } from '@/tests/cart-fixtures';
+import { jsonResponse } from '@/tests/fetch-mock';
+import { queryKeys } from '@/lib/query-keys';
 import { useThemeStore } from '@/lib/theme';
 
 import { TopNav } from './TopNav';
@@ -24,8 +27,7 @@ afterEach(() => {
   delete process.env.EXPO_PUBLIC_API_BASE_URL;
 });
 
-function routes() {
-  const client = createTestQueryClient();
+function routes(client = createTestQueryClient()) {
   return {
     _layout: () => (
       <QueryClientProvider client={client}>
@@ -128,6 +130,36 @@ describe('TopNav', () => {
       await endSession();
 
       expect(await screen.findByText('99+')).toBeOnTheScreen();
+    });
+
+    it('T12: signed in, shows the total quantity of the server cart', async () => {
+      jest
+        .spyOn(globalThis, 'fetch')
+        .mockImplementation(async () =>
+          jsonResponse(200, makeCart([makeCartLine({ variantId: 'v-1', quantity: 2 }), makeCartLine({ variantId: 'v-2', quantity: 1 })])),
+        );
+      await signInAs('Customer');
+      await renderRouter(routes(), { initialUrl: '/' });
+
+      expect(await screen.findByRole('link', { name: 'Cart, 3 items' })).toBeOnTheScreen();
+      expect(screen.getByText('3')).toBeOnTheScreen();
+    });
+
+    it('T13: signed in, the badge goes away when the cart is invalidated and the server cart is now empty', async () => {
+      let cart = makeCart([makeCartLine({ quantity: 1 })]);
+      jest.spyOn(globalThis, 'fetch').mockImplementation(async () => jsonResponse(200, cart));
+      const client = createTestQueryClient();
+      await signInAs('Customer');
+      await renderRouter(routes(client), { initialUrl: '/' });
+      expect(await screen.findByRole('link', { name: 'Cart, 1 item' })).toBeOnTheScreen();
+
+      cart = makeCart([]);
+      await act(async () => {
+        await client.invalidateQueries({ queryKey: queryKeys.cart });
+      });
+
+      expect(await screen.findByRole('link', { name: 'Cart' })).toBeOnTheScreen();
+      expect(screen.queryByRole('link', { name: 'Cart, 1 item' })).toBeNull();
     });
   });
 });

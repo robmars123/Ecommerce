@@ -19,7 +19,7 @@ internal sealed class StripePaymentGateway(IOptions<StripeOptions> options, Http
         {
             Amount = request.AmountMinor,
             Currency = request.Currency.ToLowerInvariant(),
-            AllowedPaymentMethodTypes = ["card"],
+            AllowedPaymentMethodTypes = [Domain.PaymentMethods.Card],
             Metadata = new Dictionary<string, string>
             {
                 ["order_id"] = request.OrderId.ToString(),

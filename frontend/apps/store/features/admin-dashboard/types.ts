@@ -47,3 +47,16 @@ export type RecentOrder = {
 };
 
 export type RecentOrdersPage = { items: RecentOrder[]; page: number; pageSize: number; totalCount: number };
+
+export type TrendBucket = { start: string; revenue: Money; orders: number };
+
+/** Revenue over time, server-computed (P2-tier4): the buckets add up to `total`, which is the dashboard revenue. */
+export type RevenueTrend = {
+  period: DashboardPeriod;
+  granularity: 'hour' | 'day';
+  asOf: string;
+  currency: string;
+  total: Money;
+  orderCount: number;
+  buckets: TrendBucket[];
+};

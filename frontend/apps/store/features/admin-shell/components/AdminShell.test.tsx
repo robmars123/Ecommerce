@@ -9,6 +9,7 @@ import type { NavBadges } from '@/features/admin-shell/badges';
 import { ADMIN_NAV } from '@/features/admin-shell/nav';
 import { resetSession } from '@/features/auth/session';
 import { sidebarBreakpoint } from '@/lib/design-tokens';
+import { subscribeToConnectionState } from '@/lib/realtime';
 import { useThemeStore } from '@/lib/theme';
 import { makeSearchResult } from '@/tests/admin-search-fixtures';
 import { jsonResponse, mockFetchRoutes } from '@/tests/fetch-mock';
@@ -55,13 +56,14 @@ async function renderShellWithRoutes(width: number) {
       'admin/inventory': stub('Inventory'),
       'admin/returns': stub('Returns'),
       'admin/customers': stub('Customers'),
+      'admin/analytics': stub('Analytics'),
+      'admin/settings': stub('Settings'),
     },
     { initialUrl: '/' },
   );
 }
 
-const readyItems = ADMIN_NAV.flatMap((group) => group.items).filter((item) => item.ready);
-const notReadyLabels = ['User Stories', 'Analytics', 'Settings'];
+const allItems = ADMIN_NAV.flatMap((group) => group.items);
 
 afterEach(() => resetSession());
 
@@ -139,46 +141,36 @@ describe('AdminShell', () => {
     expect(className.split(' ')).not.toContain('flex-1');
   });
 
-  it('S8: Admin sees the three headers in order and 7 working links', async () => {
+  it('S8: Admin sees the three headers in order and 10 working links', async () => {
     const first = await renderShellWithRoutes(1024);
 
     expect(screen.getAllByRole('header').map((h) => h.props.children)).toEqual(['Overview', 'Manage', 'Insights']);
-    expect(screen.getAllByRole('link')).toHaveLength(7);
+    expect(screen.getAllByRole('link')).toHaveLength(10);
     await first.unmount();
 
     // The shell sits on the index route in this harness, so each link is pressed on a fresh render.
-    for (const item of readyItems) {
+    for (const item of allItems) {
       const rendered = await renderShellWithRoutes(1024);
       await fireEvent.press(screen.getByRole('link', { name: item.label }));
-      expect(screen).toHavePathname(item.href);
+      expect(screen).toHavePathname(item.href.split('?')[0]);
+      if (item.href.includes('?tab=stories')) {
+        expect(screen).toHaveSearchParams({ tab: 'stories' });
+      }
       await rendered.unmount();
     }
   });
 
-  it('S9: Support sees Dashboard, Orders, Customers links and no admin-only items', async () => {
+  it('S9: Support sees Dashboard, User Stories, Orders, Customers links and no admin-only items', async () => {
     await resetSession();
     await signInAs('Support');
     await renderShellWithRoutes(1024);
 
-    for (const name of ['Dashboard', 'Orders', 'Customers']) {
+    for (const name of ['Dashboard', 'User Stories', 'Orders', 'Customers']) {
       expect(screen.getByRole('link', { name })).toBeTruthy();
     }
-    expect(screen.getAllByRole('link')).toHaveLength(3);
-    expect(screen.getByText('User Stories')).toBeTruthy();
+    expect(screen.getAllByRole('link')).toHaveLength(4);
     for (const text of ['Products', 'Categories', 'Inventory', 'Returns', 'Analytics', 'Settings', 'Insights']) {
       expect(screen.queryByText(text)).toBeNull();
-    }
-  });
-
-  it('S10: not-ready items are disabled, not links, and pressing leaves the path unchanged', async () => {
-    await renderShellWithRoutes(1024);
-
-    for (const label of notReadyLabels) {
-      expect(screen.queryByRole('link', { name: label })).toBeNull();
-      const item = screen.getByLabelText(label);
-      expect(item).toBeDisabled();
-      await fireEvent.press(item);
-      expect(screen).toHavePathname('/');
     }
   });
 
@@ -199,6 +191,26 @@ describe('AdminShell', () => {
     expect(screen.queryAllByRole('link')).toHaveLength(0);
     expect(screen.queryAllByRole('header')).toHaveLength(0);
     expect(screen.getByText('Store Admin')).toBeTruthy();
+  });
+});
+
+describe('AdminShell Live store pill', () => {
+  const mockSubscribe = subscribeToConnectionState as jest.MockedFunction<typeof subscribeToConnectionState>;
+  beforeEach(() => mockSubscribe.mockClear());
+
+  it.each([1024, 390])('S30 (plan S13): signed-in Admin at width %s has the pill in the top bar', async (width) => {
+    await signInAs('Admin');
+    await renderShell(width);
+
+    expect(screen.getByLabelText('Live store offline')).toBeOnTheScreen();
+    expect(mockSubscribe).toHaveBeenCalledTimes(1);
+  });
+
+  it('S31 (plan S14): signed out shows no pill and opens no subscription', async () => {
+    await renderShell(1024);
+
+    expect(screen.queryByLabelText(/Live store/)).toBeNull();
+    expect(mockSubscribe).not.toHaveBeenCalled();
   });
 });
 

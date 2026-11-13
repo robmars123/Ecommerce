@@ -9,6 +9,21 @@ import { ActionButton } from '@/components/ActionButton';
 import { getStripePublishableKey } from './config';
 import type { PaymentFormProps } from './platform';
 
+/** Downloads the text as a file: a Blob behind an object URL on a temporary anchor, revoked afterwards. */
+export async function saveTextFile(fileName: string, mimeType: string, text: string): Promise<void> {
+  const url = URL.createObjectURL(new Blob([text], { type: mimeType }));
+  try {
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = fileName;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
 export function refreshTokenTransport(): 'cookie' | 'body' {
   return 'cookie';
 }

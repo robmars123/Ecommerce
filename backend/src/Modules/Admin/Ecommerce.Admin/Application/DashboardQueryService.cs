@@ -79,7 +79,7 @@ internal sealed class DashboardQueryService(
 
         return new DashboardView(
             period.Name,
-            projectors.Count == 0 ? now : projectors.Min(p => p.AsOf),
+            ProjectionAsOf.From(projectors, now),
             settings.Currency,
             kpis,
             comparison,

@@ -7,10 +7,10 @@ public sealed record VariantRefPage(IReadOnlyList<VariantRef> Items, int TotalCo
 
 public sealed record CartImage(string Url, string AltText);
 
-/// <summary>Current display data for one variant. Image is null when the product has none or no image base URL is configured.</summary>
+/// <summary>Current display data for one variant. Image is null when the product has none or no image base URL is configured. Colour is null when the variant has none.</summary>
 public sealed record VariantSnapshot(
     Guid VariantId, string ProductSlug, string ProductName, string VariantName, CartImage? Image,
-    decimal Price, string Currency, bool IsActive);
+    decimal Price, string Currency, bool IsActive, string? Colour);
 
 /// <summary>Catalog's public lookup for other modules (rule 8): no Catalog table is read from outside.</summary>
 public interface IProductReader

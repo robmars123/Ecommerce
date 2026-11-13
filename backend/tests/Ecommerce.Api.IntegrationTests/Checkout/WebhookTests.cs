@@ -421,4 +421,76 @@ public class WebhookTests(PostgresFixture postgres)
         Assert.Equal(System.Text.Json.JsonValueKind.Null, none.Json.GetProperty("paymentStatus").ValueKind);
     }
 
+    private static string Amt(IdentityTestEnv.Api order, string card, string field) =>
+        order.Json.GetProperty("payment").GetProperty(card).GetProperty(field).GetString()!;
+
+    [Fact]
+    public async Task P2_52_the_payment_card_shows_the_total_due_before_the_webhook_and_captured_only_after_it()
+    {
+        (CheckoutEnv f, _, Guid orderId) = await PlacedAsync("HOOK-P52A");
+        await using CheckoutEnv owner = f;
+
+        IdentityTestEnv.Api before = await f.OrderAsync(f.TokenA, orderId);
+        string total = before.Json.GetProperty("grandTotal").GetProperty("amount").GetString()!;
+        Assert.Equal("card", before.Json.GetProperty("payment").GetProperty("method").GetString());
+        Assert.Equal(total, Amt(before, "amountDue", "amount"));
+        Assert.Equal("0.00", Amt(before, "captured", "amount"));
+        Assert.Equal(before.Json.GetProperty("grandTotal").GetProperty("currency").GetString(), Amt(before, "captured", "currency"));
+
+        await f.PayAsync(orderId, "evt_p52a");
+        IdentityTestEnv.Api after = await f.OrderAsync(f.TokenA, orderId);
+
+        Assert.Equal("Paid", after.Str("status"));
+        Assert.Equal("0.00", Amt(after, "amountDue", "amount"));
+        Assert.Equal(total, Amt(after, "captured", "amount"));
+    }
+
+    [Fact]
+    public async Task P2_52_an_unsigned_or_failed_payment_event_never_shows_as_captured()
+    {
+        (CheckoutEnv f, _, Guid orderId) = await PlacedAsync("HOOK-P52B");
+        await using CheckoutEnv owner = f;
+        string intent = await f.IntentOfAsync(orderId);
+        string total = (await f.OrderAsync(f.TokenA, orderId)).Json.GetProperty("grandTotal").GetProperty("amount").GetString()!;
+
+        string ok = await f.BodyAsync("evt_p52b_ok", "payment_intent.succeeded", intent);
+        Assert.Equal(HttpStatusCode.BadRequest, (await f.WebhookRawAsync(ok, "t=1,v1=bad")).Status);
+        Assert.Equal(HttpStatusCode.OK, (await f.WebhookAsync("evt_p52b_fail", intent, "payment_intent.payment_failed")).Status);
+
+        IdentityTestEnv.Api order = await f.OrderAsync(f.TokenA, orderId);
+        Assert.Equal("0.00", Amt(order, "captured", "amount"));
+        Assert.Equal(total, Amt(order, "amountDue", "amount"));
+        Assert.Equal("Failed", order.Str("paymentStatus"));
+    }
+
+    [Fact]
+    public async Task P2_52_a_late_success_after_expiry_is_not_shown_as_captured_or_due()
+    {
+        (CheckoutEnv f, _, Guid orderId) = await PlacedAsync("HOOK-P52C");
+        await using CheckoutEnv owner = f;
+        string intent = await f.IntentOfAsync(orderId);
+
+        f.Env.Clock.UtcNow = f.Env.Clock.UtcNow.AddMinutes(16);
+        Assert.Equal(1, await f.SweepAsync());
+        Assert.Equal(HttpStatusCode.OK, (await f.WebhookAsync("evt_p52c", intent)).Status);
+
+        IdentityTestEnv.Api order = await f.OrderAsync(await f.Env.AccessTokenAsync("a@example.test"), orderId);
+        Assert.Equal("Cancelled", order.Str("status"));
+        Assert.Equal("0.00", Amt(order, "amountDue", "amount"));
+        Assert.Equal("0.00", Amt(order, "captured", "amount"));
+    }
+
+    [Fact]
+    public async Task P2_52_an_order_with_no_payment_attempt_has_a_null_payment()
+    {
+        (CheckoutEnv f, _, Guid orderId) = await PlacedAsync("HOOK-P52D");
+        await using CheckoutEnv owner = f;
+        Guid user = await f.ScalarAsync<Guid>("SELECT user_id FROM orders WHERE id = @o", ("o", orderId));
+        Guid seeded = await Orders.OrderSeed.InsertAsync(InventoryEnv.Cs(f.Env), user, "Paid", f.Env.Clock.UtcNow);
+
+        IdentityTestEnv.Api none = await f.OrderAsync(f.TokenA, seeded);
+
+        Assert.Equal(HttpStatusCode.OK, none.Status);
+        Assert.Equal(System.Text.Json.JsonValueKind.Null, none.Json.GetProperty("payment").ValueKind);
+    }
 }

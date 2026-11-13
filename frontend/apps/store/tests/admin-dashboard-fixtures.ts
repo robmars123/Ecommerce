@@ -1,4 +1,4 @@
-import type { Dashboard, RecentOrder, RecentOrdersPage } from '@/features/admin-dashboard/types';
+import type { Dashboard, RecentOrder, RecentOrdersPage, RevenueTrend } from '@/features/admin-dashboard/types';
 
 const usd = (amount: string) => ({ amount, currency: 'USD' });
 
@@ -43,4 +43,21 @@ export function makeRecentOrder(overrides: Partial<RecentOrder> = {}): RecentOrd
 
 export function makeRecentOrdersPage(items: RecentOrder[], overrides: Partial<RecentOrdersPage> = {}): RecentOrdersPage {
   return { items, page: 1, pageSize: 10, totalCount: items.length, ...overrides };
+}
+
+export function makeRevenueTrend(overrides: Partial<RevenueTrend> = {}): RevenueTrend {
+  return {
+    period: 'today',
+    granularity: 'hour',
+    asOf: '2026-11-08T14:30:00Z',
+    currency: 'USD',
+    total: usd('2345.60'),
+    orderCount: 9,
+    buckets: [
+      { start: '2026-11-08T12:00:00Z', revenue: usd('200.00'), orders: 2 },
+      { start: '2026-11-08T13:00:00Z', revenue: usd('1034.50'), orders: 5 },
+      { start: '2026-11-08T14:00:00Z', revenue: usd('0.00'), orders: 0 },
+    ],
+    ...overrides,
+  };
 }

@@ -45,6 +45,8 @@ const ROUTES: ReadonlyArray<readonly [file: string, url: string, title: string, 
   ['admin/returns.tsx', '/admin/returns', 'Returns', true, 'Admin'],
   ['admin/customers/index.tsx', '/admin/customers', 'Admin · Customers', true, 'Admin'],
   ['admin/customers/[id].tsx', '/admin/customers/3', 'Admin · Customer', true, 'Admin'],
+  ['admin/analytics.tsx', '/admin/analytics', 'Analytics', true, 'Admin'],
+  ['admin/settings.tsx', '/admin/settings', 'Settings', true, 'Admin'],
 ];
 
 function mockCatalogApi() {

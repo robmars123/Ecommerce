@@ -1,6 +1,6 @@
-import { apiGet } from '@/lib/api-client';
+import { apiGet, apiGetText } from '@/lib/api-client';
 
-import type { Dashboard, DashboardPeriod, RecentOrdersPage } from './types';
+import type { Dashboard, DashboardPeriod, RecentOrdersPage, RevenueTrend } from './types';
 
 export const RECENT_ORDERS_PAGE_SIZE = 10;
 
@@ -13,4 +13,13 @@ export function fetchRecentOrders(page: number, signal?: AbortSignal): Promise<R
     params: { page, pageSize: RECENT_ORDERS_PAGE_SIZE },
     signal,
   });
+}
+
+export function fetchRevenueTrend(period: DashboardPeriod, signal?: AbortSignal): Promise<RevenueTrend> {
+  return apiGet<RevenueTrend>('/api/v1/admin/dashboard/trend', { params: { period }, signal });
+}
+
+/** The trend as CSV text (Admin only). */
+export function fetchDashboardExport(period: DashboardPeriod): Promise<string> {
+  return apiGetText('/api/v1/admin/dashboard/export', { params: { period } });
 }

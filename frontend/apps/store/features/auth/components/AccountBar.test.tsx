@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from 'expo-router/testing-library';
+import { fireEvent, screen, waitFor, within } from 'expo-router/testing-library';
 
 import { endSession, getSessionSnapshot, resetSession } from '@/features/auth/session';
 import type { UserRole } from '@/features/auth/types';
@@ -74,6 +74,31 @@ describe('AccountBar', () => {
     await waitFor(() => expect(getSessionSnapshot().status).toBe('signed-out'));
     expect(String(spy.mock.calls[0][0])).toContain('/api/v1/auth/logout');
     expect(client.getQueryData(['admin', 'products'])).toBeUndefined();
+  });
+
+  it('T5: shows the avatar initial and the name as one "Signed in as" group', async () => {
+    await signInAs('Customer');
+    await render();
+
+    const group = screen.getByLabelText('Signed in as Customer User');
+    expect(within(group).getByText('C')).toBeOnTheScreen();
+    expect(screen.getByText('Customer User')).toBeOnTheScreen();
+  });
+
+  it('T6: a blank display name falls back to the email for the label and the initial', async () => {
+    await signInAs('Customer', { user: { id: 'u-1', email: 'customer@example.test', displayName: '  ', role: 'Customer' } });
+    await render();
+
+    const group = screen.getByLabelText('Signed in as customer@example.test');
+    expect(within(group).getByText('C')).toBeOnTheScreen();
+  });
+
+  it('T7: signed out shows no avatar', async () => {
+    await render();
+    await endSession();
+
+    expect(await screen.findByRole('link', { name: 'Log in' })).toBeOnTheScreen();
+    expect(screen.queryByLabelText(/Signed in as/)).toBeNull();
   });
 
   it('Log out still ends the session when the API call fails', async () => {

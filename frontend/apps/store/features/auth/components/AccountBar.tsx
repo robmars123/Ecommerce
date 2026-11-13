@@ -3,6 +3,7 @@ import { Text, View } from 'react-native';
 
 import { ActionButton } from '@/components/ActionButton';
 
+import { avatarInitial, shownName } from '../avatar-initial';
 import { useLogoutMutation } from '../hooks/useLogoutMutation';
 import { useSession } from '../hooks/useSession';
 
@@ -28,10 +29,16 @@ export function AccountBar() {
     );
   }
 
+  const name = shownName(session.user);
   const isStaff = session.user.role === 'Admin' || session.user.role === 'Support';
   return (
     <View className="flex-row flex-wrap items-center gap-md">
-      <Text className="text-body text-foreground">{session.user.displayName}</Text>
+      <View accessible accessibilityLabel={`Signed in as ${name}`} className="flex-row items-center gap-sm">
+        <View className="h-[28px] w-[28px] items-center justify-center rounded-pill bg-primary-subtle">
+          <Text className="text-small font-bold text-primary-text">{avatarInitial(session.user)}</Text>
+        </View>
+        <Text className="text-body text-foreground">{name}</Text>
+      </View>
       {isStaff ? (
         <Link href="/admin" asChild>
           <Text className="min-h-touch py-md text-body text-foreground">Admin</Text>

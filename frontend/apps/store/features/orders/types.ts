@@ -1,5 +1,6 @@
 // Wire types for the orders API (arch 9, Orders contract). Money amounts are strings formatted by the server.
 
+import type { CartImage } from '@/features/cart/types';
 import type { Money } from '@/features/catalog/types';
 
 export type OrderStatus = 'PendingPayment' | 'Paid' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled' | 'Refunded' | 'Returned';
@@ -33,6 +34,9 @@ export type OrderItem = {
   lineTotal: Money;
 };
 
+/** An order line on the detail page: the snapshot plus today's Catalog thumbnail and colour (display only, null when unknown). */
+export type OrderDetailItem = OrderItem & { image: CartImage | null; colour: string | null };
+
 export type ShippingAddress = {
   fullName: string;
   line1: string;
@@ -48,6 +52,7 @@ export type TimelineEntry = {
   toStatus: OrderStatus;
   at: string;
   reason: string | null;
+  description: string;
 };
 
 export type Shipment = {
@@ -67,12 +72,21 @@ export type ReturnItemBody = { variantId: string; quantity: number };
 
 export type ReturnRequestBody = { items: ReturnItemBody[]; reason: string };
 
+export type OrderAlert = { title: string; message: string };
+
+export type StatusNote = { pillNote: string; alert: OrderAlert | null };
+
+export type PaymentMethod = 'card';
+
+/** The payment card: amounts are computed by the server; Captured is webhook-confirmed money only. */
+export type OrderPayment = { method: PaymentMethod; amountDue: Money; captured: Money };
+
 export type OrderDetail = {
   id: string;
   orderNumber: string;
   createdAt: string;
   status: OrderStatus;
-  items: OrderItem[];
+  items: OrderDetailItem[];
   subtotal: Money;
   discountTotal: Money;
   shippingTotal: Money;
@@ -84,4 +98,6 @@ export type OrderDetail = {
   shipments: Shipment[];
   paymentStatus: PaymentStatus | null;
   refunds: Refund[];
+  statusNote: StatusNote | null;
+  payment: OrderPayment | null;
 };

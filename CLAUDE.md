@@ -6,7 +6,7 @@ Single-store ecommerce (web, Android, iOS). Checkout, inventory, payments and no
 
 ## 1. Never
 
-- **Git writes** of any kind (commit, push, merge, rebase, reset, stash, checkout/switch, restore, clean, branch). Read-only as `git -c safe.directory='*'`. Nathaniel commits.
+- **Git writes** of any kind (push, merge, rebase, reset, stash, checkout/switch, restore, clean, branch, amend). Read-only as `git -c safe.directory='*'`. Only exception: Marco's slice commit (§4 step 5).
 - Deploy, or touch production data or secrets. No secrets anywhere; placeholders for Stripe keys, domains, email providers, buckets.
 - New packages/services unless Rob's plan names each one, why, and what it replaces.
 - Drop tables/columns, delete DBs/volumes (`down -v`), or direct-SQL edits.
@@ -31,14 +31,15 @@ Single-store ecommerce (web, Android, iOS). Checkout, inventory, payments and no
 
 ## 4. Team and flow
 
-Nathaniel: owner, commits. Rob (opus): plans and reviews, no code. Marco, Shin (sonnet): build and fix. Agent missing from `/agents` → stop and say so; never role-play one. Agent files hold their own procedures and caps.
+Nathaniel: owner. Rob (opus): plans and reviews, no code. Marco, Shin (sonnet): build and fix. Agent missing from `/agents` → stop and say so; never role-play one. Agent files hold their own procedures and caps.
 
 **Autonomous (default)** — on "Slice N", don't ask:
 1. Rob → `slice-plans/slice-N-plan.md`.
 2. Marco builds, runs full `verify.sh` → `slice-N-marco-report.md`.
 3. Rob reviews diff + untracked files (quality-bar §3, risk tier §5) → `slice-N-rob-review.md`.
 4. BLOCKED or bug open: fresh Marco, then fresh Rob, given only the blocking items + paths. Max 3 rounds.
-5. Final report (§7); all agents AVAILABLE in `AGENT_STATUS.md`.
+5. Commit (Nathaniel's standing request, 2026-11-12): only after Rob's last verdict is PASS, full `verify.sh` passed and no bug is open, a fresh Marco runs `git add` on the slice's files (never `-A`/`.`; no secrets, `artifacts/`, `bin/ obj/`) and one `git commit` on `dev` (check with `git rev-parse --abbrev-ref HEAD`; any other branch → stop). Name slices by tracker row ID, never "tier" (one row → `P2.19`; several → first ID, e.g. `P2.18`, files `slice-P2.18-*.md`). Message: subject `<row IDs> | <short summary>` (e.g. `P2.18 P2.19 P2.20 P2.9 | Dashboard tabs, user stories, live pill`); body has one line per tracker row done, in the template `ID | what was done | Module` (wording may summarise the row; ID and Module from the tracker) (e.g. ``P2.45 | Support gets 403 on export, trend and settings, and never sees revenue | API, `admin-*` ``), then the Co-Authored-By line. No push, no amend, no hooks skipped. Commits stay on `dev`: never merge, cherry-pick or push to `master`/`main`; Nathaniel reviews and merges by hand.
+6. Final report (§7); all agents AVAILABLE in `AGENT_STATUS.md`.
 
 **Learning mode** (only when Nathaniel says): Nathaniel writes `slice-N-nathaniel-plan.md`; Rob completes it; Marco never edits **Nathaniel drives** files; stop with `Waiting on Nathaniel: [files]`. Agents never read `slice-N-learning.md`.
 
@@ -73,7 +74,7 @@ Review notes: [list] | None
 Files changed: [list]
 verify.sh: secrets ✔ · hygiene ✔ · build ✔ [n warnings] · test ✔ [n] · drift ✔ · expo-check ✔ · tsc ✔ · jest ✔ [n] · export ✔
 Status: Marco AVAILABLE · Rob AVAILABLE
-Git: Nothing committed — changes are in the working tree.
+Git: Committed to dev — [short hash] [subject] | Not committed — [reason]
 ```
 
 ## 8. Environment

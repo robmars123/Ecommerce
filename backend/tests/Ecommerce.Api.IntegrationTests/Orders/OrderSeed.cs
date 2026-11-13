@@ -3,7 +3,7 @@ using NpgsqlTypes;
 
 namespace Ecommerce.Api.IntegrationTests.Orders;
 
-internal sealed record SeedItem(string Sku, string Name, decimal UnitPrice, int Quantity);
+internal sealed record SeedItem(string Sku, string Name, decimal UnitPrice, int Quantity, Guid? VariantId = null);
 
 internal sealed record SeedHistory(string? From, string To, DateTimeOffset At, string? Reason = null, Guid? ChangedBy = null);
 
@@ -64,7 +64,7 @@ internal static class OrderSeed
                 "VALUES (@id, @order, @variant, @sku, @name, @price, @qty, @total)", connection);
             cmd.Parameters.AddWithValue("id", Guid.NewGuid());
             cmd.Parameters.AddWithValue("order", orderId);
-            cmd.Parameters.AddWithValue("variant", Guid.NewGuid());
+            cmd.Parameters.AddWithValue("variant", item.VariantId ?? Guid.NewGuid());
             cmd.Parameters.AddWithValue("sku", item.Sku);
             cmd.Parameters.AddWithValue("name", item.Name);
             cmd.Parameters.AddWithValue("price", item.UnitPrice);

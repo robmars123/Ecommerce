@@ -5,6 +5,7 @@ import { Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-na
 import { useSession } from '@/features/auth/hooks/useSession';
 import type { SessionUser } from '@/features/auth/types';
 import { AdminSearch } from '@/features/admin-shell/components/AdminSearch';
+import { LiveStorePill } from '@/features/admin-shell/components/LiveStorePill';
 import { breadcrumbFor } from '@/features/admin-shell/breadcrumb';
 import type { AttentionItem, AttentionState } from '@/features/admin-shell/attention';
 import type { NavBadges } from '@/features/admin-shell/badges';
@@ -139,7 +140,7 @@ function Sidebar({ groups, user, badges, attention, onNavigate, onClose }: Sideb
             {group.items.map((item) => {
               const badge = badges?.[item.href];
               const inline = badge && !badge.href ? badge.text : null;
-              return item.ready ? (
+              return (
                 <View key={item.label} className="flex-row items-center gap-xs">
                   <Link href={item.href as never} asChild>
                     <Pressable
@@ -171,17 +172,6 @@ function Sidebar({ groups, user, badges, attention, onNavigate, onClose }: Sideb
                     </Link>
                   ) : null}
                 </View>
-              ) : (
-                <Pressable
-                  key={item.label}
-                  accessibilityLabel={item.label}
-                  accessibilityState={{ disabled: true }}
-                  disabled
-                  className="min-h-touch min-w-touch flex-row items-center justify-between gap-[10px] rounded-nav border border-transparent px-[10px]"
-                >
-                  <Text className="text-ui font-medium text-subtle">{item.label}</Text>
-                  <Text className="text-caption text-subtle">Soon</Text>
-                </Pressable>
               );
             })}
           </View>
@@ -217,6 +207,7 @@ export function AdminShell({ children, badges, attention }: AdminShellProps) {
                 <AdminSearch role={user.role} />
               </View>
             ) : null}
+            {user ? <LiveStorePill /> : null}
             <ThemeToggle />
           </View>
           {children}
@@ -239,6 +230,7 @@ export function AdminShell({ children, badges, attention }: AdminShellProps) {
             <Text className="text-body text-foreground">Menu</Text>
           </Pressable>
           <Text className="flex-1 text-small font-bold text-foreground">Store Admin</Text>
+          {user ? <LiveStorePill /> : null}
           <ThemeToggle />
         </View>
         <Breadcrumb />

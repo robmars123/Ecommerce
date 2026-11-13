@@ -24,4 +24,11 @@ internal sealed class DashboardStore(EcommerceDbContext db) : IDashboardStore
             .Where(o => o.PaidAt < from && buyers.Contains(o.UserId)).Select(o => o.UserId).Distinct().ToListAsync(ct)).ToHashSet();
         return KpiCalculator.Compute(paid, refunded, before);
     }
+
+    public async Task<RevenueEvents> ReadRevenueEventsAsync(DateTimeOffset from, DateTimeOffset to, CancellationToken ct) =>
+        new(
+            await db.Set<DashboardOrder>().AsNoTracking()
+                .Where(o => o.PaidAt >= from && o.PaidAt <= to).Select(o => new PaidAtRow(o.PaidAt!.Value, o.GrandTotal!.Value)).ToListAsync(ct),
+            await db.Set<DashboardRefund>().AsNoTracking()
+                .Where(r => r.SucceededAt >= from && r.SucceededAt <= to).Select(r => new RefundAtRow(r.SucceededAt, r.Amount)).ToListAsync(ct));
 }
