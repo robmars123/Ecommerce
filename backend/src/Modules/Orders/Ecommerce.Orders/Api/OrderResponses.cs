@@ -30,7 +30,7 @@ internal sealed record OrderDetailItemResponse(
 
 internal sealed record ShippingMethodResponse(string Code, string Name);
 
-internal sealed record TimelineEntryResponse(string? FromStatus, string ToStatus, DateTimeOffset At, string? Reason);
+internal sealed record TimelineEntryResponse(string? FromStatus, string ToStatus, DateTimeOffset At, string? Reason, string Description);
 
 internal sealed record RefundResponse(MoneyResponse Amount, string Status, DateTimeOffset CreatedAt);
 
@@ -92,7 +92,7 @@ internal static class OrderResponseMapping
             MoneyResponse.From(o.GrandTotal, o.Currency),
             new ShippingMethodResponse(o.ShippingMethodCode, o.ShippingMethodName),
             o.ShippingAddress,
-            o.Timeline.Select(t => new TimelineEntryResponse(t.FromStatus?.ToString(), t.ToStatus.ToString(), t.At, t.Reason)).ToList(),
+            o.Timeline.Select(t => new TimelineEntryResponse(t.FromStatus?.ToString(), t.ToStatus.ToString(), t.At, t.Reason, OrderStatusNotes.Describe(t.ToStatus, t.Reason))).ToList(),
             view.Shipments.Select(s => new ShipmentResponse(s.CarrierName, s.TrackingNumber, s.TrackingUrl, s.ShippedAt, s.DeliveredAt)).ToList(),
             view.PaymentStatus,
             view.Refunds.Select(r => new RefundResponse(MoneyResponse.From(r.Amount, o.Currency), r.Status, r.CreatedAt)).ToList(),

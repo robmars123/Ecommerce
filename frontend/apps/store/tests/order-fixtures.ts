@@ -50,10 +50,34 @@ export function makeOrderDetail(overrides: Partial<OrderDetail> = {}): OrderDeta
       country: 'US',
     },
     timeline: [
-      { fromStatus: null, toStatus: 'PendingPayment', at: '2026-03-04T10:00:00Z', reason: null },
-      { fromStatus: 'PendingPayment', toStatus: 'Paid', at: '2026-03-04T10:05:00Z', reason: null },
-      { fromStatus: 'Paid', toStatus: 'Processing', at: '2026-03-05T09:00:00Z', reason: null },
-      { fromStatus: 'Processing', toStatus: 'Shipped', at: '2026-03-06T09:00:00Z', reason: null },
+      {
+        fromStatus: null,
+        toStatus: 'PendingPayment',
+        at: '2026-03-04T10:00:00Z',
+        reason: null,
+        description: 'We received your order and held your items for payment.',
+      },
+      {
+        fromStatus: 'PendingPayment',
+        toStatus: 'Paid',
+        at: '2026-03-04T10:05:00Z',
+        reason: null,
+        description: 'Your payment was confirmed.',
+      },
+      {
+        fromStatus: 'Paid',
+        toStatus: 'Processing',
+        at: '2026-03-05T09:00:00Z',
+        reason: null,
+        description: 'We started preparing your order.',
+      },
+      {
+        fromStatus: 'Processing',
+        toStatus: 'Shipped',
+        at: '2026-03-06T09:00:00Z',
+        reason: null,
+        description: 'Your order was handed to the carrier.',
+      },
     ],
     shipments: [
       {

@@ -3,7 +3,7 @@ import { Text, View } from 'react-native';
 import { formatOrderDate, statusLabel } from '../status-labels';
 import type { TimelineEntry } from '../types';
 
-/** Shown in the order the server sends: oldest first. A rail of dots joined by a line; a cancelled step is red with a hidden "×". */
+/** Shown in the order the server sends: oldest first. A rail of dots joined by a line; each step shows its server-written description; a cancelled step is red with a hidden "×". */
 export function OrderTimeline({ entries }: { entries: TimelineEntry[] }) {
   return (
     <View accessibilityRole="list">
@@ -33,6 +33,7 @@ export function OrderTimeline({ entries }: { entries: TimelineEntry[] }) {
                 <Text className="text-ui font-bold text-foreground">{statusLabel(entry.toStatus)}</Text>
                 <Text className="text-ui-sm text-muted">{formatOrderDate(entry.at)}</Text>
               </View>
+              <Text className="text-ui-sm text-muted">{entry.description}</Text>
               {entry.reason ? (
                 <Text className="self-start rounded-[6px] border border-danger-border bg-danger-subtle px-sm py-[2px] font-mono text-label font-semibold text-danger">
                   {entry.reason}

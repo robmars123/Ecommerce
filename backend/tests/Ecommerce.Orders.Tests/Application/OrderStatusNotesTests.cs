@@ -72,4 +72,73 @@ public class OrderStatusNotesTests
     [InlineData("Returned")]
     public void Other_statuses_have_no_note(string status) =>
         Assert.Null(OrderStatusNotes.For(Enum.Parse<OrderStatus>(status), []));
+
+    // P2.53: timeline entry descriptions.
+    private const string ExpiryDescription =
+        "Payment was not completed before the hold on your items ran out, so we released them and cancelled the order.";
+
+    public static TheoryData<string> AllStatuses() => new(Enum.GetNames<OrderStatus>());
+
+    [Theory]
+    [MemberData(nameof(AllStatuses))]
+    public void Every_status_has_a_non_empty_description(string status) =>
+        Assert.False(string.IsNullOrWhiteSpace(OrderStatusNotes.Describe(Enum.Parse<OrderStatus>(status), null)));
+
+    [Theory]
+    [InlineData("PendingPayment", null, "We received your order and held your items for payment.")]
+    [InlineData("Paid", null, "Your payment was confirmed.")]
+    [InlineData("Processing", null, "We started preparing your order.")]
+    [InlineData("Shipped", null, "Your order was handed to the carrier.")]
+    [InlineData("Delivered", null, "Your order was delivered.")]
+    [InlineData("Cancelled", "reservation-expired", ExpiryDescription)]
+    [InlineData("Cancelled", null, "This order was cancelled and will not ship.")]
+    [InlineData("Cancelled", "something-else", "This order was cancelled and will not ship.")]
+    [InlineData("Cancelled", "RESERVATION-EXPIRED", "This order was cancelled and will not ship.")]
+    [InlineData("Refunded", null, "We refunded the full amount to your original payment method.")]
+    [InlineData("Returned", null, "Your return was refunded in full to your original payment method.")]
+    public void Each_status_has_its_exact_description(string status, string? reason, string expected) =>
+        Assert.Equal(expected, OrderStatusNotes.Describe(Enum.Parse<OrderStatus>(status), reason));
+
+    [Theory]
+    [MemberData(nameof(AllStatuses))]
+    public void A_reason_is_never_echoed_into_the_description(string status)
+    {
+        string text = OrderStatusNotes.Describe(Enum.Parse<OrderStatus>(status), "Internal: VIP, skip fraud check");
+
+        Assert.DoesNotContain("VIP", text);
+        Assert.Equal(OrderStatusNotes.Describe(Enum.Parse<OrderStatus>(status), null), text);
+    }
+
+    [Fact]
+    public void Expired_cancellation_from_the_real_domain_is_described_as_expiry()
+    {
+        Order order = NewOrder();
+        order.CancelForExpiry(Now.AddMinutes(16));
+        OrderStatusChange last = order.History.Last();
+
+        Assert.Equal(ExpiryDescription, OrderStatusNotes.Describe(last.ToStatus, last.Reason));
+    }
+
+    [Fact]
+    public void Refund_in_full_from_the_real_domain_is_described_without_its_stored_reason()
+    {
+        Order order = NewOrder();
+        order.MarkPaid(Now.AddMinutes(1));
+        order.RefundInFull(null, Now.AddMinutes(2));
+        OrderStatusChange last = order.History.Last();
+
+        string text = OrderStatusNotes.Describe(last.ToStatus, last.Reason);
+
+        Assert.Equal("We refunded the full amount to your original payment method.", text);
+        Assert.DoesNotContain("Refunded in full", text);
+    }
+
+    private static Order NewOrder()
+    {
+        Guid id = Guid.NewGuid();
+        OrderItem item = OrderItem.Create(Guid.NewGuid(), id, Guid.NewGuid(), "TEE-1", "Tee", 10.00m, 2);
+        OrderTotals totals = OrderTotals.Compute([item.LineTotal], 5.00m, 0m);
+        ShippingAddress address = new("A B", "1 Main St", null, "Town", null, "12345", "US");
+        return Order.Place(id, "ORD-2026-000001", Guid.NewGuid(), "key-1", totals, "USD", "standard", "Standard", address, [item], Now);
+    }
 }

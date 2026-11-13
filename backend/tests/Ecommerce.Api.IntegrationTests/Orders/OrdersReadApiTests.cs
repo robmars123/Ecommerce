@@ -258,6 +258,94 @@ public class OrdersReadApiTests(PostgresFixture postgres)
         Assert.NotEqual(a.Id, b.Id);
     }
 
+    private static string[] Descriptions(JsonElement json) =>
+        json.GetProperty("timeline").EnumerateArray().Select(t => t.GetProperty("description").GetString()!).ToArray();
+
+    [Fact]
+    public async Task P2_53_each_timeline_entry_has_its_description_in_order()
+    {
+        await using IdentityTestEnv env = await OrdersEnv.StartAsync(postgres);
+        User a = await env.AddUserAsync("a@example.test");
+        string token = await env.AccessTokenAsync("a@example.test");
+        DateTimeOffset t0 = env.Clock.UtcNow;
+        Guid order = await OrderSeed.InsertAsync(
+            OrdersEnv.ConnectionString(env), a.Id, "Shipped", t0,
+            history:
+            [
+                new SeedHistory(null, "PendingPayment", t0),
+                new SeedHistory("PendingPayment", "Paid", t0.AddMinutes(1)),
+                new SeedHistory("Paid", "Processing", t0.AddMinutes(2)),
+                new SeedHistory("Processing", "Shipped", t0.AddMinutes(3)),
+            ]);
+
+        string[] texts = Descriptions((await env.GetAsync($"/api/v1/orders/{order}", token)).Json);
+
+        Assert.Equal(
+            [
+                "We received your order and held your items for payment.",
+                "Your payment was confirmed.",
+                "We started preparing your order.",
+                "Your order was handed to the carrier.",
+            ],
+            texts);
+    }
+
+    [Fact]
+    public async Task P2_53_an_expired_cancellation_entry_is_described_as_expiry()
+    {
+        await using IdentityTestEnv env = await OrdersEnv.StartAsync(postgres);
+        User a = await env.AddUserAsync("a@example.test");
+        string token = await env.AccessTokenAsync("a@example.test");
+        Guid order = await OrderSeed.InsertAsync(
+            OrdersEnv.ConnectionString(env), a.Id, "Cancelled", env.Clock.UtcNow, history: ExpiredHistory(env.Clock.UtcNow));
+
+        string[] texts = Descriptions((await env.GetAsync($"/api/v1/orders/{order}", token)).Json);
+
+        Assert.Equal(
+            "Payment was not completed before the hold on your items ran out, so we released them and cancelled the order.",
+            texts[^1]);
+    }
+
+    [Fact]
+    public async Task P2_53_an_admin_override_reason_never_appears_in_a_description()
+    {
+        await using IdentityTestEnv env = await OrdersEnv.StartAsync(postgres);
+        User a = await env.AddUserAsync("a@example.test");
+        string token = await env.AccessTokenAsync("a@example.test");
+        DateTimeOffset t0 = env.Clock.UtcNow;
+        Guid order = await OrderSeed.InsertAsync(
+            OrdersEnv.ConnectionString(env), a.Id, "Processing", t0,
+            history:
+            [
+                new SeedHistory(null, "PendingPayment", t0),
+                new SeedHistory("PendingPayment", "Paid", t0.AddMinutes(1)),
+                new SeedHistory("Paid", "Processing", t0.AddMinutes(2), "Internal: VIP, skip fraud check", Guid.NewGuid()),
+            ]);
+
+        string[] texts = Descriptions((await env.GetAsync($"/api/v1/orders/{order}", token)).Json);
+
+        Assert.Equal("We started preparing your order.", texts[^1]);
+        Assert.All(texts, t => Assert.DoesNotContain("VIP", t));
+    }
+
+    [Fact]
+    public async Task P2_53_another_customers_order_is_403_without_descriptions()
+    {
+        await using IdentityTestEnv env = await OrdersEnv.StartAsync(postgres);
+        await env.AddUserAsync("a@example.test");
+        User b = await env.AddUserAsync("b@example.test");
+        string tokenA = await env.AccessTokenAsync("a@example.test");
+        DateTimeOffset t0 = env.Clock.UtcNow;
+        Guid orderB = await OrderSeed.InsertAsync(
+            OrdersEnv.ConnectionString(env), b.Id, "Paid", t0,
+            history: [new SeedHistory(null, "PendingPayment", t0), new SeedHistory("PendingPayment", "Paid", t0.AddMinutes(1))]);
+
+        IdentityTestEnv.Api r = await env.GetAsync($"/api/v1/orders/{orderB}", tokenA);
+
+        Assert.Equal(HttpStatusCode.Forbidden, r.Status);
+        Assert.DoesNotContain("Your payment was confirmed.", r.Text);
+    }
+
     private static async Task<Guid> CatalogVariantAsync(IdentityTestEnv env, string sku, string? colour, string? imageKey = null, string altText = "")
     {
         DateTimeOffset at = env.Clock.UtcNow;

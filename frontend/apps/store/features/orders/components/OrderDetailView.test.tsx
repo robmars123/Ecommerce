@@ -93,8 +93,20 @@ describe('OrderDetailView', () => {
     const order = makeOrderDetail({
       status: 'Cancelled',
       timeline: [
-        { fromStatus: null, toStatus: 'PendingPayment', at: '2026-03-04T10:00:00Z', reason: null },
-        { fromStatus: 'PendingPayment', toStatus: 'Cancelled', at: '2026-03-04T11:00:00Z', reason: 'payment_timeout' },
+        {
+          fromStatus: null,
+          toStatus: 'PendingPayment',
+          at: '2026-03-04T10:00:00Z',
+          reason: null,
+          description: 'We received your order and held your items for payment.',
+        },
+        {
+          fromStatus: 'PendingPayment',
+          toStatus: 'Cancelled',
+          at: '2026-03-04T11:00:00Z',
+          reason: 'payment_timeout',
+          description: 'This order was cancelled and will not ship.',
+        },
       ],
     });
     jest.spyOn(globalThis, 'fetch').mockImplementation(async () => jsonResponse(200, order));

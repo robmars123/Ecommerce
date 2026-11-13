@@ -52,6 +52,7 @@ export type TimelineEntry = {
   toStatus: OrderStatus;
   at: string;
   reason: string | null;
+  description: string;
 };
 
 export type Shipment = {
