@@ -52,9 +52,12 @@ describe('DashboardView', () => {
     const revenue = within(screen.getByLabelText('Revenue'));
     expect(revenue.getByText('$1,234.50')).toBeOnTheScreen();
     expect(revenue.getByText('Paid minus refunds today')).toBeOnTheScreen();
+    expect(revenue.getByText('+23.5%')).toBeOnTheScreen();
+    expect(revenue.getByText('vs $1,000.00 previous period')).toBeOnTheScreen();
     const orders = within(screen.getByLabelText('Orders'));
     expect(orders.getByText('7')).toBeOnTheScreen();
     expect(orders.getByText('Paid today')).toBeOnTheScreen();
+    expect(orders.getByText('0 delivered · 0 cancelled')).toBeOnTheScreen();
     const average = within(screen.getByLabelText('Average order value'));
     expect(average.getByText('$176.36')).toBeOnTheScreen();
     expect(average.getByText('Across 7 orders')).toBeOnTheScreen();
@@ -75,6 +78,8 @@ describe('DashboardView', () => {
     expect(await screen.findByText('Orders by status')).toBeOnTheScreen();
     expect(screen.queryByText('Sales')).toBeNull();
     expect(screen.queryByText(/Revenue/)).toBeNull();
+    expect(screen.queryByText(/previous period/)).toBeNull();
+    expect(screen.queryByText(/%/)).toBeNull();
   });
 
   it('opens the orders list filtered by the tapped status', async () => {
@@ -209,7 +214,14 @@ describe('DashboardView', () => {
     mockApi(
       makeDashboard({
         period: 'today',
-        kpis: { revenue: zero, orderCount: 0, averageOrderValue: zero, customers: { total: 0, new: 0, returning: 0 } },
+        kpis: {
+          revenue: zero,
+          orderCount: 0,
+          averageOrderValue: zero,
+          customers: { total: 0, new: 0, returning: 0 },
+          previousRevenue: zero,
+          revenueChangePercent: null,
+        },
       }),
     );
 

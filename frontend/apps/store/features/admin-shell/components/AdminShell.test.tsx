@@ -5,6 +5,7 @@ import { Text } from 'react-native';
 
 import { AdminShell } from '@/features/admin-shell/components/AdminShell';
 import type { AttentionState } from '@/features/admin-shell/attention';
+import type { NavBadges } from '@/features/admin-shell/badges';
 import { ADMIN_NAV } from '@/features/admin-shell/nav';
 import { resetSession } from '@/features/auth/session';
 import { sidebarBreakpoint } from '@/lib/design-tokens';
@@ -479,9 +480,10 @@ describe('AdminShell theme toggle', () => {
 });
 
 describe('AdminShell badges', () => {
-  const badges = { '/admin/inventory': '3 low' };
+  const badges = { '/admin/inventory': { text: '3 low' } };
+  const paidBadge = { '/admin/orders': { text: '4 paid', href: '/admin/orders?status=Paid' } };
 
-  async function renderWithBadges(width: number, shellBadges: Record<string, string>) {
+  async function renderWithBadges(width: number, shellBadges: NavBadges) {
     mockUseWindowDimensions.mockReturnValue({ width, height: 800, scale: 1, fontScale: 1 });
     return await renderRouter(
       {
@@ -513,6 +515,55 @@ describe('AdminShell badges', () => {
     const nav = within(screen.getByLabelText('Admin navigation'));
     expect(nav.getByRole('link', { name: 'Inventory, 3 low' })).toBeTruthy();
     expect(nav.getByRole('link', { name: 'Orders' })).toBeTruthy();
+  });
+
+  async function renderPaidBadgeAt(width: number) {
+    mockUseWindowDimensions.mockReturnValue({ width, height: 800, scale: 1, fontScale: 1 });
+    const stub = (name: string) => () => <Text>{`${name} page`}</Text>;
+    return await renderRouter(
+      {
+        _layout: () => (
+          <AdminShell badges={paidBadge}>
+            <Slot />
+          </AdminShell>
+        ),
+        index: stub('Home'),
+        'admin/orders/index': stub('Orders'),
+      },
+      { initialUrl: '/' },
+    );
+  }
+
+  it('J5: the Paid badge is its own link to the Paid list', async () => {
+    await signInAs('Admin');
+    await renderPaidBadgeAt(1024);
+    const nav = within(screen.getByLabelText('Admin navigation'));
+
+    await fireEvent.press(nav.getByRole('link', { name: '4 paid orders' }));
+
+    expect(screen).toHavePathname('/admin/orders');
+    expect(screen).toHaveSearchParams({ status: 'Paid' });
+  });
+
+  it('J5: the Orders nav link still goes to /admin/orders without params', async () => {
+    await signInAs('Admin');
+    await renderPaidBadgeAt(1024);
+
+    await fireEvent.press(within(screen.getByLabelText('Admin navigation')).getByRole('link', { name: 'Orders' }));
+
+    expect(screen).toHavePathname('/admin/orders');
+    expect(screen).toHaveSearchParams({});
+  });
+
+  it('J5: on a phone, pressing the badge closes the menu overlay', async () => {
+    await signInAs('Admin');
+    await renderPaidBadgeAt(390);
+    await fireEvent.press(screen.getByRole('button', { name: 'Open menu' }));
+
+    await fireEvent.press(screen.getByRole('link', { name: '4 paid orders' }));
+
+    expect(screen).toHavePathname('/admin/orders');
+    expect(screen.queryByLabelText('Admin navigation')).toBeNull();
   });
 
   it('B5: Support has no Inventory item, so no badge shows', async () => {

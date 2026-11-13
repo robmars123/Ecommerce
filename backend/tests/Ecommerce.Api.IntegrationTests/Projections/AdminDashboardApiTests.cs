@@ -2,6 +2,8 @@ using System.Net;
 using System.Text.Json;
 using Ecommerce.Api.IntegrationTests.Identity;
 using Ecommerce.Api.IntegrationTests.Inventory;
+using Ecommerce.Api.IntegrationTests.Orders;
+using Ecommerce.Api.IntegrationTests.Refunds;
 using Npgsql;
 
 namespace Ecommerce.Api.IntegrationTests.Projections;
@@ -316,5 +318,131 @@ public class AdminDashboardApiTests(PostgresFixture postgres)
 
         Assert.Equal(0, today.Json.GetProperty("cancelledCount").GetInt32());
         Assert.Equal(1, week.Json.GetProperty("cancelledCount").GetInt32());
+    }
+
+    // ---- P2.22 previous revenue and P2.23 delivered count ----
+
+    /// <summary>Moves the test clock forward to 12:00 UTC (today's, or tomorrow's when that has passed) so AddDays never crosses a different midnight.</summary>
+    private static DateTimeOffset PinMidDay(ProjectionEnv e)
+    {
+        DateTimeOffset now = e.Env.Clock.UtcNow;
+        DateTimeOffset noon = new(now.UtcDateTime.Date.AddHours(12), TimeSpan.Zero);
+        e.Env.Clock.UtcNow = noon > now ? noon : noon.AddDays(1);
+        return e.Env.Clock.UtcNow;
+    }
+
+    private static async Task<IdentityTestEnv.Api> DashboardAsAsync(ProjectionEnv e, string email, string period) =>
+        await e.DashboardAsync(await e.Env.AccessTokenAsync(email), period);
+
+    private static async Task DeliverAsync(ProjectionEnv e, Guid order)
+    {
+        Assert.Equal(HttpStatusCode.NoContent, (await e.R.OrderActionAsync(order, "process")).Status);
+        Assert.Equal(HttpStatusCode.NoContent, (await e.R.OrderActionAsync(order, "ship", new { carrierCode = OrdersEnv.Carrier, trackingNumber = "TRK-1" })).Status);
+        Assert.Equal(HttpStatusCode.NoContent, (await e.R.OrderActionAsync(order, "deliver")).Status);
+    }
+
+    [Fact]
+    public async Task Previous_revenue_is_zero_with_a_null_change_when_nothing_was_paid_before_and_delivered_count_is_present()
+    {
+        await using ProjectionEnv e = await ProjectionEnv.StartAsync(postgres);
+        await e.PaidOrderAsync("DASH-PREV-0");
+        await e.DrainAsync();
+
+        JsonElement kpis = (await e.OkDashboardAsync()).Json.GetProperty("kpis");
+
+        Assert.Equal("0.00", kpis.GetProperty("previousRevenue").GetProperty("amount").GetString());
+        Assert.Equal("USD", kpis.GetProperty("previousRevenue").GetProperty("currency").GetString());
+        Assert.Equal(JsonValueKind.Null, kpis.GetProperty("revenueChangePercent").ValueKind);
+        Assert.Equal(0, (await e.OkDashboardAsync()).Json.GetProperty("deliveredCount").GetInt32());
+    }
+
+    [Fact]
+    public async Task Support_never_receives_the_previous_revenue_while_Admin_does()
+    {
+        await using ProjectionEnv e = await ProjectionEnv.StartAsync(postgres);
+        PinMidDay(e);
+        Guid order = await e.PaidOrderAsync("DASH-PREV-SEC", token: await e.Env.AccessTokenAsync("a@example.test"));
+        decimal total = await e.TotalOfAsync(order);
+        await e.DrainAsync();
+        e.Env.Clock.UtcNow = e.Env.Clock.UtcNow.AddDays(1).AddMinutes(1);
+
+        IdentityTestEnv.Api support = await DashboardAsAsync(e, "support@example.test", "today");
+        IdentityTestEnv.Api admin = await DashboardAsAsync(e, "admin@example.test", "today");
+
+        Assert.Equal(HttpStatusCode.OK, support.Status);
+        Assert.Equal(JsonValueKind.Null, support.Json.GetProperty("kpis").ValueKind);
+        Assert.DoesNotContain("previousRevenue", support.Text);
+        Assert.DoesNotContain("revenueChangePercent", support.Text);
+        Assert.DoesNotContain(ProjectionEnv.Money(total), support.Text);
+        Assert.Equal(ProjectionEnv.Money(total), admin.Json.GetProperty("kpis").GetProperty("previousRevenue").GetProperty("amount").GetString());
+    }
+
+    [Fact]
+    public async Task The_previous_window_ends_at_now_minus_the_period_so_a_later_payment_the_day_before_is_excluded()
+    {
+        await using ProjectionEnv e = await ProjectionEnv.StartAsync(postgres);
+        DateTimeOffset t = PinMidDay(e);
+        Guid a = await e.PaidOrderAsync("DASH-WIN-A", token: await e.Env.AccessTokenAsync("a@example.test"));
+        e.Env.Clock.UtcNow = t.AddMinutes(2);
+        await e.PaidOrderAsync("DASH-WIN-B", token: await e.Env.AccessTokenAsync("a@example.test"));
+        await e.DrainAsync();
+        decimal totalA = await e.TotalOfAsync(a);
+        e.Env.Clock.UtcNow = t.AddDays(1).AddMinutes(1);
+
+        JsonElement today = (await DashboardAsAsync(e, "admin@example.test", "today")).Json.GetProperty("kpis");
+        JsonElement week = (await DashboardAsAsync(e, "admin@example.test", "7d")).Json.GetProperty("kpis");
+
+        Assert.Equal(ProjectionEnv.Money(totalA), today.GetProperty("previousRevenue").GetProperty("amount").GetString());
+        Assert.Equal("0.00", today.GetProperty("revenue").GetProperty("amount").GetString());
+        Assert.Equal("0.00", week.GetProperty("previousRevenue").GetProperty("amount").GetString());
+        Assert.Equal(2, week.GetProperty("orderCount").GetInt32());
+    }
+
+    [Fact]
+    public async Task Previous_revenue_nets_an_actor_refund_that_succeeded_in_the_previous_window()
+    {
+        await using ProjectionEnv e = await ProjectionEnv.StartAsync(postgres);
+        DateTimeOffset t = PinMidDay(e);
+        string admin = await e.Env.AccessTokenAsync("admin@example.test");
+        Guid order = await e.PaidOrderAsync("DASH-PREV-REF", token: await e.Env.AccessTokenAsync("a@example.test"));
+        decimal total = await e.TotalOfAsync(order);
+        await e.R.RefundWebhookAsync(RefundEnv.RefundIdOf(await e.R.RefundAsync(order, "3.00", token: admin)), "succeeded");
+        await e.DrainAsync();
+        e.Env.Clock.UtcNow = t.AddDays(1).AddMinutes(1);
+
+        JsonElement kpis = (await DashboardAsAsync(e, "admin@example.test", "today")).Json.GetProperty("kpis");
+
+        Assert.Equal(ProjectionEnv.Money(total - 3.00m), kpis.GetProperty("previousRevenue").GetProperty("amount").GetString());
+    }
+
+    [Fact]
+    public async Task Delivered_count_counts_orders_delivered_in_the_period_for_Admin_and_Support_and_a_Paid_order_never_counts()
+    {
+        await using ProjectionEnv e = await ProjectionEnv.StartAsync(postgres);
+        await e.PaidOrderAsync("DASH-DLV-PAID");
+        Guid delivered = await e.PaidOrderAsync("DASH-DLV-1");
+        await DeliverAsync(e, delivered);
+
+        IdentityTestEnv.Api admin = await e.DashboardAsync(e.R.Admin, "today");
+        IdentityTestEnv.Api support = await e.DashboardAsync(e.R.Support, "today");
+
+        Assert.Equal(1, admin.Json.GetProperty("deliveredCount").GetInt32());
+        Assert.Equal(HttpStatusCode.OK, support.Status);
+        Assert.Equal(1, support.Json.GetProperty("deliveredCount").GetInt32());
+    }
+
+    [Fact]
+    public async Task Delivered_count_leaves_the_period_when_the_delivery_is_older()
+    {
+        await using ProjectionEnv e = await ProjectionEnv.StartAsync(postgres);
+        await DeliverAsync(e, await e.PaidOrderAsync("DASH-DLV-OLD"));
+        e.Env.Clock.UtcNow = e.Env.Clock.UtcNow.AddDays(2);
+
+        string admin = await e.Env.AccessTokenAsync("admin@example.test");
+        IdentityTestEnv.Api today = await e.DashboardAsync(admin, "today");
+        IdentityTestEnv.Api week = await e.DashboardAsync(admin, "7d");
+
+        Assert.Equal(0, today.Json.GetProperty("deliveredCount").GetInt32());
+        Assert.Equal(1, week.Json.GetProperty("deliveredCount").GetInt32());
     }
 }

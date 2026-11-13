@@ -14,6 +14,11 @@ internal sealed record DashboardPeriod(string Name, int Days)
     };
 
     public DateTimeOffset From(DateTimeOffset now) => new(now.UtcDateTime.Date.AddDays(1 - Days), TimeSpan.Zero);
+
+    /// <summary>The previous window has the same elapsed time one period earlier, so it never overlaps the current one (P2.22 D1).</summary>
+    public DateTimeOffset PreviousFrom(DateTimeOffset now) => From(now).AddDays(-Days);
+
+    public DateTimeOffset PreviousTo(DateTimeOffset now) => now.AddDays(-Days);
 }
 
 internal sealed record PaidOrderRow(Guid UserId, decimal GrandTotal);
@@ -27,6 +32,10 @@ internal sealed record DashboardKpis(
 /// </summary>
 internal static class KpiCalculator
 {
+    /// <summary>Percent change against the previous revenue, one place, away from zero. The absolute previous keeps the sign meaning up or down; null when there is nothing to compare.</summary>
+    public static decimal? ChangePercent(decimal current, decimal previous) =>
+        previous == 0m ? null : decimal.Round((current - previous) / Math.Abs(previous) * 100m, 1, MidpointRounding.AwayFromZero);
+
     public static DashboardKpis Compute(IReadOnlyList<PaidOrderRow> paidInPeriod, decimal refundedInPeriod, IReadOnlySet<Guid> usersPaidBeforePeriod)
     {
         decimal gross = paidInPeriod.Sum(o => o.GrandTotal);

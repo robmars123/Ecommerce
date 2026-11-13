@@ -44,10 +44,24 @@ function AsOfLine({ data }: { data: Dashboard }) {
   );
 }
 
-function KpiCards({ kpis, period }: { kpis: NonNullable<Dashboard['kpis']>; period: DashboardPeriod }) {
+const changeTone = {
+  success: { pill: 'border-success text-success' },
+  danger: { pill: 'border-danger text-danger' },
+  muted: { pill: 'border-border text-muted' },
+} as const;
+
+function KpiCards({
+  kpis,
+  period,
+  outcomes,
+}: {
+  kpis: NonNullable<Dashboard['kpis']>;
+  period: DashboardPeriod;
+  outcomes: { delivered: number; cancelled: number };
+}) {
   return (
     <View className="flex-row flex-wrap gap-md">
-      {kpiCards(kpis, period).map((card) => (
+      {kpiCards(kpis, period, outcomes).map((card) => (
         <View
           key={card.label}
           accessibilityLabel={card.label}
@@ -56,6 +70,15 @@ function KpiCards({ kpis, period }: { kpis: NonNullable<Dashboard['kpis']>; peri
           <Text className="text-small text-muted">{card.label}</Text>
           <Text className="text-heading font-semibold text-foreground">{card.value}</Text>
           <Text className="text-small text-muted">{card.secondary}</Text>
+          {card.change ? (
+            <View className="flex-row flex-wrap items-center gap-sm">
+              {card.change.pill ? (
+                <Text className={`rounded-control border px-sm text-caption ${changeTone[card.change.tone].pill}`}>{card.change.pill}</Text>
+              ) : null}
+              <Text className="text-small text-muted">{card.change.text}</Text>
+            </View>
+          ) : null}
+          {card.detail ? <Text className="text-small text-muted">{card.detail}</Text> : null}
         </View>
       ))}
     </View>
@@ -204,7 +227,9 @@ export function DashboardView({ now = () => new Date() }: { now?: () => Date } =
               </Pressable>
             </Link>
           ) : null}
-          {data.kpis ? <KpiCards kpis={data.kpis} period={data.period} /> : null}
+          {data.kpis ? (
+            <KpiCards kpis={data.kpis} period={data.period} outcomes={{ delivered: data.deliveredCount, cancelled: data.cancelledCount }} />
+          ) : null}
 
           <Section title="Orders by status">
             {data.ordersByStatus.length === 0 ? <Text className="text-body text-muted">No orders yet.</Text> : null}

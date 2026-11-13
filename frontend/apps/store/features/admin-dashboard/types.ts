@@ -8,6 +8,10 @@ export type DashboardKpis = {
   orderCount: number;
   averageOrderValue: Money;
   customers: { total: number; new: number; returning: number };
+  /** Revenue over the same elapsed time one period earlier (server-computed). */
+  previousRevenue: Money;
+  /** Server percent change against previousRevenue, one decimal; null when previousRevenue is zero. */
+  revenueChangePercent: number | null;
 };
 
 export type Dashboard = {
@@ -24,6 +28,8 @@ export type Dashboard = {
   lowStockCount: number;
   /** Orders cancelled within the period's window (distinct orders). */
   cancelledCount: number;
+  /** Orders delivered within the period's window (distinct orders). */
+  deliveredCount: number;
   needsAttention: {
     pendingReturns: number;
     deadLetters: { consumer: string; count: number }[];

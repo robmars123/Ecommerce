@@ -34,6 +34,7 @@ public class CustomerQueryServiceTests
 
         public Task<int> CountPendingReturnsAsync(CancellationToken ct) => throw new NotSupportedException();
         public Task<int> CountCancelledAsync(DateTimeOffset from, DateTimeOffset to, CancellationToken ct) => throw new NotSupportedException();
+        public Task<int> CountDeliveredAsync(DateTimeOffset from, DateTimeOffset to, CancellationToken ct) => throw new NotSupportedException();
 
         public Task<CustomerOrders> GetCustomerOrdersAsync(Guid userId, int recentTake, CancellationToken ct) => Task.FromResult(result);
     }

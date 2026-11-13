@@ -17,16 +17,20 @@ internal sealed record LaggingProjector(string Name, int LagSeconds);
 
 internal sealed record NeedsAttention(int PendingReturns, IReadOnlyList<ConsumerDeadLetters> DeadLetters, IReadOnlyList<LaggingProjector> LaggingProjectors);
 
+internal sealed record RevenueComparison(decimal PreviousRevenue, decimal? ChangePercent);
+
 internal sealed record DashboardView(
     string Period,
     DateTimeOffset AsOf,
     string Currency,
     DashboardKpis? Kpis,
+    RevenueComparison? Comparison,
     IReadOnlyList<StatusCount> OrdersByStatus,
     IReadOnlyList<TopProduct> TopProducts,
     IReadOnlyList<LowStockRow> LowStock,
     int LowStockCount,
     int CancelledCount,
+    int DeliveredCount,
     NeedsAttention NeedsAttention);
 
 internal sealed record RecentOrderRow(Guid Id, string OrderNumber, string CustomerEmail, DateTimeOffset CreatedAt, decimal GrandTotal, string Currency, string Status);
@@ -64,16 +68,27 @@ internal sealed class DashboardQueryService(
         List<ConsumerDeadLetters> dead = [.. await health.GetConsumerDeadLettersAsync(ct)];
         dead.AddRange(projectors.Where(p => p.DeadLetters > 0).Select(p => new ConsumerDeadLetters(p.Name, p.DeadLetters)));
 
+        DashboardKpis? kpis = null;
+        RevenueComparison? comparison = null;
+        if (includeKpis)
+        {
+            kpis = await store.ReadKpisAsync(from, now, ct);
+            decimal previous = (await store.ReadKpisAsync(period.PreviousFrom(now), period.PreviousTo(now), ct)).Revenue;
+            comparison = new RevenueComparison(previous, KpiCalculator.ChangePercent(kpis.Revenue, previous));
+        }
+
         return new DashboardView(
             period.Name,
             projectors.Count == 0 ? now : projectors.Min(p => p.AsOf),
             settings.Currency,
-            includeKpis ? await store.ReadKpisAsync(from, now, ct) : null,
+            kpis,
+            comparison,
             statuses,
             top,
             lowStock,
             await inventory.CountLowStockAsync(ct),
             await orders.CountCancelledAsync(from, now, ct),
+            await orders.CountDeliveredAsync(from, now, ct),
             new NeedsAttention(
                 await orders.CountPendingReturnsAsync(ct),
                 dead,

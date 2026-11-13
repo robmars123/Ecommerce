@@ -136,18 +136,35 @@ function Sidebar({ groups, user, badges, attention, onNavigate, onClose }: Sideb
             </Text>
             {group.items.map((item) => {
               const badge = badges?.[item.href];
+              const inline = badge && !badge.href ? badge.text : null;
               return item.ready ? (
-                <Link key={item.label} href={item.href as never} asChild>
-                  <Pressable
-                    accessibilityRole="link"
-                    {...(badge ? { accessibilityLabel: `${item.label}, ${badge}` } : {})}
-                    onPress={onNavigate}
-                    className="min-h-touch min-w-touch flex-row items-center justify-between gap-md rounded-control px-md"
-                  >
-                    <Text className="text-body text-foreground">{item.label}</Text>
-                    {badge ? <Text className="rounded-control border border-warning px-sm text-caption text-warning">{badge}</Text> : null}
-                  </Pressable>
-                </Link>
+                <View key={item.label} className="flex-row items-center gap-xs">
+                  <Link href={item.href as never} asChild>
+                    <Pressable
+                      accessibilityRole="link"
+                      {...(inline ? { accessibilityLabel: `${item.label}, ${inline}` } : {})}
+                      onPress={onNavigate}
+                      className="min-h-touch min-w-touch flex-1 flex-row items-center justify-between gap-md rounded-control px-md"
+                    >
+                      <Text className="text-body text-foreground">{item.label}</Text>
+                      {inline ? (
+                        <Text className="rounded-control border border-warning px-sm text-caption text-warning">{inline}</Text>
+                      ) : null}
+                    </Pressable>
+                  </Link>
+                  {badge?.href ? (
+                    <Link href={badge.href as never} asChild>
+                      <Pressable
+                        accessibilityRole="link"
+                        accessibilityLabel={`${badge.text} orders`}
+                        onPress={onNavigate}
+                        className="min-h-touch min-w-touch items-center justify-center"
+                      >
+                        <Text className="rounded-control border border-warning px-sm text-caption text-warning">{badge.text}</Text>
+                      </Pressable>
+                    </Link>
+                  ) : null}
+                </View>
               ) : (
                 <Pressable
                   key={item.label}

@@ -44,6 +44,9 @@ public interface IOrderReader
     /// <summary>Distinct orders that moved to Cancelled with a history time in [<paramref name="from"/>, <paramref name="to"/>].</summary>
     Task<int> CountCancelledAsync(DateTimeOffset from, DateTimeOffset to, CancellationToken ct);
 
+    /// <summary>Distinct orders that moved to Delivered with a history time in [<paramref name="from"/>, <paramref name="to"/>].</summary>
+    Task<int> CountDeliveredAsync(DateTimeOffset from, DateTimeOffset to, CancellationToken ct);
+
     /// <summary>Newest first; the recent lists hold at most <paramref name="recentTake"/> rows.</summary>
     Task<CustomerOrders> GetCustomerOrdersAsync(Guid userId, int recentTake, CancellationToken ct);
 }

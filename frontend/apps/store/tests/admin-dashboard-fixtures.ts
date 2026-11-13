@@ -12,6 +12,8 @@ export function makeDashboard(overrides: Partial<Dashboard> = {}): Dashboard {
       orderCount: 7,
       averageOrderValue: usd('176.36'),
       customers: { total: 5, new: 3, returning: 2 },
+      previousRevenue: usd('1000.00'),
+      revenueChangePercent: 23.5,
     },
     ordersByStatus: [
       { status: 'Paid', count: 4 },
@@ -21,6 +23,7 @@ export function makeDashboard(overrides: Partial<Dashboard> = {}): Dashboard {
     lowStock: [{ variantId: 'v-1', productName: 'Blue Shirt', sku: 'BS-M', available: 2 }],
     lowStockCount: 1,
     cancelledCount: 0,
+    deliveredCount: 0,
     needsAttention: { pendingReturns: 0, deadLetters: [], laggingProjectors: [] },
     ...overrides,
   };
