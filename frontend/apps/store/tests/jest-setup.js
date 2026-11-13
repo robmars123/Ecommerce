@@ -16,3 +16,6 @@ jest.mock('@/lib/realtime', () => ({
   subscribeToOrderStatus: jest.fn(() => () => undefined),
   subscribeToConnectionState: jest.fn(() => () => undefined),
 }));
+
+// expo-clipboard has native code only (P2.48). Tests set the resolved value per case.
+jest.mock('expo-clipboard', () => ({ setStringAsync: jest.fn(async () => true) }));

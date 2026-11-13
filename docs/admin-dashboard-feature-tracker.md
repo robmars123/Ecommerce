@@ -60,7 +60,7 @@ Match the target screenshot across all admin screens. Rows are ordered MVP-first
 | P2.20 | Acceptance Criteria tab (static) | `admin-dashboard` | Done |
 | P2.9 | "Live store" pill: shows whether the SignalR connection is up (deprioritized) | `admin-shell` | Done |
 | **C** | **Customer order detail: [feature] items from `docs/design-refs/northline-order-detail.md` (storefront, not admin)** | | |
-| P2.48 | Copy order number button in the order header | `orders` | Todo |
+| P2.48 | Copy order number button in the order header | `orders` | Done |
 | P2.49 | Reorder: put the order's items back in the cart | `orders`, Cart | Todo |
 | P2.50 | Cancellation alert with an explanation, and the pill note text; the API returns the text | Orders, `orders` | Todo |
 | P2.51 | Item thumbnail and colour attribute on order items; the API returns them | Orders, `orders` | Todo |

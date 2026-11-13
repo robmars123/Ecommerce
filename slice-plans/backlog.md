@@ -80,3 +80,5 @@
 - P2-tier5 plan (Rob): the Live store pill stays offline after a failed first `start()` (automatic reconnect only covers drops after connecting); add a retry if admins report a stuck "offline".
 - P2-tier5 plan (Rob): `.p-high`/`.p-med` dark text tones (#fca5a5, #fcd34d) map to `danger`/`warning` tokens; add tokens only if the difference matters.
 - P2-tier5 R1 (Rob): at 390 px the narrow top bar holds Menu, "Store Admin", the "Live store · offline" pill and the theme toggle in one row; S30 checks presence only. Add a no-overflow check (or shorten the offline text at narrow width) if it wraps on a small phone.
+- P2.48 R1 (Rob): `CopyOrderNumber.copy` schedules the 2 s reset after the `await`, so an unmount while `setStringAsync` is pending leaves one timer the cleanup already missed (fires a no-op `setState`). Add an unmounted ref check before scheduling if it ever shows up in tests.
+- P2.48 R1 (Rob): Copied / Copy failed use the same neutral tokens as idle; the plan allowed the success/danger tones `StatusPill` uses. Add if Nathaniel wants colour feedback.

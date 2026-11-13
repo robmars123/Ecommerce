@@ -1,4 +1,6 @@
+import { setStringAsync } from 'expo-clipboard';
 import { Link } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, Text, useWindowDimensions, View } from 'react-native';
 
 import { ErrorState } from '@/components/ErrorState';
@@ -49,6 +51,47 @@ function Breadcrumb({ orderNumber }: { orderNumber: string }) {
   );
 }
 
+type CopyState = 'idle' | 'copied' | 'failed';
+
+const COPY_LABELS: Record<CopyState, { text: string; a11y: string }> = {
+  idle: { text: 'Copy', a11y: 'Copy order number' },
+  copied: { text: 'Copied', a11y: 'Order number copied' },
+  failed: { text: 'Copy failed', a11y: "Couldn't copy order number" },
+};
+
+function CopyOrderNumber({ orderNumber }: { orderNumber: string }) {
+  const [state, setState] = useState<CopyState>('idle');
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current);
+    },
+    [],
+  );
+
+  const copy = async () => {
+    if (timer.current) clearTimeout(timer.current);
+    try {
+      const ok = await setStringAsync(orderNumber);
+      setState(ok ? 'copied' : 'failed');
+    } catch {
+      setState('failed');
+    }
+    timer.current = setTimeout(() => setState('idle'), 2000);
+  };
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={COPY_LABELS[state].a11y}
+      onPress={() => void copy()}
+      className="min-h-touch items-center justify-center rounded-input border border-border bg-surface-raised px-md"
+    >
+      <Text className="text-ui font-semibold text-foreground">{COPY_LABELS[state].text}</Text>
+    </Pressable>
+  );
+}
+
 function Header({ order, compact }: { order: OrderDetail; compact: boolean }) {
   const itemCount = order.items.reduce((sum, item) => sum + item.quantity, 0);
   return (
@@ -56,16 +99,19 @@ function Header({ order, compact }: { order: OrderDetail; compact: boolean }) {
       <View className="flex-row flex-wrap items-start gap-lg">
         <View className="min-w-[240px] flex-1 gap-xs">
           <Text className="text-label font-bold uppercase text-muted">Order detail</Text>
-          <View
-            accessible
-            accessibilityRole="header"
-            accessibilityLabel={`Order ${order.orderNumber}`}
-            className="flex-row flex-wrap items-center gap-md"
-          >
-            <Text className={`${compact ? 'text-page-title-sm' : 'text-page-title'} font-bold text-foreground`}>Order</Text>
-            <Text className="rounded-control border border-border bg-surface-raised px-[9px] py-[5px] font-mono text-panel-title font-semibold text-foreground">
-              {order.orderNumber}
-            </Text>
+          <View className="flex-row flex-wrap items-center gap-md">
+            <View
+              accessible
+              accessibilityRole="header"
+              accessibilityLabel={`Order ${order.orderNumber}`}
+              className="flex-row flex-wrap items-center gap-md"
+            >
+              <Text className={`${compact ? 'text-page-title-sm' : 'text-page-title'} font-bold text-foreground`}>Order</Text>
+              <Text className="rounded-control border border-border bg-surface-raised px-[9px] py-[5px] font-mono text-panel-title font-semibold text-foreground">
+                {order.orderNumber}
+              </Text>
+            </View>
+            <CopyOrderNumber orderNumber={order.orderNumber} />
           </View>
           <Text className="text-ui text-muted">{`Placed ${formatOrderDate(order.createdAt)} · ${itemCount} ${itemCount === 1 ? 'item' : 'items'}`}</Text>
         </View>
