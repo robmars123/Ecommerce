@@ -55,3 +55,5 @@
 - P2.21 R1 (Rob): `/admin` still shows the Stack header while other admin routes hide it; decide in an admin shell row.
 - P2.21 R1 (Rob): Marco's report quotes M1 red and `cmp` but not the filtered green re-run (plan step 2); green is covered by the full verify test step. Future M-evidence reports quote the filtered green too.
 - P2.30 R1 (Rob): dashboard Low stock rows still link to `/admin/inventory` for Support, and the gate bounces them back to `/admin`. Render them as plain text when `adminRouteDecision(role, '/admin/inventory')` refuses (UX only; the server already returns 403, see S1).
+- Decision log `docs/architecture/13.2-decision-log.md` is ~59 KB, over the ~10 KB per-file guide; split at a `###` and index it (Rob, noted in slice P2.14 plan).
+- P2.14 R1 (Rob): Marco wrote the TF tests for P2.14, P2.15 and P2.16 together and quoted one red run instead of one red→green cycle per row (plan build order 2–4). The evidence covered every TF test; future multi-row slices keep the per-row cycle so one row's code cannot turn another row's test green unseen.

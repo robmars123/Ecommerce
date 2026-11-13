@@ -1,4 +1,4 @@
-import { Link } from 'expo-router';
+import { Link, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
@@ -15,26 +15,10 @@ import { userMessage } from '@/lib/api-client';
 import { formatMoney } from '@/lib/money';
 
 import { useDashboardQuery, useRecentOrdersQuery } from '../hooks/hooks';
+import { asOfParts } from '../as-of';
 import { kpiCards } from '../kpi-cards';
+import { parseDashboardPeriod, PERIODS } from '../period';
 import type { Dashboard, DashboardPeriod } from '../types';
-
-const PERIODS: { value: DashboardPeriod; label: string }[] = [
-  { value: 'today', label: 'Today' },
-  { value: '7d', label: '7 days' },
-  { value: '30d', label: '30 days' },
-];
-
-function formatAsOf(iso: string): string {
-  return new Date(iso).toLocaleString('en-US', {
-    timeZone: 'UTC',
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  });
-}
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -43,6 +27,18 @@ function Section({ title, children }: { title: string; children: React.ReactNode
         {title}
       </Text>
       {children}
+    </View>
+  );
+}
+
+function AsOfLine({ data }: { data: Dashboard }) {
+  const parts = asOfParts(data);
+  return (
+    <View className="flex-row flex-wrap gap-sm">
+      <Text className="text-small text-muted">{parts.time}</Text>
+      <Text className="text-small text-muted">{parts.period}</Text>
+      <Text className="text-small text-muted">{parts.currency}</Text>
+      <Text className={`text-small ${parts.lagging ? 'text-warning' : 'text-muted'}`}>{parts.lag}</Text>
     </View>
   );
 }
@@ -159,7 +155,10 @@ function QuickActions({ role }: { role: UserRole | null }) {
 
 /** The admin home (arch 8.8.5, app context 4.8). Every figure is what the server returned; "as of" says how fresh it is. */
 export function DashboardView() {
-  const [period, setPeriod] = useState<DashboardPeriod>('today');
+  const params = useLocalSearchParams<{ period?: string | string[] }>();
+  const router = useRouter();
+  const period = parseDashboardPeriod(params.period);
+  const choosePeriod = (next: DashboardPeriod) => router.setParams({ period: next === 'today' ? undefined : next });
   const query = useDashboardQuery(period);
   const data = query.data;
   const role = useSession().user?.role ?? null;
@@ -173,7 +172,7 @@ export function DashboardView() {
             key={p.value}
             accessibilityRole="button"
             accessibilityState={{ selected: p.value === period }}
-            onPress={() => setPeriod(p.value)}
+            onPress={() => choosePeriod(p.value)}
             className={`min-h-touch justify-center rounded-control border px-md ${p.value === period ? 'border-primary' : 'border-border'}`}
           >
             <Text className="text-body text-foreground">{p.label}</Text>
@@ -184,7 +183,12 @@ export function DashboardView() {
 
       {data ? (
         <View className="gap-md">
-          <Text className="text-small text-muted">{`Figures as of ${formatAsOf(data.asOf)} UTC`}</Text>
+          {query.isError ? (
+            <Text accessibilityRole="alert" className="text-small text-danger">
+              {`Refresh failed: ${userMessage(query.error)} Showing the last figures.`}
+            </Text>
+          ) : null}
+          <AsOfLine data={data} />
           {data.lowStock.length > 0 && adminRouteDecision(role, '/admin/inventory') === null ? (
             <Link href="/admin/inventory" asChild>
               <Pressable

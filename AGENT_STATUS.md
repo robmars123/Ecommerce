@@ -5,9 +5,9 @@ Agents update this at the **start and end of every task**.
 
 | Agent | Status | Slice | Task | Fix round | Updated |
 |---|---|---|---|---|---|
-| Marco (developer) | 🟢 AVAILABLE | P2.30 | Top products + banner + quick actions | 0 | 2026-11-12 |
+| Marco (developer) | 🟢 AVAILABLE | P2.14 | Period URL, refresh alert, as-of line | 0 | 2026-11-12 |
 | Shin (developer 2) | 🟢 AVAILABLE | — | Ready | 0 | 2026-11-08 18:45 |
-| Rob (architect, on demand) | 🟢 AVAILABLE | P2.30 | Review PASS | 0 | 2026-11-12 |
+| Rob (architect, on demand) | 🟢 AVAILABLE | P2.14 | Review PASS | 0 | 2026-11-12 |
 
 **Rules**
 
@@ -19,4 +19,4 @@ Agents update this at the **start and end of every task**.
 
 - Marco: slice-plans/slice-9.7-gapfill-marco-report.md (previous: slice-plans/archive/slice-9.5-gapfill-marco-report.md)
 - Shin: none yet
-- Rob: slice-plans/slice-P2.8-rob-review.md (previous: slice-plans/archive/slice-P2.7-rob-review.md)
+- Rob: slice-plans/slice-P2.14-rob-review.md (previous: slice-plans/archive/slice-P2.30-rob-review.md)
