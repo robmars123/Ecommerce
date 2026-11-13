@@ -1,3 +1,4 @@
+using Ecommerce.Catalog.Contracts;
 using Ecommerce.Orders.Domain;
 using Ecommerce.Payments.Contracts;
 
@@ -62,7 +63,8 @@ internal sealed record ShipmentView(string CarrierName, string TrackingNumber, s
 
 /// <summary>PaymentStatus is the latest attempt (arch 9 orders contract), or null before any attempt.</summary>
 internal sealed record OrderDetailView(
-    OrderDetailRow Order, IReadOnlyList<ShipmentView> Shipments, string? PaymentStatus, IReadOnlyList<RefundInfo> Refunds);
+    OrderDetailRow Order, IReadOnlyList<ShipmentView> Shipments, string? PaymentStatus, IReadOnlyList<RefundInfo> Refunds,
+    IReadOnlyDictionary<Guid, VariantSnapshot> Variants);
 
 /// <summary>The customer detail plus what F13 needs (D14): every refund, the server-computed totals and the return requests.</summary>
 internal sealed record AdminOrderDetailView(OrderDetailView Detail, RefundSummary Summary, IReadOnlyList<ReturnRow> Returns);

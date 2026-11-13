@@ -1,4 +1,5 @@
 using System.Globalization;
+using Ecommerce.Catalog.Contracts;
 using Ecommerce.Orders.Application;
 using Ecommerce.Orders.Domain;
 
@@ -24,6 +25,9 @@ internal sealed record AdminOrderListResponse(IReadOnlyList<AdminOrderListItemRe
 internal sealed record OrderItemResponse(
     Guid VariantId, string Sku, string Name, MoneyResponse UnitPrice, int Quantity, MoneyResponse LineTotal);
 
+internal sealed record OrderDetailItemResponse(
+    Guid VariantId, string Sku, string Name, MoneyResponse UnitPrice, int Quantity, MoneyResponse LineTotal, CartImage? Image, string? Colour);
+
 internal sealed record ShippingMethodResponse(string Code, string Name);
 
 internal sealed record TimelineEntryResponse(string? FromStatus, string ToStatus, DateTimeOffset At, string? Reason);
@@ -38,7 +42,7 @@ internal sealed record OrderDetailResponse(
     string OrderNumber,
     DateTimeOffset CreatedAt,
     string Status,
-    IReadOnlyList<OrderItemResponse> Items,
+    IReadOnlyList<OrderDetailItemResponse> Items,
     MoneyResponse Subtotal,
     MoneyResponse DiscountTotal,
     MoneyResponse ShippingTotal,
@@ -71,8 +75,13 @@ internal static class OrderResponseMapping
         OrderDetailRow o = view.Order;
         return new OrderDetailResponse(
             o.Id, o.OrderNumber, o.CreatedAt, o.Status.ToString(),
-            o.Items.Select(i => new OrderItemResponse(
-                i.VariantId, i.Sku, i.Name, MoneyResponse.From(i.UnitPrice, o.Currency), i.Quantity, MoneyResponse.From(i.LineTotal, o.Currency))).ToList(),
+            o.Items.Select(i =>
+            {
+                view.Variants.TryGetValue(i.VariantId, out VariantSnapshot? v);
+                return new OrderDetailItemResponse(
+                    i.VariantId, i.Sku, i.Name, MoneyResponse.From(i.UnitPrice, o.Currency), i.Quantity, MoneyResponse.From(i.LineTotal, o.Currency),
+                    v?.Image, v?.Colour);
+            }).ToList(),
             MoneyResponse.From(o.Subtotal, o.Currency),
             MoneyResponse.From(o.DiscountTotal, o.Currency),
             MoneyResponse.From(o.ShippingTotal, o.Currency),

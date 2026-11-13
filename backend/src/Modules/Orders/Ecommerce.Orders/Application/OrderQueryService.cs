@@ -1,3 +1,4 @@
+using Ecommerce.Catalog.Contracts;
 using Ecommerce.Identity.Contracts;
 using Ecommerce.Orders.Contracts;
 using Ecommerce.Payments.Contracts;
@@ -5,7 +6,8 @@ using Ecommerce.Payments.Contracts;
 namespace Ecommerce.Orders.Application;
 
 internal sealed class OrderQueryService(
-    IOrderReadStore store, IReturnStore returns, ShippingCarriers carriers, IPaymentAttempts payments, IRefundState refunds, IUserReader users)
+    IOrderReadStore store, IReturnStore returns, ShippingCarriers carriers, IPaymentAttempts payments, IRefundState refunds, IUserReader users,
+    IProductReader products)
 {
     /// <summary>The admin list (arch 13.2). A customer email that matches no user is an empty page and no Orders query (rule 8).</summary>
     public async Task<AdminOrderListPage> ListForAdminAsync(AdminOrderFilter filter, string? customerEmail, int page, int pageSize, CancellationToken ct)
@@ -78,6 +80,7 @@ internal sealed class OrderQueryService(
             .ToList();
         PaymentAttemptInfo? latest = await payments.GetLatestAsync(order.Id, ct);
         RefundSummary summary = await refunds.GetSummaryAsync(order.Id, ct);
-        return new OrderDetailView(order, shipments, latest?.Status, summary.Refunds);
+        IReadOnlyList<VariantSnapshot> snapshots = await products.GetVariantSnapshotsAsync(order.Items.Select(i => i.VariantId).Distinct().ToList(), ct);
+        return new OrderDetailView(order, shipments, latest?.Status, summary.Refunds, snapshots.ToDictionary(s => s.VariantId));
     }
 }

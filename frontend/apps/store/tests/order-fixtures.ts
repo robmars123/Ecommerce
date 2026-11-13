@@ -30,6 +30,8 @@ export function makeOrderDetail(overrides: Partial<OrderDetail> = {}): OrderDeta
         unitPrice: { amount: '20.00', currency: 'USD' },
         quantity: 2,
         lineTotal: { amount: '40.00', currency: 'USD' },
+        image: null,
+        colour: null,
       },
     ],
     subtotal: { amount: '40.00', currency: 'USD' },

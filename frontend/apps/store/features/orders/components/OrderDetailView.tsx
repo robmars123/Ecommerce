@@ -8,7 +8,9 @@ import { LoadingState } from '@/components/LoadingState';
 import { Panel } from '@/components/Panel';
 import { ScreenTitle } from '@/components/ScreenTitle';
 import { mergeResultText } from '@/features/cart/cart-messages';
+import { ProductImageView } from '@/features/catalog/components/ProductImageView';
 import { ApiError, userMessage } from '@/lib/api-client';
+import { touch } from '@/lib/design-tokens';
 import { formatMoney } from '@/lib/money';
 
 import { useReorder } from '../hooks/useReorder';
@@ -16,7 +18,7 @@ import { useOrderLiveStatus } from '../hooks/useOrderLiveStatus';
 import { useOrderQuery } from '../hooks/useOrderQuery';
 import { orderDetailLayout } from '../layout';
 import { formatOrderDate, paymentStatusLabel, paymentTone, refundStatusLabel, statusLabel, statusTone } from '../status-labels';
-import type { OrderAlert, OrderDetail, OrderItem } from '../types';
+import type { OrderAlert, OrderDetail, OrderDetailItem } from '../types';
 import { OrderTimeline } from './OrderTimeline';
 import { ReturnRequestForm } from './ReturnRequestForm';
 import { StatusPill } from './StatusPill';
@@ -202,17 +204,19 @@ function Header({ order, compact }: { order: OrderDetail; compact: boolean }) {
   );
 }
 
-function ItemRow({ item, last, compact }: { item: OrderItem; last: boolean; compact: boolean }) {
+function ItemRow({ item, last, compact }: { item: OrderDetailItem; last: boolean; compact: boolean }) {
   const amount = formatMoney(item.lineTotal);
   return (
     <View
       accessible
-      accessibilityLabel={`${item.name} × ${item.quantity}, ${amount}`}
+      accessibilityLabel={`${item.name}${item.colour ? `, ${item.colour}` : ''} × ${item.quantity}, ${amount}`}
       className={`flex-row items-center gap-lg py-md ${compact ? 'flex-wrap' : ''} ${last ? '' : 'border-b border-border'}`}
     >
+      <ProductImageView url={item.image?.url ?? null} altText={item.image?.altText ?? ''} fallbackLabel={item.name} width={touch} />
       <View className="min-w-0 flex-1 gap-xs">
         <Text className="text-panel-title font-bold text-foreground">{item.name}</Text>
         <Text className="font-mono text-meta text-muted">{item.sku}</Text>
+        {item.colour ? <Text className="text-meta text-muted">{`Colour: ${item.colour}`}</Text> : null}
       </View>
       <View className="items-center gap-xs">
         <Text className="rounded-control border border-border bg-surface-raised px-md py-xs text-ui font-bold text-foreground">{`× ${item.quantity}`}</Text>

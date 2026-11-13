@@ -1,5 +1,6 @@
 // Wire types for the orders API (arch 9, Orders contract). Money amounts are strings formatted by the server.
 
+import type { CartImage } from '@/features/cart/types';
 import type { Money } from '@/features/catalog/types';
 
 export type OrderStatus = 'PendingPayment' | 'Paid' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled' | 'Refunded' | 'Returned';
@@ -32,6 +33,9 @@ export type OrderItem = {
   quantity: number;
   lineTotal: Money;
 };
+
+/** An order line on the detail page: the snapshot plus today's Catalog thumbnail and colour (display only, null when unknown). */
+export type OrderDetailItem = OrderItem & { image: CartImage | null; colour: string | null };
 
 export type ShippingAddress = {
   fullName: string;
@@ -76,7 +80,7 @@ export type OrderDetail = {
   orderNumber: string;
   createdAt: string;
   status: OrderStatus;
-  items: OrderItem[];
+  items: OrderDetailItem[];
   subtotal: Money;
   discountTotal: Money;
   shippingTotal: Money;

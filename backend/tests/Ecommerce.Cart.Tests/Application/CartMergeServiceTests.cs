@@ -60,7 +60,7 @@ public class CartMergeServiceTests
     }
 
     private static VariantSnapshot Snapshot(Guid id, bool active = true, string currency = "USD") =>
-        new(id, "slug", "Product", "Variant", null, 10m, currency, active);
+        new(id, "slug", "Product", "Variant", null, 10m, currency, active, null);
 
     private static (CartMergeService Service, CartAggregate Cart, FakeKeys Keys) Build(
         Guid variant, int serverQuantity, int available, bool active = true, string currency = "USD", bool known = true)

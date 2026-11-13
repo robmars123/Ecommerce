@@ -63,7 +63,7 @@ Match the target screenshot across all admin screens. Rows are ordered MVP-first
 | P2.48 | Copy order number button in the order header | `orders` | Done |
 | P2.49 | Reorder: put the order's items back in the cart | `orders`, Cart | Done |
 | P2.50 | Cancellation alert with an explanation, and the pill note text; the API returns the text | Orders, `orders` | Done |
-| P2.51 | Item thumbnail and colour attribute on order items; the API returns them | Orders, `orders` | Todo |
+| P2.51 | Item thumbnail and colour attribute on order items; the API returns them | Orders, `orders` | Done |
 | P2.52 | Payment card: method, amount due, captured; the API returns them | Orders, Payments, `orders` | Todo |
 | P2.53 | Timeline entry description text | Orders, `orders` | Todo |
 | P2.54 | Totals note under the Total ("never charged …") | `orders` | Todo |
