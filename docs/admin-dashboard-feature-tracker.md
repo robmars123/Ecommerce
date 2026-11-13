@@ -70,5 +70,7 @@ Match the target screenshot across all admin screens. Rows are ordered MVP-first
 | P2.55 | Top bar avatar initial and cart count badge | `components`, Cart | Done |
 | **D** | **Product images** | | |
 | P2.56 | Product image upload: "Add image" picks a file and uploads it; image bytes stored in Postgres and served by the API (replaces the unconfigured Spaces storage). Admin only | Catalog, `admin-catalog` | Done |
+| **E** | **Theme toggle** | | |
+| P2.57 | Theme toggle label names the theme it switches to: in Light it shows "Dark", in Dark it shows "Light" | `components` | Done |
 
 **Every new endpoint:** tests for the happy path, 401/403 and 400. **Every screen:** Jest tests. **Restyle rows:** existing tests unchanged. **Theme rows:** P2.47 and P2.46 close tier 1 as a sweep; each tier-1 row already uses theme tokens only.
