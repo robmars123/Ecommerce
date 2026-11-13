@@ -50,7 +50,7 @@ describe('OrderDetailView refunds and live status', () => {
     jest.spyOn(globalThis, 'fetch').mockImplementation(async () => jsonResponse(200, makeOrderDetail()));
 
     await render();
-    await screen.findByText('ORD-2026-000001');
+    await screen.findByRole('header', { name: 'Order ORD-2026-000001' });
 
     expect(screen.queryByText('Refunds')).toBeNull();
   });
@@ -69,7 +69,7 @@ describe('OrderDetailView refunds and live status', () => {
     let current = makeOrderDetail({ status: 'Shipped' });
     const spy = jest.spyOn(globalThis, 'fetch').mockImplementation(async () => jsonResponse(200, current));
     await render();
-    await screen.findByText('ORD-2026-000001');
+    await screen.findByRole('header', { name: 'Order ORD-2026-000001' });
     const listener = jest.mocked(subscribeToOrderStatus).mock.calls.at(-1)![0];
     const callsBefore = spy.mock.calls.length;
 
@@ -84,7 +84,7 @@ describe('OrderDetailView refunds and live status', () => {
     await signInAs('Customer');
     const spy = jest.spyOn(globalThis, 'fetch').mockImplementation(async () => jsonResponse(200, makeOrderDetail()));
     await render();
-    await screen.findByText('ORD-2026-000001');
+    await screen.findByRole('header', { name: 'Order ORD-2026-000001' });
     const listener = jest.mocked(subscribeToOrderStatus).mock.calls.at(-1)![0];
     const callsBefore = spy.mock.calls.length;
 

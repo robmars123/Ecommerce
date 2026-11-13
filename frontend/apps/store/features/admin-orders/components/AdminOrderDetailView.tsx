@@ -1,6 +1,6 @@
 import { ScrollView, Text, View } from 'react-native';
 
-import { AdminPanel } from '@/components/AdminPanel';
+import { Panel } from '@/components/Panel';
 import { ErrorState } from '@/components/ErrorState';
 import { LoadingState } from '@/components/LoadingState';
 import { ScreenTitle } from '@/components/ScreenTitle';
@@ -17,16 +17,16 @@ function Content({ detail }: { detail: AdminOrderDetail }) {
   const { order } = detail;
   return (
     <View className="gap-lg">
-      <AdminPanel>
+      <Panel>
         <View className="gap-xs">
           <Text className="text-body font-semibold text-foreground">{order.orderNumber}</Text>
           <Text className="text-small text-muted">{formatOrderDate(order.createdAt)}</Text>
           <Text className="text-body text-foreground">{statusLabel(order.status)}</Text>
           <Text className="text-small text-muted">{`Customer ${detail.userId}`}</Text>
         </View>
-      </AdminPanel>
+      </Panel>
 
-      <AdminPanel title="Items">
+      <Panel title="Items">
         {order.items.map((item) => (
           <View key={item.variantId} className="flex-row flex-wrap justify-between gap-sm">
             <Text className="text-body text-foreground">{`${item.name} × ${item.quantity}`}</Text>
@@ -34,9 +34,9 @@ function Content({ detail }: { detail: AdminOrderDetail }) {
           </View>
         ))}
         <Text className="text-body font-semibold text-foreground">{`Total ${formatMoney(order.grandTotal)}`}</Text>
-      </AdminPanel>
+      </Panel>
 
-      <AdminPanel title="Refunds">
+      <Panel title="Refunds">
         <Text className="text-body text-foreground">{`Refunded ${formatMoney(detail.refundedTotal)}`}</Text>
         <Text className="text-body text-foreground">{`Pending ${formatMoney(detail.pendingTotal)}`}</Text>
         <Text className="text-body text-foreground">{`Remaining ${formatMoney(detail.remaining)}`}</Text>
@@ -46,14 +46,14 @@ function Content({ detail }: { detail: AdminOrderDetail }) {
             <Text className="text-small text-muted">{formatOrderDate(refund.createdAt)}</Text>
           </View>
         ))}
-      </AdminPanel>
+      </Panel>
 
       {detail.returnRequests.length > 0 ? (
-        <AdminPanel title="Return requests">
+        <Panel title="Return requests">
           {detail.returnRequests.map((request) => (
             <Text key={request.id} className="text-body text-foreground">{`${request.status}: ${request.reason}`}</Text>
           ))}
-        </AdminPanel>
+        </Panel>
       ) : null}
 
       <OrderActions detail={detail} />

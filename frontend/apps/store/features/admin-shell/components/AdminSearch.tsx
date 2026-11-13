@@ -22,18 +22,18 @@ function SearchResults({ term, role, onNavigate }: ResultsProps) {
   if (query.isError) return <ErrorState message="Search isn't available right now." onRetry={() => void query.refetch()} />;
 
   const groups = searchGroups(role, query.data);
-  if (groups.length === 0) return <Text className="px-lg py-md text-body text-muted">{`No matches for “${term}”.`}</Text>;
+  if (groups.length === 0) return <Text className="px-lg py-md text-ui text-muted">{`No matches for “${term}”.`}</Text>;
   return (
     <View className="gap-md py-md">
       {groups.map((group) => (
         <View key={group.title} className="gap-xs">
-          <Text accessibilityRole="header" className="px-lg text-caption text-muted">
+          <Text accessibilityRole="header" className="px-lg text-nav-label font-semibold uppercase text-subtle">
             {group.title}
           </Text>
           {group.items.map((item) => (
             <Link key={item.key} href={item.href as never} asChild>
               <Pressable accessibilityRole="link" onPress={onNavigate} className="min-h-touch justify-center px-lg">
-                <Text className="text-body text-foreground">{item.label}</Text>
+                <Text className="text-ui text-foreground">{item.label}</Text>
               </Pressable>
             </Link>
           ))}
@@ -77,8 +77,8 @@ export function AdminSearch({ role }: { role: UserRole }) {
           autoCapitalize="none"
           autoCorrect={false}
           maxLength={100}
-          placeholderTextColor={colors.muted}
-          className="min-h-touch flex-1 rounded-input border border-border bg-surface px-lg text-body text-foreground"
+          placeholderTextColor={colors.subtle}
+          className="min-h-touch flex-1 rounded-pill border border-border bg-surface px-[14px] text-ui text-foreground"
         />
         {text ? (
           <Pressable
@@ -92,9 +92,9 @@ export function AdminSearch({ role }: { role: UserRole }) {
         ) : null}
       </View>
       {showPanel ? (
-        <View accessibilityLabel="Search results" className="rounded-input border border-border bg-surface">
+        <View accessibilityLabel="Search results" className="rounded-card border border-border bg-surface">
           {term === null ? (
-            <Text className="px-lg py-md text-body text-muted">Type at least 2 characters.</Text>
+            <Text className="px-lg py-md text-ui text-muted">Type at least 2 characters.</Text>
           ) : (
             <SearchResults term={term} role={role} onNavigate={reset} />
           )}

@@ -2,7 +2,7 @@ import { Link } from 'expo-router';
 import type { ReactNode } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 
-import { AdminPanel } from '@/components/AdminPanel';
+import { Panel } from '@/components/Panel';
 import { ErrorState } from '@/components/ErrorState';
 import { LoadingState } from '@/components/LoadingState';
 import { ScreenTitle } from '@/components/ScreenTitle';
@@ -27,10 +27,10 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <AdminPanel title={title}>
+    <Panel title={title}>
       {shown === 0 ? <Text className="text-body text-muted">{empty}</Text> : children}
       {count > shown ? <Text className="text-small text-muted">{`Showing ${shown} of ${count}`}</Text> : null}
-    </AdminPanel>
+    </Panel>
   );
 }
 
@@ -38,7 +38,7 @@ function Section({
 function Content({ customer }: { customer: AdminCustomerDetail }) {
   return (
     <View className="gap-lg">
-      <AdminPanel>
+      <Panel>
         <View className="gap-xs">
           <Text className="text-body font-semibold text-foreground">{customer.displayName}</Text>
           <Text className="text-body text-foreground">{customer.email}</Text>
@@ -48,7 +48,7 @@ function Content({ customer }: { customer: AdminCustomerDetail }) {
             <Text className="text-body text-foreground">{`Total spent ${formatMoney(customer.totalSpent)}`}</Text>
           ) : null}
         </View>
-      </AdminPanel>
+      </Panel>
 
       <Section title="Recent orders" count={customer.orderCount} shown={customer.recentOrders.length} empty="No orders yet.">
         {customer.recentOrders.map((order) => (

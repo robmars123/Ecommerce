@@ -15,6 +15,27 @@ export function statusLabel(status: OrderStatus): string {
   return LABELS[status] ?? status;
 }
 
+export type StatusTone = 'success' | 'warning' | 'danger' | 'neutral';
+
+const TONES: Record<OrderStatus, StatusTone> = {
+  PendingPayment: 'warning',
+  Paid: 'neutral',
+  Processing: 'neutral',
+  Shipped: 'neutral',
+  Delivered: 'success',
+  Cancelled: 'danger',
+  Refunded: 'neutral',
+  Returned: 'neutral',
+};
+
+export function statusTone(status: OrderStatus): StatusTone {
+  return TONES[status] ?? 'neutral';
+}
+
+export function paymentTone(status: PaymentStatus): StatusTone {
+  return status === 'Pending' ? 'warning' : status === 'Succeeded' ? 'success' : status === 'Failed' ? 'danger' : 'neutral';
+}
+
 const PAYMENT_LABELS: Record<PaymentStatus, string> = {
   Pending: 'Awaiting payment',
   Succeeded: 'Paid',

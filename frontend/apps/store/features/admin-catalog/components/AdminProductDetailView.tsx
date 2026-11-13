@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 
 import { ActionButton } from '@/components/ActionButton';
-import { AdminPanel } from '@/components/AdminPanel';
+import { Panel } from '@/components/Panel';
 import { ErrorState } from '@/components/ErrorState';
 import { LoadingState } from '@/components/LoadingState';
 import { ScreenTitle } from '@/components/ScreenTitle';
@@ -45,7 +45,7 @@ export function AdminProductDetailView({ id }: { id: string }) {
   return (
     <ScrollView contentContainerClassName="w-full max-w-content gap-lg self-center p-lg">
       <ScreenTitle title="Admin · Product" />
-      <AdminPanel>
+      <Panel>
         <Text className="text-title font-semibold text-foreground">{product.name}</Text>
         {!product.isActive ? (
           <Text className="self-start rounded-pill border border-border bg-surface-raised px-md py-xs text-body font-semibold text-foreground">
@@ -62,14 +62,14 @@ export function AdminProductDetailView({ id }: { id: string }) {
             pending={publish.isPending}
           />
         </View>
-      </AdminPanel>
+      </Panel>
       {publishMessage ? (
         <Text accessibilityRole="alert" className="text-body text-danger">
           {publishMessage}
         </Text>
       ) : null}
 
-      <AdminPanel>
+      <Panel>
         {tab === 'edit' ? (
           <ProductForm
             // A new version remounts the form with what the server has.
@@ -91,7 +91,7 @@ export function AdminProductDetailView({ id }: { id: string }) {
         ) : (
           <LoadingState />
         )}
-      </AdminPanel>
+      </Panel>
     </ScrollView>
   );
 }

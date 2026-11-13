@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { ActionButton } from '@/components/ActionButton';
-import { AdminPanel } from '@/components/AdminPanel';
+import { Panel } from '@/components/Panel';
 import { ErrorState } from '@/components/ErrorState';
 import { LoadingState } from '@/components/LoadingState';
 import { ScreenTitle } from '@/components/ScreenTitle';
@@ -89,7 +89,7 @@ export function AdminOrderListView() {
           </Pressable>
         ))}
       </View>
-      <AdminPanel>
+      <Panel>
         <TextField
           label="From (yyyy-mm-dd)"
           value={draft.from}
@@ -112,8 +112,8 @@ export function AdminOrderListView() {
           autoCapitalize="characters"
         />
         <ActionButton label="Apply filters" onPress={apply} />
-      </AdminPanel>
-      <AdminPanel>
+      </Panel>
+      <Panel>
         {query.data ? (
           query.data.items.length === 0 ? (
             <Text className="text-body text-muted">No orders match.</Text>
@@ -141,7 +141,7 @@ export function AdminOrderListView() {
         ) : (
           <LoadingState />
         )}
-      </AdminPanel>
+      </Panel>
       {query.data && query.data.items.length > 0 && query.data.totalPages > 1 ? (
         <View className="flex-row flex-wrap items-center gap-md">
           <ActionButton label="Previous page" onPress={() => goTo(page - 1)} disabled={page <= 1} />

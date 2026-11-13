@@ -15,6 +15,9 @@ import { makeOrderDetail, makeOrderPage } from '@/tests/order-fixtures';
 import { signInAs } from '@/tests/session';
 
 jest.mock('expo-secure-store');
+// Loading the whole app/ module tree cold takes ~1.2-1.4 s alone and goes over the 5 s default under parallel load.
+// 15 s is still ~10x that, so a real hang still fails.
+jest.setTimeout(15_000);
 
 const APP_DIR = path.join(process.cwd(), 'app');
 

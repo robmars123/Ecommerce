@@ -38,8 +38,9 @@ describe('OrderListView', () => {
     await render();
 
     expect(screen.getByLabelText('Loading')).toBeOnTheScreen();
-    expect(await screen.findByRole('link', { name: 'ORD-2026-000001' })).toBeOnTheScreen();
-    expect(screen.getByRole('link', { name: 'ORD-2026-000002' })).toBeOnTheScreen();
+    expect(await screen.findByRole('link', { name: /^ORD-2026-000001\b/ })).toBeOnTheScreen();
+    expect(screen.getByRole('link', { name: /^ORD-2026-000002\b/ })).toBeOnTheScreen();
+    expect(screen.getAllByRole('link')[0]).toHaveAccessibleName('ORD-2026-000001 Mar 4, 2026 Paid $57.50'); // O2
     expect(screen.getAllByText('Mar 4, 2026')).toHaveLength(2);
     expect(screen.getAllByText('$57.50').length).toBe(2);
     expect(screen.getByText('Delivered')).toBeOnTheScreen();
@@ -61,8 +62,9 @@ describe('OrderListView', () => {
 
     await render();
 
-    await screen.findByRole('link', { name: 'ORD-2026-000001' });
+    await screen.findByRole('link', { name: /^ORD-2026-000001\b/ });
     expect(screen.getAllByRole('link', { name: 'Track' })).toHaveLength(1);
+    expect(screen.getAllByRole('link')[0]).not.toHaveAccessibleName(/Track/); // O2
   });
 
   it('never shows a placeholder word as a tracking number when the URL is not https', async () => {
@@ -75,7 +77,7 @@ describe('OrderListView', () => {
 
     await render();
 
-    await screen.findByRole('link', { name: 'ORD-2026-000001' });
+    await screen.findByRole('link', { name: /^ORD-2026-000001\b/ });
     expect(screen.queryByText('Tracking')).toBeNull();
     expect(screen.queryByRole('link', { name: 'Track' })).toBeNull();
   });
@@ -100,7 +102,7 @@ describe('OrderListView', () => {
     await render();
     await fireEvent.press(await screen.findByRole('button', { name: 'Try again' }));
 
-    expect(await screen.findByRole('link', { name: 'ORD-2026-000001' })).toBeOnTheScreen();
+    expect(await screen.findByRole('link', { name: /^ORD-2026-000001\b/ })).toBeOnTheScreen();
     expect(calledUrls(spy)).toHaveLength(2);
   });
 
@@ -113,7 +115,7 @@ describe('OrderListView', () => {
     await render();
     await fireEvent.press(await screen.findByRole('button', { name: 'Next' }));
 
-    await screen.findByRole('link', { name: 'ORD-2026-000001' });
+    await screen.findByRole('link', { name: /^ORD-2026-000001\b/ });
     expect(calledUrls(spy).some((u) => u.includes('page=2'))).toBe(true);
   });
 

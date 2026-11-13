@@ -1,14 +1,14 @@
 import { render, screen } from '@testing-library/react-native';
 import { Text } from 'react-native';
 
-import { AdminPanel } from './AdminPanel';
+import { Panel } from './Panel';
 
-describe('AdminPanel', () => {
+describe('Panel', () => {
   it('A1 shows its title as a header above the children', async () => {
     await render(
-      <AdminPanel title="Items">
+      <Panel title="Items">
         <Text>Body</Text>
-      </AdminPanel>,
+      </Panel>,
     );
 
     expect(screen.getByRole('header', { name: 'Items' })).toBeOnTheScreen();
@@ -17,12 +17,23 @@ describe('AdminPanel', () => {
 
   it('A2 shows no header without a title', async () => {
     await render(
-      <AdminPanel>
+      <Panel>
         <Text>Body</Text>
-      </AdminPanel>,
+      </Panel>,
     );
 
     expect(screen.queryByRole('header')).toBeNull();
     expect(screen.getByText('Body')).toBeOnTheScreen();
+  });
+
+  it('A4 shows the subtitle beside the title', async () => {
+    await render(
+      <Panel title="Timeline" subtitle="Newest last">
+        <Text>Body</Text>
+      </Panel>,
+    );
+
+    expect(screen.getByRole('header', { name: 'Timeline' })).toBeOnTheScreen();
+    expect(screen.getByText('Newest last')).toBeOnTheScreen();
   });
 });

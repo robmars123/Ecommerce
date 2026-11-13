@@ -28,14 +28,92 @@ describe('OrderDetailView', () => {
 
     await render();
 
-    expect(await screen.findByText('ORD-2026-000001')).toBeOnTheScreen();
-    expect(screen.getByText('Black tee, M × 2')).toBeOnTheScreen();
-    expect(screen.getByText('$40.00')).toBeOnTheScreen();
-    expect(screen.getByText('Shipping $5.00')).toBeOnTheScreen();
-    expect(screen.getByText('Total $45.00')).toBeOnTheScreen();
+    expect(await screen.findByRole('header', { name: 'Order ORD-2026-000001' })).toBeOnTheScreen();
+    expect(screen.getByText('Black tee, M')).toBeOnTheScreen();
+    expect(screen.getByText('× 2')).toBeOnTheScreen();
+    expect(screen.getByLabelText('Black tee, M × 2, $40.00')).toBeOnTheScreen();
+    expect(screen.getByLabelText('Subtotal $40.00')).toBeOnTheScreen(); // O3
+    expect(screen.getByLabelText('Shipping · Standard shipping $5.00')).toBeOnTheScreen();
+    expect(screen.getByLabelText('Tax $0.00')).toBeOnTheScreen();
+    expect(screen.getByLabelText('Total $45.00')).toBeOnTheScreen();
     expect(screen.getByText('Standard shipping')).toBeOnTheScreen();
     expect(screen.getByText('1 Example Street')).toBeOnTheScreen();
     expect(screen.getByText('Exampleville, 12345')).toBeOnTheScreen();
+  });
+
+  it('O5 titles each block with a header', async () => {
+    await signInAs('Customer');
+    jest.spyOn(globalThis, 'fetch').mockImplementation(async () => jsonResponse(200, makeOrderDetail()));
+
+    await render();
+    await screen.findByRole('header', { name: 'Order ORD-2026-000001' });
+
+    for (const name of ['Items', 'Totals', 'Shipping', 'Timeline']) {
+      expect(screen.getByRole('header', { name })).toBeOnTheScreen();
+    }
+  });
+
+  it('O7 the header names the order, and both links lead back to /orders', async () => {
+    await signInAs('Customer');
+    jest.spyOn(globalThis, 'fetch').mockImplementation(async () => jsonResponse(200, makeOrderDetail()));
+
+    await render();
+    await screen.findByRole('header', { name: 'Order ORD-2026-000001' });
+
+    await fireEvent.press(screen.getByRole('link', { name: 'Orders' }));
+    expect(screen).toHavePathname('/orders');
+  });
+
+  it('O7 the All orders action leads to /orders', async () => {
+    await signInAs('Customer');
+    jest.spyOn(globalThis, 'fetch').mockImplementation(async () => jsonResponse(200, makeOrderDetail()));
+
+    await render();
+    await screen.findByRole('header', { name: 'Order ORD-2026-000001' });
+
+    await fireEvent.press(screen.getByRole('link', { name: 'All orders' }));
+    expect(screen).toHavePathname('/orders');
+  });
+
+  it('O8 shows the placed date, the item count, the SKU, the quantity and the unit price', async () => {
+    await signInAs('Customer');
+    jest.spyOn(globalThis, 'fetch').mockImplementation(async () => jsonResponse(200, makeOrderDetail()));
+
+    await render();
+    await screen.findByRole('header', { name: 'Order ORD-2026-000001' });
+
+    expect(screen.getByText('Placed Mar 4, 2026 · 2 items')).toBeOnTheScreen();
+    expect(screen.getByText('TEE-BLK-M')).toBeOnTheScreen();
+    expect(screen.getByText('× 2')).toBeOnTheScreen();
+    expect(screen.getByText('$20.00 each')).toBeOnTheScreen();
+  });
+
+  it('O9 shows the reason of a cancelled order on its timeline entry', async () => {
+    await signInAs('Customer');
+    const order = makeOrderDetail({
+      status: 'Cancelled',
+      timeline: [
+        { fromStatus: null, toStatus: 'PendingPayment', at: '2026-03-04T10:00:00Z', reason: null },
+        { fromStatus: 'PendingPayment', toStatus: 'Cancelled', at: '2026-03-04T11:00:00Z', reason: 'payment_timeout' },
+      ],
+    });
+    jest.spyOn(globalThis, 'fetch').mockImplementation(async () => jsonResponse(200, order));
+
+    await render();
+    await screen.findByRole('header', { name: 'Order ORD-2026-000001' });
+
+    expect(screen.getByText('payment_timeout')).toBeOnTheScreen();
+  });
+
+  it('O10 shows no Fulfilment before the order ships', async () => {
+    await signInAs('Customer');
+    jest.spyOn(globalThis, 'fetch').mockImplementation(async () => jsonResponse(200, makeOrderDetail({ status: 'Paid', shipments: [] })));
+
+    await render();
+    await screen.findByRole('header', { name: 'Order ORD-2026-000001' });
+
+    expect(screen.queryByText('Fulfilment')).toBeNull();
+    expect(screen.getByText('Deliver to')).toBeOnTheScreen();
   });
 
   it('shows the timeline in the order the server sends it', async () => {
@@ -43,7 +121,7 @@ describe('OrderDetailView', () => {
     jest.spyOn(globalThis, 'fetch').mockImplementation(async () => jsonResponse(200, makeOrderDetail()));
 
     await render();
-    await screen.findByText('ORD-2026-000001');
+    await screen.findByRole('header', { name: 'Order ORD-2026-000001' });
 
     const labels = screen.getAllByText(/^(Awaiting payment|Paid|Processing|Shipped)$/).map((node) => node.props.children as string);
     // The header status line comes first ("Shipped"), then the timeline rows in sequence.
@@ -65,7 +143,7 @@ describe('OrderDetailView', () => {
     jest.spyOn(globalThis, 'fetch').mockImplementation(async () => jsonResponse(200, makeOrderDetail({ status: 'Paid', shipments: [] })));
 
     await render();
-    await screen.findByText('ORD-2026-000001');
+    await screen.findByRole('header', { name: 'Order ORD-2026-000001' });
 
     expect(screen.queryByRole('link', { name: 'Track shipment' })).toBeNull();
     expect(screen.queryByRole('header', { name: 'Tracking' })).toBeNull();
@@ -82,7 +160,7 @@ describe('OrderDetailView', () => {
     await render();
     await fireEvent.press(await screen.findByRole('button', { name: 'Try again' }));
 
-    expect(await screen.findByText('ORD-2026-000001')).toBeOnTheScreen();
+    expect(await screen.findByRole('header', { name: 'Order ORD-2026-000001' })).toBeOnTheScreen();
   });
 
   it('shows "could not find" with no retry for another customer\'s order (403)', async () => {
@@ -114,7 +192,7 @@ describe('OrderDetailView payment status', () => {
     jest.spyOn(globalThis, 'fetch').mockImplementation(async () => jsonResponse(200, makeOrderDetail({ paymentStatus: null })));
 
     await render();
-    await screen.findByText('ORD-2026-000001');
+    await screen.findByRole('header', { name: 'Order ORD-2026-000001' });
 
     expect(screen.queryByText(/^Payment:/)).toBeNull();
   });
