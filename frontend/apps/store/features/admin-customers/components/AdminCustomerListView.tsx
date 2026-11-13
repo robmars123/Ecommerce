@@ -1,7 +1,7 @@
 import { Link, useLocalSearchParams, useRouter } from 'expo-router';
 import { ScrollView, Text, View } from 'react-native';
 
-import { AdminPanel } from '@/components/AdminPanel';
+import { Panel } from '@/components/Panel';
 import { EmptyState } from '@/components/EmptyState';
 import { ErrorState } from '@/components/ErrorState';
 import { LoadingState } from '@/components/LoadingState';
@@ -36,11 +36,11 @@ export function AdminCustomerListView() {
   return (
     <ScrollView contentContainerClassName="w-full max-w-content gap-lg self-center p-lg">
       <ScreenTitle title="Admin · Customers" />
-      <AdminPanel>
+      <Panel>
         <SearchBar value={search ?? ''} onSearch={(text) => change({ search: text || undefined, page: 1 })} />
-      </AdminPanel>
+      </Panel>
 
-      <AdminPanel>
+      <Panel>
         {data ? (
           data.items.length === 0 ? (
             <EmptyState message="No customers match." />
@@ -60,7 +60,7 @@ export function AdminCustomerListView() {
         ) : (
           <LoadingState />
         )}
-      </AdminPanel>
+      </Panel>
 
       {data && (data.totalPages > 1 || page > 1) ? (
         <Pagination

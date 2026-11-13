@@ -35,6 +35,10 @@ internal interface IOrderReadStore
 
     Task<int> CountPendingReturnsAsync(CancellationToken ct);
 
+    Task<int> CountCancelledAsync(DateTimeOffset from, DateTimeOffset to, CancellationToken ct);
+
+    Task<int> CountDeliveredAsync(DateTimeOffset from, DateTimeOffset to, CancellationToken ct);
+
     Task<CustomerOrders> GetCustomerOrdersAsync(Guid userId, int recentTake, CancellationToken ct);
 }
 

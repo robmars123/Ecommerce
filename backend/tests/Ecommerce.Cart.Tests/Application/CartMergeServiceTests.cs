@@ -42,6 +42,7 @@ public class CartMergeServiceTests
     private sealed class FakeInventory(Dictionary<Guid, int> available) : IInventoryReader
     {
         public Task<IReadOnlyList<LowStockItem>> ListLowStockAsync(int max, CancellationToken ct) => throw new NotSupportedException();
+        public Task<int> CountLowStockAsync(CancellationToken ct) => throw new NotSupportedException();
 
         public Task<IReadOnlyDictionary<Guid, StockAvailability>> GetAvailabilityAsync(IReadOnlyCollection<Guid> variantIds, CancellationToken ct) =>
             Task.FromResult<IReadOnlyDictionary<Guid, StockAvailability>>(variantIds.Distinct().ToDictionary(

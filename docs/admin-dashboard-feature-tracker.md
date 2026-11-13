@@ -37,14 +37,14 @@ Match the target screenshot across all admin screens. Rows are ordered MVP-first
 | P2.14 | Period filter: Today / 7 days / 30 days | `admin-dashboard` | Done |
 | P2.15 | Refresh button; keeps old figures on error | `admin-dashboard` | Done |
 | P2.16 | As-of line: time, period, currency, lag | `admin-dashboard` | Done |
-| P2.13 | Greeting by device time | `admin-dashboard` | Todo |
+| P2.13 | Greeting by device time | `admin-dashboard` | Done |
 | **3** | **Post-MVP: shell shortcuts** | | |
-| P2.10 | Orders badge: Paid count, links to the filtered list | `admin-shell` | Todo |
-| P2.11 | Inventory badge: "N low" | `admin-shell` | Todo |
-| P2.12 | Needs attention card: low stock, cancelled, pending returns, dead letters, lag | `admin-shell` | Todo |
+| P2.10 | Orders badge: Paid count, links to the filtered list | `admin-shell` | Done |
+| P2.11 | Inventory badge: "N low" | `admin-shell` | Done |
+| P2.12 | Needs attention card: low stock, cancelled, pending returns, dead letters, lag | `admin-shell` | Done |
 | **4** | **Post-MVP: charts, insights, settings, export** | | |
-| P2.23 | Orders card: cancelled and completed (Delivered) in the period | Admin, `admin-dashboard` | Todo |
-| P2.22 | "vs previous period" chip; the API adds previous revenue | Admin, `admin-dashboard` | Todo |
+| P2.23 | Orders card: cancelled and completed (Delivered) in the period | Admin, `admin-dashboard` | Done |
+| P2.22 | "vs previous period" chip; the API adds previous revenue | Admin, `admin-dashboard` | Done |
 | P2.25 | Revenue trend API: hourly buckets for Today, daily for 7 and 30 days, from the projection. Admin only | Admin | Todo |
 | P2.26 | Revenue trend line chart with TOTAL, ORDERS and "View report →" | `admin-dashboard` | Todo |
 | P2.27 | Orders-by-status donut with legend, % and empty state | `admin-dashboard` | Todo |
@@ -59,5 +59,14 @@ Match the target screenshot across all admin screens. Rows are ordered MVP-first
 | P2.19 | User Stories tab: US-01–US-08 (static) | `admin-dashboard` | Todo |
 | P2.20 | Acceptance Criteria tab (static) | `admin-dashboard` | Todo |
 | P2.9 | "Live store" pill: shows whether the SignalR connection is up (deprioritized) | `admin-shell` | Todo |
+| **C** | **Customer order detail: [feature] items from `docs/design-refs/northline-order-detail.md` (storefront, not admin)** | | |
+| P2.48 | Copy order number button in the order header | `orders` | Todo |
+| P2.49 | Reorder: put the order's items back in the cart | `orders`, Cart | Todo |
+| P2.50 | Cancellation alert with an explanation, and the pill note text; the API returns the text | Orders, `orders` | Todo |
+| P2.51 | Item thumbnail and colour attribute on order items; the API returns them | Orders, `orders` | Todo |
+| P2.52 | Payment card: method, amount due, captured; the API returns them | Orders, Payments, `orders` | Todo |
+| P2.53 | Timeline entry description text | Orders, `orders` | Todo |
+| P2.54 | Totals note under the Total ("never charged …") | `orders` | Todo |
+| P2.55 | Top bar avatar initial and cart count badge | `components`, Cart | Todo |
 
 **Every new endpoint:** tests for the happy path, 401/403 and 400. **Every screen:** Jest tests. **Restyle rows:** existing tests unchanged. **Theme rows:** P2.47 and P2.46 close tier 1 as a sweep; each tier-1 row already uses theme tokens only.

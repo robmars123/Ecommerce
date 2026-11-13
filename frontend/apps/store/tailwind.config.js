@@ -15,6 +15,7 @@ module.exports = {
       maxWidth: tokens.maxWidth,
       width: tokens.width,
       height: tokens.height,
+      boxShadow: tokens.boxShadow,
     },
   },
   plugins: [],

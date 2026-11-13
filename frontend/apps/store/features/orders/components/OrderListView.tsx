@@ -1,6 +1,6 @@
 import { Link } from 'expo-router';
 import { useState } from 'react';
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { EmptyState } from '@/components/EmptyState';
 import { ErrorState } from '@/components/ErrorState';
@@ -11,23 +11,28 @@ import { userMessage } from '@/lib/api-client';
 import { formatMoney } from '@/lib/money';
 
 import { useOrdersQuery } from '../hooks/useOrdersQuery';
-import { formatOrderDate, statusLabel } from '../status-labels';
+import { formatOrderDate, statusLabel, statusTone } from '../status-labels';
 import type { OrderSummary } from '../types';
+import { StatusPill } from './StatusPill';
 import { TrackingLink } from './TrackingLink';
 
 function OrderRow({ order }: { order: OrderSummary }) {
   return (
-    <View className="gap-xs rounded-card border border-border bg-surface p-md">
+    <View className="overflow-hidden rounded-panel border border-border bg-surface web:shadow-card">
       <Link href={{ pathname: '/orders/[id]', params: { id: order.id } }} asChild>
-        <Text accessibilityRole="link" className="min-h-touch py-sm text-body font-semibold text-foreground">
-          {order.orderNumber}
-        </Text>
+        <Pressable accessibilityRole="link" className="min-h-touch flex-row flex-wrap items-center gap-x-md gap-y-xs px-card py-md">
+          <Text className="font-mono text-ui font-semibold text-foreground">{order.orderNumber}</Text>
+          <Text className="text-ui-sm text-muted">{formatOrderDate(order.createdAt)}</Text>
+          <StatusPill tone={statusTone(order.status)} label={statusLabel(order.status)} />
+          <Text className="ml-auto text-panel-title font-bold text-foreground">{formatMoney(order.grandTotal)}</Text>
+        </Pressable>
       </Link>
-      <Text className="text-small text-muted">{formatOrderDate(order.createdAt)}</Text>
-      <Text className="text-body text-foreground">{statusLabel(order.status)}</Text>
-      <Text className="text-body text-foreground">{formatMoney(order.grandTotal)}</Text>
       {/* The list carries no tracking number (arch 9), so only an https link is shown; the detail shows the number. */}
-      {order.trackingUrl?.startsWith('https://') ? <TrackingLink trackingNumber="" trackingUrl={order.trackingUrl} label="Track" /> : null}
+      {order.trackingUrl?.startsWith('https://') ? (
+        <View className="px-card pb-sm">
+          <TrackingLink trackingNumber="" trackingUrl={order.trackingUrl} label="Track" />
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -38,7 +43,7 @@ export function OrderListView() {
   const data = orders.data;
 
   return (
-    <View className="w-full max-w-content flex-1 gap-sm self-center p-lg">
+    <View className="w-full max-w-content flex-1 gap-gutter self-center p-lg">
       <ScreenTitle title="Orders" />
       {data ? (
         data.items.length > 0 ? (

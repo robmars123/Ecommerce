@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="%LANG_ISO_CODE%">
+  <head>
+    <meta charset="utf-8" />
+    <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <title>%WEB_TITLE%</title>
+    <!-- Web only: Android and iOS never read this file, so they keep the system font. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap"
+    />
+    <!-- The `react-native-web` recommended style reset: https://necolas.github.io/react-native-web/docs/setup/#root-element -->
+    <style id="expo-reset">
+      /* These styles make the body full-height */
+      html,
+      body {
+        height: 100%;
+      }
+      /* These styles disable body scrolling if you are using <ScrollView> */
+      body {
+        overflow: hidden;
+      }
+      /* These styles make the root element full-height */
+      #root {
+        display: flex;
+        height: 100%;
+        flex: 1;
+      }
+    </style>
+    <!-- react-native-web sets `font: 14px System` on every Text and TextInput, so the family is applied from #root (id specificity wins). Keep in step with webFontFamily.sans in lib/design-tokens.js (checked by a test). -->
+    <style id="web-fonts">
+      #root,
+      #root * {
+        font-family:
+          Inter,
+          system-ui,
+          -apple-system,
+          'Segoe UI',
+          Roboto,
+          sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      /* Mono text (order numbers, SKUs): later and more specific than the rule above. Keep in step with webFontFamily.mono. */
+      #root .font-mono,
+      #root .font-mono * {
+        font-family: 'JetBrains Mono', monospace;
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- Use static rendering with Expo Router to support running without JavaScript. -->
+    <noscript> You need to enable JavaScript to run this app. </noscript>
+    <!-- The root element for your Expo app. -->
+    <div id="root"></div>
+  </body>
+</html>

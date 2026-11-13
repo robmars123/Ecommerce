@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
-import { AdminPanel } from '@/components/AdminPanel';
+import { Panel } from '@/components/Panel';
 import { EmptyState } from '@/components/EmptyState';
 import { ErrorState } from '@/components/ErrorState';
 import { LoadingState } from '@/components/LoadingState';
@@ -23,7 +23,7 @@ export function AdminCategoriesView() {
     <ScrollView contentContainerClassName="w-full max-w-content gap-lg self-center p-lg">
       <ScreenTitle title="Admin · Categories" />
       <CategoryCreateForm />
-      <AdminPanel title="Categories">
+      <Panel title="Categories">
         {items ? (
           items.length === 0 ? (
             <EmptyState message="No categories yet." />
@@ -49,7 +49,7 @@ export function AdminCategoriesView() {
         ) : (
           <LoadingState />
         )}
-      </AdminPanel>
+      </Panel>
     </ScrollView>
   );
 }

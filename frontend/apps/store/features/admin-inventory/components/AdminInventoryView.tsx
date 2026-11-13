@@ -2,7 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
-import { AdminPanel } from '@/components/AdminPanel';
+import { Panel } from '@/components/Panel';
 import { EmptyState } from '@/components/EmptyState';
 import { ErrorState } from '@/components/ErrorState';
 import { LoadingState } from '@/components/LoadingState';
@@ -33,7 +33,7 @@ export function AdminInventoryView() {
     <ScrollView contentContainerClassName="w-full max-w-content gap-lg self-center p-lg">
       <ScreenTitle title="Admin · Inventory" />
 
-      <AdminPanel>
+      <Panel>
         {data ? (
           data.items.length === 0 ? (
             <EmptyState message="No variants yet." />
@@ -56,7 +56,7 @@ export function AdminInventoryView() {
         ) : (
           <LoadingState />
         )}
-      </AdminPanel>
+      </Panel>
 
       {data ? (
         <Pagination

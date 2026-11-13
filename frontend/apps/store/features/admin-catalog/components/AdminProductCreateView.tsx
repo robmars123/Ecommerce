@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import { ScrollView } from 'react-native';
 
-import { AdminPanel } from '@/components/AdminPanel';
+import { Panel } from '@/components/Panel';
 import { ScreenTitle } from '@/components/ScreenTitle';
 
 import { emptyFormState, toCreateRequest } from '../form-model';
@@ -15,7 +15,7 @@ export function AdminProductCreateView() {
   return (
     <ScrollView contentContainerClassName="w-full max-w-content gap-lg self-center p-lg">
       <ScreenTitle title="Admin · New product" />
-      <AdminPanel>
+      <Panel>
         <ProductForm
           mode="create"
           initial={emptyFormState()}
@@ -27,7 +27,7 @@ export function AdminProductCreateView() {
           pending={create.isPending}
           error={create.error}
         />
-      </AdminPanel>
+      </Panel>
     </ScrollView>
   );
 }

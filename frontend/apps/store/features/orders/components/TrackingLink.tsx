@@ -18,7 +18,7 @@ export function TrackingLink({ trackingNumber, trackingUrl, label = 'Track shipm
       onPress={() => void Linking.openURL(trackingUrl)}
       className="min-h-touch justify-center"
     >
-      <Text className="text-body text-primary underline">{label}</Text>
+      <Text className="text-ui font-semibold text-primary-text underline">{label}</Text>
     </Pressable>
   );
 }

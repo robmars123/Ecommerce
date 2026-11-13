@@ -2,6 +2,7 @@ import { fireEvent, screen, waitFor, within } from 'expo-router/testing-library'
 import { Text } from 'react-native';
 
 import AdminDashboardScreen from '@/app/admin/index';
+import { DashboardView } from '@/features/admin-dashboard/components/DashboardView';
 import { resetSession } from '@/features/auth/session';
 import { makeDashboard, makeRecentOrder, makeRecentOrdersPage } from '@/tests/admin-dashboard-fixtures';
 import { calledUrls, jsonResponse, problemResponse } from '@/tests/fetch-mock';
@@ -51,9 +52,12 @@ describe('DashboardView', () => {
     const revenue = within(screen.getByLabelText('Revenue'));
     expect(revenue.getByText('$1,234.50')).toBeOnTheScreen();
     expect(revenue.getByText('Paid minus refunds today')).toBeOnTheScreen();
+    expect(revenue.getByText('+23.5%')).toBeOnTheScreen();
+    expect(revenue.getByText('vs $1,000.00 previous period')).toBeOnTheScreen();
     const orders = within(screen.getByLabelText('Orders'));
     expect(orders.getByText('7')).toBeOnTheScreen();
     expect(orders.getByText('Paid today')).toBeOnTheScreen();
+    expect(orders.getByText('0 delivered · 0 cancelled')).toBeOnTheScreen();
     const average = within(screen.getByLabelText('Average order value'));
     expect(average.getByText('$176.36')).toBeOnTheScreen();
     expect(average.getByText('Across 7 orders')).toBeOnTheScreen();
@@ -74,6 +78,8 @@ describe('DashboardView', () => {
     expect(await screen.findByText('Orders by status')).toBeOnTheScreen();
     expect(screen.queryByText('Sales')).toBeNull();
     expect(screen.queryByText(/Revenue/)).toBeNull();
+    expect(screen.queryByText(/previous period/)).toBeNull();
+    expect(screen.queryByText(/%/)).toBeNull();
   });
 
   it('opens the orders list filtered by the tapped status', async () => {
@@ -208,7 +214,14 @@ describe('DashboardView', () => {
     mockApi(
       makeDashboard({
         period: 'today',
-        kpis: { revenue: zero, orderCount: 0, averageOrderValue: zero, customers: { total: 0, new: 0, returning: 0 } },
+        kpis: {
+          revenue: zero,
+          orderCount: 0,
+          averageOrderValue: zero,
+          customers: { total: 0, new: 0, returning: 0 },
+          previousRevenue: zero,
+          revenueChangePercent: null,
+        },
       }),
     );
 
@@ -479,5 +492,28 @@ describe('DashboardView period, refresh and as-of (P2.14-P2.16)', () => {
 
     expect(await screen.findByText('Period: 30 days')).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: 'Today' })).toBeSelected();
+  });
+});
+
+describe('DashboardView greeting', () => {
+  const renderGreeting = (now: () => Date) =>
+    renderRouterWithQuery({ 'admin/index': () => <DashboardView now={now} /> }, { initialUrl: '/admin' });
+
+  it('G3: Admin at 09:00 is greeted by name', async () => {
+    await signInAs('Admin');
+    mockApi();
+
+    await renderGreeting(() => new Date(2026, 10, 12, 9, 0));
+
+    expect(await screen.findByText('Good morning, Admin User')).toBeOnTheScreen();
+  });
+
+  it('G4: Support at 20:00 is greeted by name', async () => {
+    await signInAs('Support');
+    mockApi();
+
+    await renderGreeting(() => new Date(2026, 10, 12, 20, 0));
+
+    expect(await screen.findByText('Good evening, Support User')).toBeOnTheScreen();
   });
 });

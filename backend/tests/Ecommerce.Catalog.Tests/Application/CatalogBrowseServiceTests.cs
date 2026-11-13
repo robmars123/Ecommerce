@@ -159,6 +159,7 @@ public class CatalogBrowseServiceTests
     private sealed class FakeInventory(Dictionary<Guid, StockStatus> statuses) : IInventoryReader
     {
         public Task<IReadOnlyList<LowStockItem>> ListLowStockAsync(int max, CancellationToken ct) => throw new NotSupportedException();
+        public Task<int> CountLowStockAsync(CancellationToken ct) => throw new NotSupportedException();
 
         public List<IReadOnlyCollection<Guid>> Calls { get; } = [];
 

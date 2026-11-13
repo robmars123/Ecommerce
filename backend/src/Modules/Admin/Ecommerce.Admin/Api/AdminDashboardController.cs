@@ -16,7 +16,8 @@ internal sealed record MoneyResponse(string Amount, string Currency)
 
 internal sealed record CustomersResponse(int Total, int New, int Returning);
 
-internal sealed record KpisResponse(MoneyResponse Revenue, int OrderCount, MoneyResponse AverageOrderValue, CustomersResponse Customers);
+internal sealed record KpisResponse(MoneyResponse Revenue, int OrderCount, MoneyResponse AverageOrderValue, CustomersResponse Customers,
+    MoneyResponse PreviousRevenue, decimal? RevenueChangePercent);
 
 internal sealed record TopProductResponse(Guid ProductId, string Name, int Units);
 
@@ -37,6 +38,9 @@ internal sealed record DashboardResponse(
     IReadOnlyList<StatusCount> OrdersByStatus,
     IReadOnlyList<TopProductResponse> TopProducts,
     IReadOnlyList<LowStockResponse> LowStock,
+    int LowStockCount,
+    int CancelledCount,
+    int DeliveredCount,
     NeedsAttentionResponse NeedsAttention);
 
 internal sealed record RecentOrderResponse(
@@ -71,10 +75,14 @@ internal sealed class AdminDashboardController(DashboardQueryService dashboard) 
                 ? null
                 : new KpisResponse(
                     MoneyResponse.From(view.Kpis.Revenue, currency), view.Kpis.OrderCount, MoneyResponse.From(view.Kpis.AverageOrderValue, currency),
-                    new CustomersResponse(view.Kpis.Customers, view.Kpis.NewCustomers, view.Kpis.ReturningCustomers)),
+                    new CustomersResponse(view.Kpis.Customers, view.Kpis.NewCustomers, view.Kpis.ReturningCustomers),
+                    MoneyResponse.From(view.Comparison!.PreviousRevenue, currency), view.Comparison.ChangePercent),
             view.OrdersByStatus,
             view.TopProducts.Select(t => new TopProductResponse(t.ProductId, t.Name, t.Units)).ToList(),
             view.LowStock.Select(l => new LowStockResponse(l.VariantId, l.ProductName, l.Sku, l.Available)).ToList(),
+            view.LowStockCount,
+            view.CancelledCount,
+            view.DeliveredCount,
             new NeedsAttentionResponse(
                 view.NeedsAttention.PendingReturns,
                 view.NeedsAttention.DeadLetters.Select(d => new DeadLetterResponse(d.Consumer, d.Count)).ToList(),

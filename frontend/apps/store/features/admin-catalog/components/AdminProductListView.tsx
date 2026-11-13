@@ -1,7 +1,7 @@
 import { Link, useLocalSearchParams, useRouter } from 'expo-router';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
-import { AdminPanel } from '@/components/AdminPanel';
+import { Panel } from '@/components/Panel';
 import { EmptyState } from '@/components/EmptyState';
 import { ErrorState } from '@/components/ErrorState';
 import { LoadingState } from '@/components/LoadingState';
@@ -75,7 +75,7 @@ export function AdminProductListView() {
         </Link>
       </View>
 
-      <AdminPanel>
+      <Panel>
         <SearchBar value={params.search ?? ''} onSearch={(text) => change({ search: text || undefined })} />
         <View className="flex-row flex-wrap gap-sm">
           {STATUSES.map((s) => {
@@ -96,9 +96,9 @@ export function AdminProductListView() {
         {categories.data ? (
           <CategoryFilter categories={categories.data.items} selected={params.category} onSelect={(slug) => change({ category: slug })} />
         ) : null}
-      </AdminPanel>
+      </Panel>
 
-      <AdminPanel>
+      <Panel>
         {data ? (
           data.items.length === 0 ? (
             <EmptyState message="No products match." />
@@ -118,7 +118,7 @@ export function AdminProductListView() {
         ) : (
           <LoadingState />
         )}
-      </AdminPanel>
+      </Panel>
 
       {data ? (
         <Pagination

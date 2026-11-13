@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Text, View } from 'react-native';
+import { Text } from 'react-native';
 
 import { ActionButton } from '@/components/ActionButton';
 import { ErrorState } from '@/components/ErrorState';
+import { Panel } from '@/components/Panel';
 import { TextField } from '@/components/TextField';
 import { ApiError, userMessage } from '@/lib/api-client';
 
@@ -35,9 +36,11 @@ export function ReturnRequestForm({ order }: { order: OrderDetail }) {
   }
   if (mutation.isSuccess) {
     return (
-      <Text accessibilityRole="alert" className="text-body text-foreground">
-        Return requested. We will email you when it has been reviewed.
-      </Text>
+      <Panel title="Return items">
+        <Text accessibilityRole="alert" className="text-body text-foreground">
+          Return requested. We will email you when it has been reviewed.
+        </Text>
+      </Panel>
     );
   }
 
@@ -58,14 +61,15 @@ export function ReturnRequestForm({ order }: { order: OrderDetail }) {
   }
 
   if (mutation.isError) {
-    return <ErrorState message={messageFor(mutation.error)} onRetry={submit} />;
+    return (
+      <Panel title="Return items">
+        <ErrorState message={messageFor(mutation.error)} onRetry={submit} />
+      </Panel>
+    );
   }
 
   return (
-    <View className="gap-md">
-      <Text accessibilityRole="header" className="text-title font-semibold text-foreground">
-        Return items
-      </Text>
+    <Panel title="Return items">
       {order.items.map((item) => (
         <TextField
           key={item.variantId}
@@ -82,6 +86,6 @@ export function ReturnRequestForm({ order }: { order: OrderDetail }) {
         </Text>
       ) : null}
       <ActionButton label="Request a return" onPress={submit} pending={mutation.isPending} />
-    </View>
+    </Panel>
   );
 }

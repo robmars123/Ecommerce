@@ -64,6 +64,42 @@ public class KpiTests
     }
 
     [Fact]
+    public void The_revenue_change_is_the_percent_against_the_previous_rounded_to_one_place_away_from_zero()
+    {
+        Assert.Equal(20.0m, KpiCalculator.ChangePercent(120m, 100m));
+        Assert.Equal(-16.7m, KpiCalculator.ChangePercent(100m, 120m));
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(50)]
+    public void The_revenue_change_is_null_when_the_previous_revenue_is_zero(int current)
+    {
+        Assert.Null(KpiCalculator.ChangePercent(current, 0m));
+    }
+
+    [Fact]
+    public void The_revenue_change_divides_by_the_absolute_previous_so_the_sign_means_up_or_down()
+    {
+        Assert.Equal(50.0m, KpiCalculator.ChangePercent(-50m, -100m));
+        Assert.Equal(150.0m, KpiCalculator.ChangePercent(50m, -100m));
+    }
+
+    [Theory]
+    [InlineData("today", "2026-11-11T00:00:00Z", "2026-11-11T14:05:00Z")]
+    [InlineData("7d", "2026-10-30T00:00:00Z", "2026-11-05T14:05:00Z")]
+    [InlineData("30d", "2026-09-14T00:00:00Z", "2026-10-13T14:05:00Z")]
+    public void The_previous_window_is_the_same_elapsed_time_one_period_earlier_and_never_overlaps(string name, string from, string to)
+    {
+        DashboardPeriod period = DashboardPeriod.Parse(name)!;
+        DateTimeOffset now = DateTimeOffset.Parse("2026-11-12T14:05:00Z");
+
+        Assert.Equal(DateTimeOffset.Parse(from), period.PreviousFrom(now));
+        Assert.Equal(DateTimeOffset.Parse(to), period.PreviousTo(now));
+        Assert.True(period.PreviousTo(now) < period.From(now));
+    }
+
+    [Fact]
     public void The_period_start_ignores_the_offset_of_the_clock_value()
     {
         DashboardPeriod today = DashboardPeriod.Today;
