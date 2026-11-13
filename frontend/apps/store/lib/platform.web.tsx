@@ -1,6 +1,7 @@
 // The only per-platform code (architecture 5.2): web half. Keep the exports identical to platform.d.ts.
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
 import { loadStripe, type Stripe } from '@stripe/stripe-js';
+import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 
@@ -22,6 +23,18 @@ export async function saveTextFile(fileName: string, mimeType: string, text: str
   } finally {
     URL.revokeObjectURL(url);
   }
+}
+
+/** A file chooser; the picked asset carries the browser File, which goes into the form as is. */
+export async function pickImageFile(): Promise<FormData | null> {
+  const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: false, quality: 0.9 });
+  const asset = result.canceled ? undefined : result.assets[0];
+  if (!asset?.file) {
+    return null;
+  }
+  const form = new FormData();
+  form.append('file', asset.file);
+  return form;
 }
 
 export function refreshTokenTransport(): 'cookie' | 'body' {

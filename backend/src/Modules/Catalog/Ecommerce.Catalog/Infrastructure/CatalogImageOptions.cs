@@ -3,8 +3,8 @@ namespace Ecommerce.Catalog.Infrastructure;
 internal sealed class CatalogImageOptions
 {
     /// <summary>
-    /// Public base URL for product images (Spaces/CDN domain is an open decision, architecture 2).
-    /// Empty by design in committed config: image URLs are then null.
+    /// Optional public base URL for product images (a CDN or the API host; the domain is an open decision, architecture 2).
+    /// Empty by design in committed config: image URLs are then the API's own /api/v1/images/{key} path.
     /// </summary>
     public string BaseUrl { get; set; } = "";
 

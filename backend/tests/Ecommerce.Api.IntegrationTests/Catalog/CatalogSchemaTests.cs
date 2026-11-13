@@ -70,7 +70,7 @@ public class CatalogSchemaTests(PostgresFixture postgres)
 
         List<IEntityType> tables = db.Model.GetEntityTypes().Where(e => e.GetTableName() is not null).ToList();
         Assert.Equal(
-            new[] { "admin_dashboard_orders", "admin_dashboard_refunds", "audit_log", "cart_items", "carts", "catalog_product_sales_daily", "categories", "consumer_checkpoints", "fulfillment_sagas", "idempotency_keys", "inventory_reservations", "inventory_stock", "order_items", "order_status_history", "orders", "outbox_events", "password_reset_tokens", "payments", "processed_events", "product_images", "product_variants", "products", "projection_versions", "refresh_token_families", "refresh_tokens", "refunds", "return_requests", "shipments", "users" },
+            new[] { "admin_dashboard_orders", "admin_dashboard_refunds", "audit_log", "cart_items", "carts", "catalog_product_sales_daily", "categories", "consumer_checkpoints", "fulfillment_sagas", "idempotency_keys", "image_blobs", "inventory_reservations", "inventory_stock", "order_items", "order_status_history", "orders", "outbox_events", "password_reset_tokens", "payments", "processed_events", "product_images", "product_variants", "products", "projection_versions", "refresh_token_families", "refresh_tokens", "refunds", "return_requests", "shipments", "users" },
             tables.Select(t => t.GetTableName()!).Order().ToArray());
 
         foreach (IEntityType? entity in tables)

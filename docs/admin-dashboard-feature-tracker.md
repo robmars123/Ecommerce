@@ -68,5 +68,7 @@ Match the target screenshot across all admin screens. Rows are ordered MVP-first
 | P2.53 | Timeline entry description text | Orders, `orders` | Done |
 | P2.54 | Totals note under the Total ("never charged …") | `orders` | Done |
 | P2.55 | Top bar avatar initial and cart count badge | `components`, Cart | Done |
+| **D** | **Product images** | | |
+| P2.56 | Product image upload: "Add image" picks a file and uploads it; image bytes stored in Postgres and served by the API (replaces the unconfigured Spaces storage). Admin only | Catalog, `admin-catalog` | Done |
 
 **Every new endpoint:** tests for the happy path, 401/403 and 400. **Every screen:** Jest tests. **Restyle rows:** existing tests unchanged. **Theme rows:** P2.47 and P2.46 close tier 1 as a sweep; each tier-1 row already uses theme tokens only.

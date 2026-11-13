@@ -1,4 +1,4 @@
-import { ApiError, apiGet, userMessage } from './api-client';
+import { ApiError, apiGet, apiSend, userMessage } from './api-client';
 import { jsonResponse, mockFetchOnce, problemResponse } from '@/tests/fetch-mock';
 
 const BASE = 'http://api.test.invalid:5080';
@@ -284,5 +284,38 @@ describe('ApiError carries the on-hand count of a stock conflict (Slice 10.4)', 
 
     mockFetchOnce(problemResponse(409, { title: 'Conflict' }));
     expect((await catchError(apiGet('/api/v1/admin/inventory'))).onHand).toBeUndefined();
+  });
+});
+
+describe('apiSend with a FormData body', () => {
+  it('sends the form as is with no JSON Content-Type, so fetch sets the multipart boundary', async () => {
+    const spy = jest.spyOn(globalThis, 'fetch').mockImplementation(async () => jsonResponse(200, { storageKey: 'k', url: '/u' }));
+    const form = new FormData();
+    form.append('file', new Blob(['x']), 'a.png');
+
+    await apiSend('POST', '/api/v1/admin/products/p-1/images', { body: form });
+
+    const init = spy.mock.calls[0][1] as RequestInit;
+    expect(init.body).toBe(form);
+    expect(init.headers as Record<string, string>).not.toHaveProperty('Content-Type');
+  });
+
+  it('timeoutMs overrides the default timeout', async () => {
+    jest.useFakeTimers();
+    jest.spyOn(globalThis, 'fetch').mockImplementation(
+      (_url, init) =>
+        new Promise((_resolve, reject) => {
+          (init?.signal as AbortSignal).addEventListener('abort', () => reject(new Error('aborted')));
+        }),
+    );
+
+    const pending = catchError(apiSend('POST', '/x', { body: new FormData(), timeoutMs: 60_000 }));
+    let settled = false;
+    void pending.then(() => (settled = true));
+    await jest.advanceTimersByTimeAsync(15_001);
+    expect(settled).toBe(false);
+
+    await jest.advanceTimersByTimeAsync(45_000);
+    expect((await pending).kind).toBe('timeout');
   });
 });

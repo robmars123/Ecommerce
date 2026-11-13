@@ -105,7 +105,7 @@ internal sealed class CountingInventory : IInventoryReader
 
 internal sealed class NoImages : IImageUrlResolver
 {
-    public string? Resolve(string storageKey) => null;
+    public string Resolve(string storageKey) => "url:" + storageKey;
 }
 
 internal sealed class AdminEnv

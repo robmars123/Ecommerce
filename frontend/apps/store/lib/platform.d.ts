@@ -28,5 +28,8 @@ export declare const refreshTokenStorage: {
   clear(): Promise<void>;
 };
 
+/** Opens the photo library (native) or a file chooser (web) for one image. A FormData with the picked file in field `file`, or null when cancelled. */
+export declare function pickImageFile(): Promise<FormData | null>;
+
 /** Hands a text file to the user: a download on web, the share sheet on native (the dashboard CSV export). */
 export declare function saveTextFile(fileName: string, mimeType: string, text: string): Promise<void>;

@@ -6,12 +6,13 @@ using System.Text.RegularExpressions;
 using Ecommerce.Api.IntegrationTests.Identity;
 using Ecommerce.Catalog.Application.Admin;
 using Ecommerce.Identity.Domain;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Ecommerce.Api.IntegrationTests.Catalog.Admin;
 
-// IU1 .. IU9 (IU5: the host's anonymous 404 fallback hides the 415 a mismatched Consumes would give): product image upload over HTTP with a real Postgres and a recording storage fake (no network).
+// IU1 .. IU9 (IU7 was removed with the Spaces 503 path, P2.56 D11; IU5: the host's anonymous 404 fallback hides the 415 a mismatched Consumes would give): product image upload over HTTP with a real Postgres and the real Postgres image storage (IU9 uses a failing fake).
 public class AdminProductImageApiTests(PostgresFixture postgres)
 {
     private static readonly byte[] Png = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
@@ -33,9 +34,17 @@ public class AdminProductImageApiTests(PostgresFixture postgres)
             await content.CopyToAsync(copy, ct);
             Puts.Add((key, contentType, copy.ToArray()));
         }
+
+        public Task<StoredImage?> GetAsync(string key, CancellationToken ct) => throw new NotSupportedException();
     }
 
-    private async Task<(IdentityTestEnv Env, RecordingImageStorage Storage, string Token)> StartAsync()
+    private async Task<(IdentityTestEnv Env, string Token)> StartAsync()
+    {
+        IdentityTestEnv env = await IdentityTestEnv.StartAsync(postgres);
+        return (env, await AdminSamples.AdminTokenAsync(env));
+    }
+
+    private async Task<(IdentityTestEnv Env, RecordingImageStorage Storage, string Token)> StartWithFakeAsync()
     {
         RecordingImageStorage storage = new RecordingImageStorage();
         IdentityTestEnv env = await IdentityTestEnv.StartAsync(postgres, configure: s =>
@@ -45,6 +54,9 @@ public class AdminProductImageApiTests(PostgresFixture postgres)
         });
         return (env, storage, await AdminSamples.AdminTokenAsync(env));
     }
+
+    private static Task<int> BlobCountAsync(IdentityTestEnv env) =>
+        env.Db.Database.SqlQuery<int>($"SELECT count(*)::int AS \"Value\" FROM image_blobs").SingleAsync(TestContext.Current.CancellationToken);
 
     private static async Task<(HttpStatusCode Status, string Text)> UploadAsync(
         IdentityTestEnv env, string productId, byte[]? bytes, string? token, string contentType = "image/png", string fileName = "a.png", bool filePart = true)
@@ -76,10 +88,18 @@ public class AdminProductImageApiTests(PostgresFixture postgres)
 
     private static string KeyOf(string text) => JsonDocument.Parse(text).RootElement.GetProperty("storageKey").GetString()!;
 
-    [Fact]
-    public async Task IU1_a_png_is_stored_byte_identical_returns_its_key_and_attaches_nothing_until_the_product_is_saved()
+    private static string UrlOf(string text) => JsonDocument.Parse(text).RootElement.GetProperty("url").GetString()!;
+
+    private static async Task<(HttpStatusCode Status, string? ContentType, byte[] Bytes)> GetImageAsync(IdentityTestEnv env, string url)
     {
-        (IdentityTestEnv? env, RecordingImageStorage? storage, string? token) = await StartAsync();
+        using HttpResponseMessage response = await env.Client.GetAsync(url, TestContext.Current.CancellationToken);
+        return (response.StatusCode, response.Content.Headers.ContentType?.MediaType, await response.Content.ReadAsByteArrayAsync(TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task IU1_a_png_is_stored_byte_identical_returns_its_key_and_url_and_attaches_nothing_until_the_product_is_saved()
+    {
+        (IdentityTestEnv? env, string? token) = await StartAsync();
         await using IdentityTestEnv _env = env;
         IdentityTestEnv.Api product = await AdminSamples.CreateProductAsync(env, token);
         string id = product.Str("id");
@@ -89,10 +109,12 @@ public class AdminProductImageApiTests(PostgresFixture postgres)
         Assert.Equal(HttpStatusCode.OK, status);
         string key = KeyOf(text);
         Assert.Matches(new Regex($"^products/{id}/[0-9a-f-]{{36}}\\.png$"), key);
-        (string Key, string ContentType, byte[] Bytes) put = Assert.Single(storage.Puts);
-        Assert.Equal(key, put.Key);
-        Assert.Equal("image/png", put.ContentType);
-        Assert.Equal(Png, put.Bytes);
+        Assert.Equal("/api/v1/images/" + key, UrlOf(text));
+        (HttpStatusCode getStatus, string? type, byte[] bytes) = await GetImageAsync(env, UrlOf(text));
+        Assert.Equal(HttpStatusCode.OK, getStatus);
+        Assert.Equal("image/png", type);
+        Assert.Equal(Png, bytes);
+        Assert.Equal(1, await BlobCountAsync(env));
 
         IdentityTestEnv.Api before = await env.GetAsync($"{AdminSamples.Products}/{id}", token);
         Assert.Empty(before.Json.GetProperty("images").EnumerateArray());
@@ -106,7 +128,7 @@ public class AdminProductImageApiTests(PostgresFixture postgres)
     [Fact]
     public async Task IU2_jpeg_and_webp_are_detected_from_the_bytes_and_the_clients_type_and_name_are_ignored()
     {
-        (IdentityTestEnv? env, RecordingImageStorage? storage, string? token) = await StartAsync();
+        (IdentityTestEnv? env, string? token) = await StartAsync();
         await using IdentityTestEnv _env = env;
         string id = (await AdminSamples.CreateProductAsync(env, token)).Str("id");
 
@@ -117,13 +139,14 @@ public class AdminProductImageApiTests(PostgresFixture postgres)
         Assert.Equal(HttpStatusCode.OK, s2);
         Assert.EndsWith(".jpg", KeyOf(t1));
         Assert.EndsWith(".webp", KeyOf(t2));
-        Assert.Equal(["image/jpeg", "image/webp"], storage.Puts.Select(p => p.ContentType).ToArray());
+        Assert.Equal("image/jpeg", (await GetImageAsync(env, UrlOf(t1))).ContentType);
+        Assert.Equal("image/webp", (await GetImageAsync(env, UrlOf(t2))).ContentType);
     }
 
     [Fact]
     public async Task IU3_upload_needs_an_admin_token()
     {
-        (IdentityTestEnv? env, RecordingImageStorage? storage, string? admin) = await StartAsync();
+        (IdentityTestEnv? env, string? admin) = await StartAsync();
         await using IdentityTestEnv _env = env;
         string id = (await AdminSamples.CreateProductAsync(env, admin)).Str("id");
         await env.AddUserAsync("cust@example.test", UserRole.Customer);
@@ -132,19 +155,19 @@ public class AdminProductImageApiTests(PostgresFixture postgres)
         Assert.Equal(HttpStatusCode.Unauthorized, (await UploadAsync(env, id, Png, null)).Status);
         Assert.Equal(HttpStatusCode.Forbidden, (await UploadAsync(env, id, Png, await env.AccessTokenAsync("cust@example.test"))).Status);
         Assert.Equal(HttpStatusCode.Forbidden, (await UploadAsync(env, id, Png, await env.AccessTokenAsync("support@example.test"))).Status);
-        Assert.Empty(storage.Puts);
+        Assert.Equal(0, await BlobCountAsync(env));
     }
 
     public static TheoryData<string> BadFiles => new()
     {
-        "none", "empty", "toobig", "svg", "html", "wave", "gif",
+        "none", "empty", "toobig", "svg", "html", "svgtype", "wave", "gif",
     };
 
     [Theory]
     [MemberData(nameof(BadFiles))]
     public async Task IU4_a_missing_empty_oversize_or_non_image_file_is_400_on_file_and_nothing_is_stored(string kind)
     {
-        (IdentityTestEnv? env, RecordingImageStorage? storage, string? token) = await StartAsync();
+        (IdentityTestEnv? env, string? token) = await StartAsync();
         await using IdentityTestEnv _env = env;
         string id = (await AdminSamples.CreateProductAsync(env, token)).Str("id");
 
@@ -154,6 +177,7 @@ public class AdminProductImageApiTests(PostgresFixture postgres)
             "empty" => await UploadAsync(env, id, [], token),
             "toobig" => await UploadAsync(env, id, [.. Png, .. new byte[5 * 1024 * 1024 + 1 - Png.Length]], token),
             "svg" => await UploadAsync(env, id, Encoding.UTF8.GetBytes("<svg xmlns=\"http://www.w3.org/2000/svg\"/>"), token, "image/png", "a.png"),
+            "svgtype" => await UploadAsync(env, id, Encoding.UTF8.GetBytes("<svg xmlns=\"http://www.w3.org/2000/svg\"/>"), token, "image/svg+xml", "a.svg"),
             "html" => await UploadAsync(env, id, Encoding.UTF8.GetBytes("<html><script>1</script></html>"), token),
             "wave" => await UploadAsync(env, id, [.. "RIFF"u8, 20, 0, 0, 0, .. "WAVE"u8, 1, 2, 3, 4], token),
             _ => await UploadAsync(env, id, [.. "GIF89a"u8, 1, 0, 1, 0], token),
@@ -161,65 +185,51 @@ public class AdminProductImageApiTests(PostgresFixture postgres)
 
         Assert.Equal(HttpStatusCode.BadRequest, status);
         Assert.True(JsonDocument.Parse(text).RootElement.GetProperty("errors").TryGetProperty("file", out _));
-        Assert.Empty(storage.Puts);
+        Assert.Equal(0, await BlobCountAsync(env));
     }
 
     [Fact]
     public async Task IU5_a_json_body_never_reaches_the_upload_action()
     {
-        (IdentityTestEnv? env, RecordingImageStorage? storage, string? token) = await StartAsync();
+        (IdentityTestEnv? env, string? token) = await StartAsync();
         await using IdentityTestEnv _env = env;
         string id = (await AdminSamples.CreateProductAsync(env, token)).Str("id");
 
         (HttpStatusCode status, string text) = await SendAsync(env, id, new StringContent("{}", Encoding.UTF8, "application/json"), token);
 
         Assert.True(status == HttpStatusCode.NotFound, $"{status} {text}");
-        Assert.Empty(storage.Puts);
+        Assert.Equal(0, await BlobCountAsync(env));
     }
 
     [Fact]
     public async Task IU6_an_unknown_product_is_404_and_storage_is_not_touched()
     {
-        (IdentityTestEnv? env, RecordingImageStorage? storage, string? token) = await StartAsync();
+        (IdentityTestEnv? env, string? token) = await StartAsync();
         await using IdentityTestEnv _env = env;
 
         (HttpStatusCode status, _) = await UploadAsync(env, Guid.NewGuid().ToString(), Png, token);
 
         Assert.Equal(HttpStatusCode.NotFound, status);
-        Assert.Empty(storage.Puts);
-    }
-
-    [Fact]
-    public async Task IU7_blank_storage_config_is_503_without_any_network_call()
-    {
-        IdentityTestEnv env = await IdentityTestEnv.StartAsync(postgres);
-        await using IdentityTestEnv _env = env;
-        string token = await AdminSamples.AdminTokenAsync(env);
-        string id = (await AdminSamples.CreateProductAsync(env, token)).Str("id");
-
-        (HttpStatusCode status, string text) = await UploadAsync(env, id, Png, token).WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
-
-        Assert.Equal(HttpStatusCode.ServiceUnavailable, status);
-        Assert.Equal("Image storage is not configured", JsonDocument.Parse(text).RootElement.GetProperty("title").GetString());
+        Assert.Equal(0, await BlobCountAsync(env));
     }
 
     [Fact]
     public async Task IU8_a_body_far_over_the_limit_is_rejected_by_the_framework()
     {
-        (IdentityTestEnv? env, RecordingImageStorage? storage, string? token) = await StartAsync();
+        (IdentityTestEnv? env, string? token) = await StartAsync();
         await using IdentityTestEnv _env = env;
         string id = (await AdminSamples.CreateProductAsync(env, token)).Str("id");
 
         (HttpStatusCode status, _) = await UploadAsync(env, id, [.. Png, .. new byte[7 * 1024 * 1024]], token);
 
         Assert.Equal(HttpStatusCode.BadRequest, status); // observed once under TestServer; Kestrel answers 413
-        Assert.Empty(storage.Puts);
+        Assert.Equal(0, await BlobCountAsync(env));
     }
 
     [Fact]
     public async Task IU9_a_storage_failure_is_a_500_that_does_not_leak_the_exception_message()
     {
-        (IdentityTestEnv? env, RecordingImageStorage? storage, string? token) = await StartAsync();
+        (IdentityTestEnv? env, RecordingImageStorage? storage, string? token) = await StartWithFakeAsync();
         await using IdentityTestEnv _env = env;
         string id = (await AdminSamples.CreateProductAsync(env, token)).Str("id");
         storage.Throw = new IOException("secret-bucket-detail");

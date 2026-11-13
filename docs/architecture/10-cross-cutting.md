@@ -17,7 +17,7 @@
 
 | Data | Cache | Invalidation |
 |---|---|---|
-| Product list / detail | Redis 60s, images on CDN | Delete keys on product/variant change |
+| Product list / detail | Redis 60s; images served by the API with immutable HTTP caching (CDN optional via `Catalog:Images:BaseUrl`) | Delete keys on product/variant change; image keys are never overwritten |
 | Categories | Redis 5 min | On change |
 | Stock indicator (display) | Redis 10s | TTL only. Checkout re-reads Postgres under lock |
 | Cart, totals, orders, payments | **Never cached** | — |
@@ -51,7 +51,6 @@ flowchart LR
     GH --> EAS[EAS Build<br/>AAB / IPA on demand]
     DO --> PG[(Managed Postgres)]
     DO --> RD[(Managed Redis)]
-    DO --> SP[Spaces + CDN]
     DO <--> ST[Stripe]
 ```
 

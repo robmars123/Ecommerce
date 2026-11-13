@@ -1,6 +1,7 @@
 // The only per-platform code (architecture 5.2): native half. Keep the exports identical to platform.d.ts.
 import { StripeProvider, useStripe } from '@stripe/stripe-react-native';
 import Constants from 'expo-constants';
+import * as ImagePicker from 'expo-image-picker';
 import * as Linking from 'expo-linking';
 import * as SecureStore from 'expo-secure-store';
 import { useState } from 'react';
@@ -17,6 +18,19 @@ const SHEET_CANCELED = 'Canceled';
 /** Opens the share sheet with the text (React Native core; no file-system package). */
 export async function saveTextFile(fileName: string, _mimeType: string, text: string): Promise<void> {
   await Share.share({ title: fileName, message: text });
+}
+
+/** The photo library. quality 0.9 makes iOS export JPEG rather than HEIC, which the server refuses. */
+export async function pickImageFile(): Promise<FormData | null> {
+  const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: false, quality: 0.9 });
+  const asset = result.canceled ? undefined : result.assets[0];
+  if (!asset) {
+    return null;
+  }
+  const form = new FormData();
+  // React Native's FormData takes a { uri, name, type } part; the DOM typings do not know it.
+  form.append('file', { uri: asset.uri, name: asset.fileName ?? 'image.jpg', type: asset.mimeType ?? 'image/jpeg' } as unknown as Blob);
+  return form;
 }
 
 export function refreshTokenTransport(): 'cookie' | 'body' {

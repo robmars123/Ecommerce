@@ -33,6 +33,7 @@ erDiagram
 | products | id, slug (unique), name, description, category_id, is_active (default false), created_at, updated_at |
 | product_variants | id, product_id, sku (unique), name, size, colour, price, currency, compare_at_price, weight_grams, is_active |
 | product_images | id, product_id, storage_key, alt_text, sort_order |
+| image_blobs | storage_key (PK, varchar 512), content_type (JPEG/PNG/WebP only), size_bytes, sha256 (bytea, 32), content (bytea, ≤ 5 MB), created_at. Image bytes (§2, P2.56); `product_images.storage_key` points here, no FK. Never updated; orphans kept (GC is backlog) |
 | inventory_stock | product_variant_id (PK), quantity_on_hand, quantity_reserved, `xmin` concurrency token. **CHECK (on_hand − reserved ≥ 0 AND reserved ≥ 0)** |
 | inventory_reservations | id, order_id, product_variant_id, quantity, status, expires_at, created_at. Unique partial (order_id, variant_id) WHERE status = 'Active' |
 | carts | id, user_id (unique — one cart per user), updated_at |

@@ -10,10 +10,13 @@ import type {
   CreateProductRequest,
   UpdateCategoryRequest,
   UpdateProductRequest,
+  UploadedImage,
 } from './types';
 
 const BASE = '/api/v1/admin/products';
 const CATEGORIES = '/api/v1/admin/categories';
+/** A 5 MB image on a slow uplink can pass the 15 s default. */
+const UPLOAD_TIMEOUT_MS = 60_000;
 
 export function fetchAdminProducts(params: AdminProductListParams, signal?: AbortSignal): Promise<AdminProductListPage> {
   return apiGet<AdminProductListPage>(BASE, {
@@ -46,6 +49,11 @@ export function updateProduct(id: string, body: UpdateProductRequest): Promise<A
 
 export function publishProduct(id: string, publish: boolean): Promise<AdminProduct> {
   return apiSend<AdminProduct>('POST', `${BASE}/${encodeURIComponent(id)}/${publish ? 'publish' : 'unpublish'}`);
+}
+
+/** Multipart upload of one image (field `file`). Stores the bytes only; the product keeps the key after its next save. */
+export function uploadProductImage(id: string, form: FormData): Promise<UploadedImage> {
+  return apiSend<UploadedImage>('POST', `${BASE}/${encodeURIComponent(id)}/images`, { body: form, timeoutMs: UPLOAD_TIMEOUT_MS });
 }
 
 export function createCategory(body: CreateCategoryRequest): Promise<Category> {

@@ -18,6 +18,8 @@ internal sealed class FakeImageStorage : IImageStorage
         await content.CopyToAsync(copy, ct);
         Puts.Add((key, contentType, copy.ToArray()));
     }
+
+    public Task<StoredImage?> GetAsync(string key, CancellationToken ct) => throw new NotSupportedException();
 }
 
 public class AdminProductImageServiceTests
@@ -28,7 +30,7 @@ public class AdminProductImageServiceTests
     private readonly FakeImageStorage _storage = new();
 
     private AdminProductImageService Service() =>
-        new(_env.Reads, _storage, _env.Clock);
+        new(_env.Reads, _storage, new NoImages(), _env.Clock);
 
     private static UploadImageCommand Command(byte[] bytes, long? length = null) =>
         new(new MemoryStream(bytes), length ?? bytes.Length);
@@ -102,12 +104,12 @@ public class AdminProductImageServiceTests
     }
 
     [Fact]
-    public async Task A_storage_that_is_not_configured_is_unavailable_and_other_failures_propagate()
+    public async Task A_storage_failure_propagates_and_the_result_carries_the_resolved_url()
     {
         Guid id = _env.SeedProduct().Id;
-        _storage.Throw = new ImageStorageNotConfiguredException();
-        AdminResult<UploadedImageView> r = await Service().UploadAsync(id, Command(Png), TestContext.Current.CancellationToken);
-        Assert.IsType<AdminResult<UploadedImageView>.Unavailable>(r);
+        AdminResult<UploadedImageView> ok = await Service().UploadAsync(id, Command(Png), TestContext.Current.CancellationToken);
+        UploadedImageView view = Assert.IsType<AdminResult<UploadedImageView>.Ok>(ok).Value;
+        Assert.Equal("url:" + view.StorageKey, view.Url);
 
         _storage.Throw = new IOException("down");
         await Assert.ThrowsAsync<IOException>(() => Service().UploadAsync(id, Command(Png), TestContext.Current.CancellationToken));

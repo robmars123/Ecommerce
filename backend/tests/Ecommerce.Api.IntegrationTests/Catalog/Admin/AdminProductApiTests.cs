@@ -201,7 +201,7 @@ public class AdminProductApiTests(PostgresFixture postgres)
     }
 
     [Fact]
-    public async Task IA5_preview_of_an_unpublished_product_has_the_public_shape_no_image_urls_and_is_not_visible()
+    public async Task IA5_preview_of_an_unpublished_product_has_the_public_shape_with_api_image_urls_and_is_not_visible()
     {
         (IdentityTestEnv? env, string? token) = await StartAsync(postgres);
         await using IdentityTestEnv _env = env;
@@ -218,7 +218,7 @@ public class AdminProductApiTests(PostgresFixture postgres)
         Assert.False(preview.Json.GetProperty("isVisibleToCustomers").GetBoolean());
         JsonElement product = preview.Json.GetProperty("product");
         Assert.Equal("linen-shirt", product.GetProperty("slug").GetString());
-        Assert.Equal(System.Text.Json.JsonValueKind.Null, product.GetProperty("images")[0].GetProperty("url").ValueKind);
+        Assert.Equal("/api/v1/images/dev/a.jpg", product.GetProperty("images")[0].GetProperty("url").GetString());
         Assert.Equal(HttpStatusCode.NotFound, (await env.GetAsync("/api/v1/products/linen-shirt")).Status);
     }
 
