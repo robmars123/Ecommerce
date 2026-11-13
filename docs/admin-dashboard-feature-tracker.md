@@ -66,7 +66,7 @@ Match the target screenshot across all admin screens. Rows are ordered MVP-first
 | P2.51 | Item thumbnail and colour attribute on order items; the API returns them | Orders, `orders` | Done |
 | P2.52 | Payment card: method, amount due, captured; the API returns them | Orders, Payments, `orders` | Done |
 | P2.53 | Timeline entry description text | Orders, `orders` | Done |
-| P2.54 | Totals note under the Total ("never charged …") | `orders` | Todo |
+| P2.54 | Totals note under the Total ("never charged …") | `orders` | Done |
 | P2.55 | Top bar avatar initial and cart count badge | `components`, Cart | Todo |
 
 **Every new endpoint:** tests for the happy path, 401/403 and 400. **Every screen:** Jest tests. **Restyle rows:** existing tests unchanged. **Theme rows:** P2.47 and P2.46 close tier 1 as a sweep; each tier-1 row already uses theme tokens only.

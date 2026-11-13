@@ -25,6 +25,7 @@ import {
   refundStatusLabel,
   statusLabel,
   statusTone,
+  totalsNote,
 } from '../status-labels';
 import type { OrderAlert, OrderDetail, OrderDetailItem } from '../types';
 import { OrderTimeline } from './OrderTimeline';
@@ -250,6 +251,7 @@ function CancellationAlert({ alert }: { alert: OrderAlert }) {
 
 function Content({ order, twoColumn, compact }: { order: OrderDetail; twoColumn: boolean; compact: boolean }) {
   const address = order.shippingAddress;
+  const note = totalsNote(order.status);
   return (
     <View className="gap-lg">
       <Breadcrumb orderNumber={order.orderNumber} />
@@ -277,6 +279,7 @@ function Content({ order, twoColumn, compact }: { order: OrderDetail; twoColumn:
             <TotalRow label={`Shipping · ${order.shippingMethod.name}`} amount={formatMoney(order.shippingTotal)} />
             <TotalRow label="Tax" amount={formatMoney(order.taxTotal)} />
             <TotalRow label="Total" amount={formatMoney(order.grandTotal)} emphasis />
+            {note ? <Text className="text-ui-sm text-muted">{note}</Text> : null}
           </Panel>
 
           {order.payment ? (

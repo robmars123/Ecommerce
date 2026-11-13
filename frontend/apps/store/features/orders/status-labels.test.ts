@@ -1,4 +1,4 @@
-import { paymentTone, statusTone, type StatusTone } from './status-labels';
+import { paymentTone, statusTone, totalsNote, type StatusTone } from './status-labels';
 import type { OrderStatus, PaymentStatus } from './types';
 
 describe('statusTone', () => {
@@ -29,5 +29,20 @@ describe('paymentTone', () => {
     ['Refunded', 'neutral'],
   ])('O6 %s is %s', (status, tone) => {
     expect(paymentTone(status)).toBe(tone);
+  });
+});
+
+const TOTALS_NOTE_CANCELLED =
+  'No payment is kept for this order. It was cancelled before payment was confirmed, and any payment that went through late is refunded automatically.';
+
+describe('totalsNote', () => {
+  const statuses: OrderStatus[] = ['PendingPayment', 'Paid', 'Processing', 'Shipped', 'Delivered', 'Cancelled', 'Refunded', 'Returned'];
+
+  it.each(statuses)('U1 %s', (status) => {
+    expect(totalsNote(status)).toBe(status === 'Cancelled' ? TOTALS_NOTE_CANCELLED : null);
+  });
+
+  it('U2 does not claim the order was never charged', () => {
+    expect(totalsNote('Cancelled')).not.toMatch(/never charged|not charged/i);
   });
 });
