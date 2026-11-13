@@ -7,9 +7,11 @@ import { ErrorState } from '@/components/ErrorState';
 import { LoadingState } from '@/components/LoadingState';
 import { Panel } from '@/components/Panel';
 import { ScreenTitle } from '@/components/ScreenTitle';
+import { mergeResultText } from '@/features/cart/cart-messages';
 import { ApiError, userMessage } from '@/lib/api-client';
 import { formatMoney } from '@/lib/money';
 
+import { useReorder } from '../hooks/useReorder';
 import { useOrderLiveStatus } from '../hooks/useOrderLiveStatus';
 import { useOrderQuery } from '../hooks/useOrderQuery';
 import { orderDetailLayout } from '../layout';
@@ -92,8 +94,68 @@ function CopyOrderNumber({ orderNumber }: { orderNumber: string }) {
   );
 }
 
+type Reorder = ReturnType<typeof useReorder>;
+
+function ReorderAction({ reorder: { state, reorder }, compact }: { reorder: Reorder; compact: boolean }) {
+  const pending = state.status === 'pending';
+  const done = state.status === 'done';
+  const disabled = pending || done;
+  const label = pending ? 'Adding items to cart' : done ? 'Items added to cart' : 'Reorder all items';
+  const text = pending ? 'Adding…' : done ? 'Added to cart' : 'Reorder';
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled, busy: pending }}
+      disabled={disabled}
+      onPress={reorder}
+      className={`min-h-touch items-center justify-center rounded-input border border-primary bg-primary px-lg ${compact ? 'flex-1' : ''} ${disabled ? 'opacity-50' : ''}`}
+    >
+      <Text className="text-ui font-semibold text-primary-foreground">{text}</Text>
+    </Pressable>
+  );
+}
+
+function ReorderResult({ reorder: { state, reorder } }: { reorder: Reorder }) {
+  if (state.status === 'done') {
+    return (
+      <View className="items-start gap-xs border-t border-border pt-lg">
+        <View accessible accessibilityRole="summary" className="gap-xs">
+          <Text className="text-panel-title font-bold text-foreground">Added to your cart</Text>
+          {state.lines.map((line) => (
+            <Text key={line.variantId} className="text-ui text-foreground">{`${line.name}: ${mergeResultText(line)}`}</Text>
+          ))}
+        </View>
+        <Link href="/cart" asChild>
+          <Pressable accessibilityRole="link" className="min-h-touch justify-center">
+            <Text className="text-ui font-semibold text-primary">View cart</Text>
+          </Pressable>
+        </Link>
+      </View>
+    );
+  }
+  if (state.status === 'failed') {
+    return (
+      <View className="items-start gap-sm border-t border-border pt-lg">
+        <Text accessibilityRole="alert" className="text-ui text-danger">
+          {state.message}
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          onPress={reorder}
+          className="min-h-touch items-center justify-center rounded-input border border-border bg-surface-raised px-lg"
+        >
+          <Text className="text-ui font-semibold text-foreground">Try again</Text>
+        </Pressable>
+      </View>
+    );
+  }
+  return null;
+}
+
 function Header({ order, compact }: { order: OrderDetail; compact: boolean }) {
   const itemCount = order.items.reduce((sum, item) => sum + item.quantity, 0);
+  const reorder = useReorder(order.items);
   return (
     <Panel>
       <View className="flex-row flex-wrap items-start gap-lg">
@@ -115,12 +177,13 @@ function Header({ order, compact }: { order: OrderDetail; compact: boolean }) {
           </View>
           <Text className="text-ui text-muted">{`Placed ${formatOrderDate(order.createdAt)} · ${itemCount} ${itemCount === 1 ? 'item' : 'items'}`}</Text>
         </View>
-        <View className={compact ? 'w-full' : ''}>
+        <View className={`flex-row flex-wrap gap-sm ${compact ? 'w-full' : ''}`}>
+          {order.status === 'PendingPayment' ? null : <ReorderAction reorder={reorder} compact={compact} />}
           <Link href="/orders" asChild>
             <Pressable
               accessibilityRole="link"
               accessibilityLabel="All orders"
-              className="min-h-touch items-center justify-center rounded-input border border-border bg-surface-raised px-lg"
+              className={`min-h-touch items-center justify-center rounded-input border border-border bg-surface-raised px-lg ${compact ? 'flex-1' : ''}`}
             >
               <Text className="text-ui font-semibold text-foreground">← All orders</Text>
             </Pressable>
@@ -133,6 +196,7 @@ function Header({ order, compact }: { order: OrderDetail; compact: boolean }) {
           <StatusPill tone={paymentTone(order.paymentStatus)} label={`Payment: ${paymentStatusLabel(order.paymentStatus)}`} />
         ) : null}
       </View>
+      <ReorderResult reorder={reorder} />
     </Panel>
   );
 }
