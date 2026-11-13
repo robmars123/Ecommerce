@@ -105,7 +105,7 @@ public class CatalogStockAndImageTests(PostgresFixture postgres)
     }
 
     [Fact]
-    public async Task Image_url_is_null_when_no_base_url_is_configured_and_primary_image_is_null_without_images()
+    public async Task Image_url_is_the_api_image_path_when_no_base_url_is_configured_and_primary_image_is_null_without_images()
     {
         await using CatalogTestEnv env = await CatalogTestEnv.StartAsync(postgres);
         env.AddProduct("with-image", "With Image", images: [new ImageSpec("dev/a.jpg", "alt", 1)]);
@@ -115,7 +115,7 @@ public class CatalogStockAndImageTests(PostgresFixture postgres)
         (HttpStatusCode _, System.Text.Json.JsonDocument? list) = await env.GetAsync("/api/v1/products?sort=price-asc");
 
         Dictionary<string, JsonElement> items = list.RootElement.GetProperty("items").EnumerateArray().ToDictionary(i => i.GetProperty("slug").GetString()!);
-        Assert.Equal(System.Text.Json.JsonValueKind.Null, items["with-image"].GetProperty("primaryImage").GetProperty("url").ValueKind);
+        Assert.Equal("/api/v1/images/dev/a.jpg", items["with-image"].GetProperty("primaryImage").GetProperty("url").GetString());
         Assert.Equal("alt", items["with-image"].GetProperty("primaryImage").GetProperty("altText").GetString());
         Assert.Equal(System.Text.Json.JsonValueKind.Null, items["without-image"].GetProperty("primaryImage").ValueKind);
     }

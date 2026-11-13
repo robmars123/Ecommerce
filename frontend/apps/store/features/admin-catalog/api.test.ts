@@ -11,6 +11,7 @@ import {
   publishProduct,
   updateCategory,
   updateProduct,
+  uploadProductImage,
 } from './api';
 
 beforeEach(() => {
@@ -69,5 +70,23 @@ describe('admin catalog api', () => {
     const spy = jest.spyOn(globalThis, 'fetch').mockImplementation(async () => new Response(null, { status: 204 }));
     await expect(deleteCategory('tops')).resolves.toBeDefined();
     expect(lastCall(spy)).toMatchObject({ method: 'DELETE', url: expect.stringMatching(/\/api\/v1\/admin\/categories\/tops$/) });
+  });
+});
+
+describe('uploadProductImage', () => {
+  it('POSTs the multipart form to the product images route and returns the key and url', async () => {
+    const spy = jest
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(async () => jsonResponse(200, { storageKey: 'products/a-1/x.png', url: '/api/v1/images/products/a-1/x.png' }));
+    const form = new FormData();
+    form.append('file', new Blob(['x']), 'a.png');
+
+    const result = await uploadProductImage('a-1', form);
+
+    const [url, init] = spy.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe('http://api.test.invalid:5080/api/v1/admin/products/a-1/images');
+    expect(init.method).toBe('POST');
+    expect(init.body).toBe(form);
+    expect(result.url).toBe('/api/v1/images/products/a-1/x.png');
   });
 });

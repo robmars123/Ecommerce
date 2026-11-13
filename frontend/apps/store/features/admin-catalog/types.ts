@@ -46,6 +46,9 @@ export type AdminVariant = {
 
 export type AdminImage = { storageKey: string; altText: string; sortOrder: number; url: string | null };
 
+/** What an upload returns: the key to put in the next product update, and a URL to show it by (relative to the API when no CDN is set). */
+export type UploadedImage = { storageKey: string; url: string };
+
 export type AdminProduct = {
   id: string;
   slug: string;

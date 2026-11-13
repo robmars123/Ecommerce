@@ -1,6 +1,8 @@
 import { Image } from 'expo-image';
 import { StyleSheet, View } from 'react-native';
 
+import { resolveImageUrl } from '@/lib/config';
+
 type ProductImageViewProps = {
   url: string | null;
   altText: string;
@@ -16,20 +18,21 @@ export function ProductImageView({ url, altText, fallbackLabel, aspectRatio = 1,
   const label = altText || fallbackLabel;
   // Runtime values from the API or the caller: an allowed style exception (arch §5.5).
   const box = { aspectRatio, width: width ?? ('100%' as const), maxWidth };
+  const source = resolveImageUrl(url);
 
-  if (!url) {
+  if (!source) {
     return (
       <View accessible accessibilityRole="image" accessibilityLabel={label} className="rounded-control bg-surface-raised" style={box} />
     );
   }
 
   return (
-    <View className="overflow-hidden rounded-control" style={box}>
+    <View className="overflow-hidden rounded-control bg-surface-raised" style={box}>
       <Image
         accessible
         accessibilityRole="image"
         accessibilityLabel={label}
-        source={{ uri: url }}
+        source={{ uri: source }}
         contentFit="cover"
         transition={150}
         style={StyleSheet.absoluteFill}

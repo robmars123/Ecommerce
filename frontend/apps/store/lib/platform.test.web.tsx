@@ -1,12 +1,14 @@
 // Runs in the web Jest project only (jest-expo picks *.test.web.* by platform). It renders into the jsdom DOM with
 // react-dom: React Native Testing Library drives the native renderer and cannot render react-native-web output.
+import * as ImagePicker from 'expo-image-picker';
 import * as SecureStore from 'expo-secure-store';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 
-import { PaymentForm, refreshTokenStorage, refreshTokenTransport, saveTextFile } from './platform';
+import { PaymentForm, pickImageFile, refreshTokenStorage, refreshTokenTransport, saveTextFile } from './platform';
 
 jest.mock('expo-secure-store');
+jest.mock('expo-image-picker', () => ({ launchImageLibraryAsync: jest.fn() }));
 
 const mockConfirmPayment = jest.fn();
 const mockLoadStripe = jest.fn();
@@ -152,5 +154,25 @@ describe('saveTextFile (web)', () => {
     expect((createObjectURL.mock.calls[0] as unknown[])[0]).toBeInstanceOf(Blob);
     expect(revokeObjectURL).toHaveBeenCalledWith('blob:csv-1');
     click.mockRestore();
+  });
+});
+
+describe('pickImageFile (web)', () => {
+  const picker = ImagePicker.launchImageLibraryAsync as jest.Mock;
+
+  it('returns a form whose file field holds the browser File, and asks for images only', async () => {
+    const file = new File(['x'], 'a.png', { type: 'image/png' });
+    picker.mockResolvedValue({ canceled: false, assets: [{ uri: 'blob:x', file }] });
+
+    const form = await pickImageFile();
+
+    expect((form?.get('file') as File).name).toBe('a.png');
+    expect(picker).toHaveBeenCalledWith(expect.objectContaining({ mediaTypes: ['images'], allowsEditing: false }));
+  });
+
+  it('returns null when the pick is cancelled', async () => {
+    picker.mockResolvedValue({ canceled: true, assets: null });
+
+    expect(await pickImageFile()).toBeNull();
   });
 });

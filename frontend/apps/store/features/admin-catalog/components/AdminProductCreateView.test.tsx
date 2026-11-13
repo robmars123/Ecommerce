@@ -93,17 +93,19 @@ describe('AdminProductCreateView', () => {
     expect(await screen.findByText('A product with this slug already exists.')).toBeOnTheScreen();
   });
 
-  it('can add and remove variant and image rows', async () => {
+  it('can add and remove variant rows', async () => {
     await render();
 
     await fireEvent.press(screen.getByRole('button', { name: 'Add variant' }));
     expect(screen.getByLabelText('Variant 2 SKU')).toBeOnTheScreen();
     await fireEvent.press(screen.getByRole('button', { name: 'Remove variant 2' }));
     expect(screen.queryByLabelText('Variant 2 SKU')).toBeNull();
+  });
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Add image' }));
-    expect(screen.getByLabelText('Image 1 storage key')).toBeOnTheScreen();
-    await fireEvent.press(screen.getByRole('button', { name: 'Remove image 1' }));
-    expect(screen.queryByLabelText('Image 1 storage key')).toBeNull();
+  it('cannot add images before the product exists: Add image is disabled with a hint', async () => {
+    await render();
+
+    expect(screen.getByRole('button', { name: 'Add image' })).toBeDisabled();
+    expect(screen.getByText('Save the product first to add images.')).toBeOnTheScreen();
   });
 });

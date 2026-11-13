@@ -75,6 +75,7 @@ export function AdminProductDetailView({ id }: { id: string }) {
             // A new version remounts the form with what the server has.
             key={product.version}
             mode="edit"
+            productId={product.id}
             initial={toFormState(product)}
             onSubmit={(state) => update.mutate(toUpdateRequest(state, product.version))}
             pending={update.isPending}

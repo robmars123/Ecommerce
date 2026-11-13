@@ -14,18 +14,18 @@ Only Nathaniel changes the stack. Agents never do — a slice that would need a 
 | Auth | ASP.NET Core Identity + short-lived JWT + rotating refresh token | Roles: Customer, Support, Admin |
 | Payments | Stripe PaymentIntents + signed webhooks | Test mode first |
 | Email | `IEmailSender` (SMTP / Resend / SendGrid) | Provider chosen at deploy time |
-| Images | S3-compatible storage (DO Spaces) + CDN | Never blobs in Postgres |
+| Images | PostgreSQL `bytea` (`image_blobs` table), served by the API (`GET /api/v1/images/{key}`); CDN optional in front | Owner decision (Nathaniel, 2026-11-13). Replaces DO Spaces for product images. Products store keys only; bytes live in `image_blobs` |
 | Real-time | SignalR | Order status to the owning customer. Not required for correctness |
 | Background work | `IHostedService` workers in the API process | Expiry, outbox consumers, projectors. No separate worker or broker in v1 |
 | Observability | Serilog + OpenTelemetry | Correlation ID on every request, order ID on every order log |
 | Tests | xUnit + Testcontainers (Postgres) + WebApplicationFactory | Integration tests on real Postgres, never in-memory EF |
 | Frontend tests | Jest via `jest-expo` preset + React Native Testing Library (`@testing-library/react-native` + `test-renderer`) + `expo-router/testing-library` | Owner-approved amendment (Nathaniel, 2026-11-03). Expo's official runner; versions pinned to the SDK via `npx expo install`. Replaces nothing — the frontend had no runner. No Detox/Playwright/MSW in v1 (§11.3) |
-| Hosting | DigitalOcean App Platform + Managed Postgres + Managed Redis + Spaces | Docker image from CI |
+| Hosting | DigitalOcean App Platform + Managed Postgres + Managed Redis | Docker image from CI. Spaces dropped for images (Nathaniel, 2026-11-13) |
 | CI | GitHub Actions | Build, test, migration check, secret scan, Docker build. No deploy on red |
 
 **Frontend delivery:** web via `expo export --platform web` → CDN. Android and iOS via **cloud EAS Build** → signed AAB / IPA. No Android Studio, local Android SDK, Xcode, or Mac. No committed `android/` or `ios/` folders. No Kotlin, Java, Swift, Capacitor, or separate React DOM app. Local testing: Expo Go on a physical phone + web export.
 
 **Open decisions — left blank on purpose. Never invent these; use config placeholders.**
-Stripe keys and webhook secret · production domain · email provider and sender · Spaces bucket, endpoint, region, access keys / CDN domain (config `Catalog:Images:Storage:*` and `Catalog:Images:BaseUrl`, blank).
+Stripe keys and webhook secret · production domain · email provider and sender · optional image CDN in front of the API (config `Catalog:Images:BaseUrl`, blank = API-relative URLs).
 
 

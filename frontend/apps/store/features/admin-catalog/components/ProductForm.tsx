@@ -13,6 +13,8 @@ export const STALE_VERSION_COPY = 'This product was changed by someone else. Rel
 
 type ProductFormProps = {
   mode: 'create' | 'edit';
+  /** Edit only: lets the image editor upload to this product. */
+  productId?: string;
   initial: ProductFormState;
   onSubmit: (state: ProductFormState) => void;
   pending: boolean;
@@ -21,7 +23,7 @@ type ProductFormProps = {
   onReload?: () => void;
 };
 
-export function ProductForm({ mode, initial, onSubmit, pending, error, onReload }: ProductFormProps) {
+export function ProductForm({ mode, productId, initial, onSubmit, pending, error, onReload }: ProductFormProps) {
   const [state, setState] = useState(initial);
   const isEdit = mode === 'edit';
 
@@ -83,7 +85,7 @@ export function ProductForm({ mode, initial, onSubmit, pending, error, onReload 
       />
 
       <VariantRowsEditor rows={state.variants} onChange={(rows) => set('variants', rows)} isEdit={isEdit} errorFor={errorFor} />
-      <ImageKeysEditor rows={state.images} onChange={(rows) => set('images', rows)} errorFor={errorFor} />
+      <ImageKeysEditor productId={productId} rows={state.images} onChange={(rows) => set('images', rows)} errorFor={errorFor} />
 
       <ActionButton label={isEdit ? 'Save changes' : 'Create product'} onPress={() => onSubmit(state)} pending={pending} />
     </View>

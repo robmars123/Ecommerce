@@ -177,6 +177,6 @@ public class CatalogBrowseServiceTests
 
     private sealed class FakeImages : IImageUrlResolver
     {
-        public string? Resolve(string storageKey) => $"resolved:{storageKey}";
+        public string Resolve(string storageKey) => $"resolved:{storageKey}";
     }
 }

@@ -27,18 +27,8 @@ public static class CatalogModule
             .Validate(CatalogImageOptions.IsValid, "Catalog:Images:BaseUrl must be empty or an absolute http/https URL.")
             .ValidateOnStart();
         services.AddSingleton<IImageUrlResolver, ConfiguredImageUrlResolver>();
-        services.AddOptions<CatalogImageStorageOptions>()
-            .Configure<IConfiguration>((o, c) =>
-            {
-                o.ServiceUrl = c["Catalog:Images:Storage:ServiceUrl"] ?? "";
-                o.Region = c["Catalog:Images:Storage:Region"] ?? "";
-                o.Bucket = c["Catalog:Images:Storage:Bucket"] ?? "";
-                o.AccessKeyId = c["Catalog:Images:Storage:AccessKeyId"] ?? "";
-                o.SecretAccessKey = c["Catalog:Images:Storage:SecretAccessKey"] ?? "";
-            })
-            .Validate(CatalogImageStorageOptions.IsValid, "Catalog:Images:Storage must be all blank or fully set with an https ServiceUrl.")
-            .ValidateOnStart();
-        services.AddSingleton<IImageStorage, SpacesImageStorage>();
+        services.AddScoped<IImageStorage, PostgresImageStorage>();
+        services.AddScoped<ImageFileService>();
         services.AddScoped<ICatalogReadStore, CatalogReadStore>();
         services.AddScoped<IProductReader, ProductReader>();
         services.AddScoped<ICatalogSearch, CatalogSearch>();

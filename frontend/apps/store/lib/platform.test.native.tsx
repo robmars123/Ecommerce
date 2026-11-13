@@ -1,13 +1,15 @@
 // Runs in the ios and android Jest projects only (jest-expo picks *.test.native.* by platform).
 import { useStripe } from '@stripe/stripe-react-native';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import * as ImagePicker from 'expo-image-picker';
 import * as SecureStore from 'expo-secure-store';
 
 import { Share } from 'react-native';
 
-import { PaymentForm, refreshTokenStorage, refreshTokenTransport, saveTextFile } from './platform';
+import { PaymentForm, pickImageFile, refreshTokenStorage, refreshTokenTransport, saveTextFile } from './platform';
 
 jest.mock('expo-secure-store');
+jest.mock('expo-image-picker', () => ({ launchImageLibraryAsync: jest.fn() }));
 jest.mock('expo-constants', () => ({ expoConfig: { name: 'Ecommerce Store' } }));
 jest.mock('expo-linking', () => ({ createURL: (path: string) => `ecommerce-store://${path.replace(/^\//, '')}` }));
 
@@ -115,5 +117,28 @@ describe('saveTextFile (native)', () => {
 
     expect(share).toHaveBeenCalledWith({ title: 'dashboard-7d.csv', message: 'a,b\r\n' });
     share.mockRestore();
+  });
+});
+
+describe('pickImageFile (native)', () => {
+  const picker = ImagePicker.launchImageLibraryAsync as jest.Mock;
+
+  it('returns a form with a file part built from the asset uri, name and type', async () => {
+    picker.mockResolvedValue({ canceled: false, assets: [{ uri: 'file:///p/a.jpg', fileName: 'a.jpg', mimeType: 'image/jpeg' }] });
+
+    // The Jest FormData is the DOM one, which stringifies a { uri, name, type } part; React Native's FormData keeps it.
+    const append = jest.spyOn(FormData.prototype, 'append');
+
+    const form = await pickImageFile();
+
+    expect(form).toBeInstanceOf(FormData);
+    expect(append).toHaveBeenCalledWith('file', { uri: 'file:///p/a.jpg', name: 'a.jpg', type: 'image/jpeg' });
+    expect(picker).toHaveBeenCalledWith(expect.objectContaining({ mediaTypes: ['images'], allowsEditing: false, quality: 0.9 }));
+  });
+
+  it('returns null when the pick is cancelled', async () => {
+    picker.mockResolvedValue({ canceled: true, assets: null });
+
+    expect(await pickImageFile()).toBeNull();
   });
 });

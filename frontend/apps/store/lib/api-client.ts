@@ -66,6 +66,7 @@ type ApiGetOptions = {
 };
 
 type ApiSendOptions = {
+  /** A FormData body (a file upload) is sent as-is: fetch sets the multipart boundary, so no JSON Content-Type. */
   body?: unknown;
   signal?: AbortSignal;
   auth?: 'bearer' | 'none';
@@ -73,6 +74,8 @@ type ApiSendOptions = {
   refreshTransport?: 'cookie' | 'body';
   /** Extra request headers, such as Idempotency-Key. Never an Authorization header: the session owns that. */
   headers?: Record<string, string>;
+  /** Overrides REQUEST_TIMEOUT_MS (a 5 MB upload on a slow uplink). */
+  timeoutMs?: number;
 };
 
 /**
@@ -157,6 +160,7 @@ type RequestSpec = {
   auth: 'bearer' | 'none';
   refreshTransport?: 'cookie' | 'body';
   headers?: Record<string, string>;
+  timeoutMs?: number;
   /** `text` returns the raw body of a 2xx (a CSV export); errors still parse as problem JSON. */
   responseType?: 'json' | 'text';
 };
@@ -177,7 +181,7 @@ async function attempt<T>(spec: RequestSpec, token: string | undefined): Promise
   const timer = setTimeout(() => {
     timedOut = true;
     controller.abort();
-  }, REQUEST_TIMEOUT_MS);
+  }, spec.timeoutMs ?? REQUEST_TIMEOUT_MS);
   const forwardAbort = () => controller.abort();
   spec.signal?.addEventListener('abort', forwardAbort);
 
@@ -185,7 +189,8 @@ async function attempt<T>(spec: RequestSpec, token: string | undefined): Promise
     const sentId = newCorrelationId();
     const accept = spec.responseType === 'text' ? 'text/csv' : 'application/json';
     const headers: Record<string, string> = { ...spec.headers, Accept: accept, 'X-Correlation-ID': sentId };
-    if (spec.body !== undefined) {
+    const isForm = spec.body instanceof FormData;
+    if (spec.body !== undefined && !isForm) {
       headers['Content-Type'] = 'application/json';
     }
     if (token) {
@@ -200,7 +205,7 @@ async function attempt<T>(spec: RequestSpec, token: string | undefined): Promise
       response = await fetch(buildUrl(base, spec.path, spec.params), {
         method: spec.method,
         headers,
-        body: spec.body === undefined ? undefined : JSON.stringify(spec.body),
+        body: spec.body === undefined ? undefined : isForm ? (spec.body as FormData) : JSON.stringify(spec.body),
         credentials: spec.refreshTransport === 'cookie' ? 'include' : undefined,
         signal: controller.signal,
       });
@@ -304,6 +309,7 @@ export function apiSend<T>(method: 'POST' | 'PUT' | 'DELETE', path: string, opti
     auth: options.auth ?? 'bearer',
     refreshTransport: options.refreshTransport,
     headers: options.headers,
+    timeoutMs: options.timeoutMs,
   });
 }
 

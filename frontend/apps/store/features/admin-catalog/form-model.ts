@@ -14,7 +14,8 @@ export type VariantFormRow = {
   isActive: boolean;
 };
 
-export type ImageFormRow = { key: string; storageKey: string; altText: string };
+/** `url` is only for the thumbnail; it is never sent (the request carries the key and the description). */
+export type ImageFormRow = { key: string; storageKey: string; altText: string; url: string | null };
 
 export type ProductFormState = {
   slug: string;
@@ -59,7 +60,7 @@ export function toFormState(product: AdminProduct): ProductFormState {
       weightGrams: String(v.weightGrams),
       isActive: v.isActive,
     })),
-    images: product.images.map((i) => ({ key: newRowKey(), storageKey: i.storageKey, altText: i.altText })),
+    images: product.images.map((i) => ({ key: newRowKey(), storageKey: i.storageKey, altText: i.altText, url: i.url })),
   };
 }
 

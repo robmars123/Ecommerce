@@ -5,8 +5,13 @@ import { jsonResponse, problemResponse } from '@/tests/fetch-mock';
 import { makeDetail } from '@/tests/fixtures';
 import { renderRouterWithQuery } from '@/tests/render-with-query';
 
+import * as platform from '@/lib/platform';
+
 import { AdminProductDetailView, NOT_VISIBLE_COPY } from './AdminProductDetailView';
 import { STALE_VERSION_COPY } from './ProductForm';
+
+jest.mock('@/lib/platform', () => ({ ...jest.requireActual('@/lib/platform'), pickImageFile: jest.fn() }));
+const pickImageFile = platform.pickImageFile as jest.Mock;
 
 beforeEach(() => {
   process.env.EXPO_PUBLIC_API_BASE_URL = 'http://api.test.invalid:5080';
@@ -119,5 +124,85 @@ describe('AdminProductDetailView', () => {
 
     expect(await screen.findByLabelText('Variant 1 active')).toBeOnTheScreen();
     expect(screen.queryByRole('button', { name: 'Remove variant 1' })).toBeNull();
+  });
+
+  describe('images', () => {
+    const KEY = 'products/a-1/new.png';
+    const pickedForm = () => {
+      const form = new FormData();
+      form.append('file', new Blob(['x']), 'a.png');
+      return form;
+    };
+    const savedImage = { storageKey: 'products/a-1/old.png', altText: 'Old', sortOrder: 1, url: '/api/v1/images/products/a-1/old.png' };
+
+    function api(upload: () => Response | Promise<Response>, product = makeAdminProduct({ images: [savedImage] })) {
+      return jest.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+        const path = new URL(String(input)).pathname;
+        const method = (init as RequestInit | undefined)?.method ?? 'GET';
+        if (method === 'POST' && path.endsWith('/a-1/images')) return upload();
+        if (method === 'PUT') return jsonResponse(200, product);
+        if (path === '/api/v1/admin/products/a-1') return jsonResponse(200, product);
+        return new Response('not mocked', { status: 599 });
+      });
+    }
+
+    it('uploads a picked image, shows Uploading while it runs, adds a row with a thumbnail, and Save sends the new key', async () => {
+      pickImageFile.mockResolvedValue(pickedForm());
+      let release: (r: Response) => void = () => {};
+      const gate = new Promise<Response>((resolve) => (release = resolve));
+      const spy = api(() => gate);
+      await render();
+
+      await fireEvent.press(await screen.findByRole('button', { name: 'Add image' }));
+      expect(await screen.findByRole('button', { name: 'Uploading…' })).toBeDisabled();
+      release(jsonResponse(200, { storageKey: KEY, url: `/api/v1/images/${KEY}` }));
+
+      expect(await screen.findByLabelText('Image 2 description')).toBeOnTheScreen();
+      expect(screen.getByRole('button', { name: 'Add image' })).toBeEnabled();
+      expect(screen.getAllByRole('image')).toHaveLength(2);
+      expect(calls(spy, 'POST', '/a-1/images')).toHaveLength(1);
+      expect((calls(spy, 'POST', '/a-1/images')[0][1] as RequestInit).body).toBeInstanceOf(FormData);
+
+      await fireEvent.press(screen.getByRole('button', { name: 'Save changes' }));
+      await waitFor(() => expect(calls(spy, 'PUT', '/a-1')).toHaveLength(1));
+      const body = JSON.parse((calls(spy, 'PUT', '/a-1')[0][1] as RequestInit).body as string);
+      expect(body.images).toEqual([
+        { storageKey: savedImage.storageKey, altText: 'Old' },
+        { storageKey: KEY, altText: '' },
+      ]);
+    });
+
+    it('shows the server message for a refused file and adds no row', async () => {
+      pickImageFile.mockResolvedValue(pickedForm());
+      api(() => problemResponse(400, { errors: { file: ['Only JPEG, PNG or WebP images are allowed.'] } }));
+      await render();
+
+      await fireEvent.press(await screen.findByRole('button', { name: 'Add image' }));
+
+      expect(await screen.findByText('Only JPEG, PNG or WebP images are allowed.')).toBeOnTheScreen();
+      expect(screen.queryByLabelText('Image 2 description')).toBeNull();
+    });
+
+    it('sends no request when the pick is cancelled', async () => {
+      pickImageFile.mockResolvedValue(null);
+      const spy = api(() => jsonResponse(200, {}));
+      await render();
+
+      await fireEvent.press(await screen.findByRole('button', { name: 'Add image' }));
+
+      await waitFor(() => expect(pickImageFile).toHaveBeenCalled());
+      expect(calls(spy, 'POST', '/a-1/images')).toHaveLength(0);
+    });
+
+    it('Remove drops the row from the saved request', async () => {
+      const spy = api(() => jsonResponse(200, {}));
+      await render();
+
+      await fireEvent.press(await screen.findByRole('button', { name: 'Remove image 1' }));
+      await fireEvent.press(screen.getByRole('button', { name: 'Save changes' }));
+
+      await waitFor(() => expect(calls(spy, 'PUT', '/a-1')).toHaveLength(1));
+      expect(JSON.parse((calls(spy, 'PUT', '/a-1')[0][1] as RequestInit).body as string).images).toEqual([]);
+    });
   });
 });

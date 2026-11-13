@@ -19,3 +19,19 @@ export function getStripePublishableKey(): string | undefined {
   const raw = process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim();
   return raw ? raw : undefined;
 }
+
+/**
+ * The URL an image can be loaded from. The API returns its own images as a path (`/api/v1/images/...`) when no image base URL is
+ * configured, so a leading `/` gets the API base in front; an absolute URL (a CDN) passes through. A relative path with no API
+ * base is null, so the placeholder shows rather than a broken request to a guessed host.
+ */
+export function resolveImageUrl(url: string | null | undefined): string | null {
+  if (!url) {
+    return null;
+  }
+  if (url.startsWith('/')) {
+    const base = getApiBaseUrl();
+    return base ? `${base}${url}` : null;
+  }
+  return url;
+}

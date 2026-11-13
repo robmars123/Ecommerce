@@ -29,6 +29,12 @@
       "expo-image",
       "expo-secure-store",
       [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow the app to access your photos so you can add product images."
+        }
+      ],
+      [
         "@stripe/stripe-react-native",
         {}
       ],

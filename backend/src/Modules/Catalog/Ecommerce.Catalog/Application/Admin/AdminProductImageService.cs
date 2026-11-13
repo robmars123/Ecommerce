@@ -4,12 +4,13 @@ using Ecommerce.SharedKernel.Time;
 namespace Ecommerce.Catalog.Application.Admin;
 
 /// <summary>
-/// Stores one uploaded image and returns its key. Attaches nothing to the product: the admin sends the key in the next
-/// version-checked product update (D2). Nothing is written to Postgres, so no transaction is open during the upload.
+/// Stores one uploaded image (one INSERT into image_blobs) and returns its key and URL. Attaches nothing to the product: the admin
+/// sends the key in the next version-checked product update (D2, D3).
 /// </summary>
 internal sealed class AdminProductImageService(
     IAdminCatalogReadStore reads,
     IImageStorage storage,
+    IImageUrlResolver urls,
     IClock clock)
 {
     public const string FileField = "file";
@@ -43,15 +44,8 @@ internal sealed class AdminProductImageService(
         command.Content.Position = 0;
 
         string key = StorageKey.ForProductImage(productId, Guid.CreateVersion7(clock.UtcNow), format.Extension);
-        try
-        {
-            await storage.PutAsync(key, command.Content, format.ContentType, ct);
-        }
-        catch (ImageStorageNotConfiguredException e)
-        {
-            return new AdminResult<UploadedImageView>.Unavailable(e.Message);
-        }
+        await storage.PutAsync(key, command.Content, format.ContentType, ct);
 
-        return new AdminResult<UploadedImageView>.Ok(new UploadedImageView(key));
+        return new AdminResult<UploadedImageView>.Ok(new UploadedImageView(key, urls.Resolve(key)));
     }
 }
