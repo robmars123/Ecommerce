@@ -1,6 +1,6 @@
 namespace Ecommerce.Payments.Contracts;
 
-public sealed record PaymentAttemptInfo(Guid PaymentId, int Attempt, string Status, string? ProviderPaymentId);
+public sealed record PaymentAttemptInfo(Guid PaymentId, int Attempt, string Status, string? ProviderPaymentId, string Method);
 
 /// <summary>The provider's intent and the secret the client confirms with. The secret is never stored.</summary>
 public sealed record PaymentIntentHandle(string ProviderPaymentId, string ClientSecret, int Attempt);

@@ -67,5 +67,5 @@ internal sealed class PaymentAttempts(IPaymentStore store, IPaymentGateway gatew
         return new PaymentIntentHandle(stored, created.ClientSecret, payment.Attempt);
     }
 
-    private static PaymentAttemptInfo ToInfo(Payment p) => new(p.Id, p.Attempt, p.Status.ToString(), p.ProviderPaymentId);
+    private static PaymentAttemptInfo ToInfo(Payment p) => new(p.Id, p.Attempt, p.Status.ToString(), p.ProviderPaymentId, PaymentMethods.Card);
 }

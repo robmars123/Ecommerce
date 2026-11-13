@@ -17,7 +17,15 @@ import { useReorder } from '../hooks/useReorder';
 import { useOrderLiveStatus } from '../hooks/useOrderLiveStatus';
 import { useOrderQuery } from '../hooks/useOrderQuery';
 import { orderDetailLayout } from '../layout';
-import { formatOrderDate, paymentStatusLabel, paymentTone, refundStatusLabel, statusLabel, statusTone } from '../status-labels';
+import {
+  formatOrderDate,
+  paymentMethodLabel,
+  paymentStatusLabel,
+  paymentTone,
+  refundStatusLabel,
+  statusLabel,
+  statusTone,
+} from '../status-labels';
 import type { OrderAlert, OrderDetail, OrderDetailItem } from '../types';
 import { OrderTimeline } from './OrderTimeline';
 import { ReturnRequestForm } from './ReturnRequestForm';
@@ -270,6 +278,16 @@ function Content({ order, twoColumn, compact }: { order: OrderDetail; twoColumn:
             <TotalRow label="Tax" amount={formatMoney(order.taxTotal)} />
             <TotalRow label="Total" amount={formatMoney(order.grandTotal)} emphasis />
           </Panel>
+
+          {order.payment ? (
+            <Panel title="Payment">
+              <View className="flex-row items-center justify-between gap-md rounded-input border border-border bg-surface-raised px-md py-md">
+                <Text className="shrink text-ui font-semibold text-foreground">{paymentMethodLabel(order.payment.method)}</Text>
+              </View>
+              <TotalRow label="Amount due" amount={formatMoney(order.payment.amountDue)} />
+              <TotalRow label="Captured" amount={formatMoney(order.payment.captured)} />
+            </Panel>
+          ) : null}
 
           <Panel title="Shipping">
             <View className="flex-row items-center justify-between gap-md rounded-input border border-border bg-surface-raised px-md py-md">

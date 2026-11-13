@@ -75,6 +75,11 @@ export type OrderAlert = { title: string; message: string };
 
 export type StatusNote = { pillNote: string; alert: OrderAlert | null };
 
+export type PaymentMethod = 'card';
+
+/** The payment card: amounts are computed by the server; Captured is webhook-confirmed money only. */
+export type OrderPayment = { method: PaymentMethod; amountDue: Money; captured: Money };
+
 export type OrderDetail = {
   id: string;
   orderNumber: string;
@@ -93,4 +98,5 @@ export type OrderDetail = {
   paymentStatus: PaymentStatus | null;
   refunds: Refund[];
   statusNote: StatusNote | null;
+  payment: OrderPayment | null;
 };

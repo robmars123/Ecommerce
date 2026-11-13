@@ -1,6 +1,7 @@
 using Ecommerce.Catalog.Contracts;
 using Ecommerce.Identity.Contracts;
 using Ecommerce.Orders.Contracts;
+using Ecommerce.Orders.Domain;
 using Ecommerce.Payments.Contracts;
 
 namespace Ecommerce.Orders.Application;
@@ -81,6 +82,9 @@ internal sealed class OrderQueryService(
         PaymentAttemptInfo? latest = await payments.GetLatestAsync(order.Id, ct);
         RefundSummary summary = await refunds.GetSummaryAsync(order.Id, ct);
         IReadOnlyList<VariantSnapshot> snapshots = await products.GetVariantSnapshotsAsync(order.Items.Select(i => i.VariantId).Distinct().ToList(), ct);
-        return new OrderDetailView(order, shipments, latest?.Status, summary.Refunds, snapshots.ToDictionary(s => s.VariantId));
+        OrderPaymentView? payment = latest is null
+            ? null
+            : new OrderPaymentView(latest.Method, order.Status == OrderStatus.PendingPayment ? order.GrandTotal : 0m, summary.Captured);
+        return new OrderDetailView(order, shipments, latest?.Status, summary.Refunds, snapshots.ToDictionary(s => s.VariantId), payment);
     }
 }

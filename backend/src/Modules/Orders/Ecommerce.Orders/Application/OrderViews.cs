@@ -61,10 +61,13 @@ internal sealed record AdminOrderListPage(IReadOnlyList<AdminOrderListItem> Item
 
 internal sealed record ShipmentView(string CarrierName, string TrackingNumber, string? TrackingUrl, DateTimeOffset ShippedAt, DateTimeOffset? DeliveredAt);
 
-/// <summary>PaymentStatus is the latest attempt (arch 9 orders contract), or null before any attempt.</summary>
+/// <summary>The payment card: AmountDue is the order total while it awaits payment, Captured is the webhook-confirmed gross amount.</summary>
+internal sealed record OrderPaymentView(string Method, decimal AmountDue, decimal Captured);
+
+/// <summary>PaymentStatus is the latest attempt (arch 9 orders contract), or null before any attempt; Payment is null when there is no attempt.</summary>
 internal sealed record OrderDetailView(
     OrderDetailRow Order, IReadOnlyList<ShipmentView> Shipments, string? PaymentStatus, IReadOnlyList<RefundInfo> Refunds,
-    IReadOnlyDictionary<Guid, VariantSnapshot> Variants);
+    IReadOnlyDictionary<Guid, VariantSnapshot> Variants, OrderPaymentView? Payment);
 
 /// <summary>The customer detail plus what F13 needs (D14): every refund, the server-computed totals and the return requests.</summary>
 internal sealed record AdminOrderDetailView(OrderDetailView Detail, RefundSummary Summary, IReadOnlyList<ReturnRow> Returns);

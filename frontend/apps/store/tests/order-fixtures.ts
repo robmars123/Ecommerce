@@ -67,6 +67,7 @@ export function makeOrderDetail(overrides: Partial<OrderDetail> = {}): OrderDeta
     paymentStatus: 'Succeeded',
     refunds: [],
     statusNote: null,
+    payment: null,
     ...overrides,
   };
 }

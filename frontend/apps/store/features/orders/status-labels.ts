@@ -36,6 +36,10 @@ export function paymentTone(status: PaymentStatus): StatusTone {
   return status === 'Pending' ? 'warning' : status === 'Succeeded' ? 'success' : status === 'Failed' ? 'danger' : 'neutral';
 }
 
+export function paymentMethodLabel(method: string): string {
+  return method === 'card' ? 'Card' : method;
+}
+
 const PAYMENT_LABELS: Record<PaymentStatus, string> = {
   Pending: 'Awaiting payment',
   Succeeded: 'Paid',

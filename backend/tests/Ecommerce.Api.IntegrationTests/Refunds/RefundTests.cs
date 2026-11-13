@@ -378,4 +378,54 @@ public class RefundTests(PostgresFixture postgres)
         string body = "{\"id\":\"evt_x\",\"type\":\"refund.updated\",\"data\":{\"object\":{\"id\":\"re_1\",\"status\":\"succeeded\"}}}";
         Assert.Equal(HttpStatusCode.BadRequest, (await e.F.WebhookRawAsync(body, "t=1,v1=bad")).Status);
     }
+
+    private static string Money(IdentityTestEnv.Api order, string card) =>
+        order.Json.GetProperty("payment").GetProperty(card).GetProperty("amount").GetString()!;
+
+    [Fact]
+    public async Task P2_52_partial_and_full_refunds_keep_captured_gross_and_nothing_due()
+    {
+        await using RefundEnv e = await RefundEnv.StartAsync(postgres);
+        Guid order = await e.SeedOrderAsync();
+
+        await e.RefundWebhookAsync(RefundEnv.RefundIdOf(await e.RefundAsync(order, "10.00")), "succeeded");
+        IdentityTestEnv.Api partial = await e.Env.GetAsync($"/api/v1/orders/{order}", e.TokenA);
+        Assert.Equal("25.00", Money(partial, "captured"));
+        Assert.Equal("0.00", Money(partial, "amountDue"));
+        Assert.Equal("PartiallyRefunded", partial.Str("paymentStatus"));
+
+        await e.RefundWebhookAsync(RefundEnv.RefundIdOf(await e.RefundAsync(order, "15.00")), "succeeded");
+        IdentityTestEnv.Api full = await e.Env.GetAsync($"/api/v1/orders/{order}", e.TokenA);
+        Assert.Equal("25.00", Money(full, "captured"));
+        Assert.Equal("0.00", Money(full, "amountDue"));
+        Assert.Equal("Refunded", full.Str("paymentStatus"));
+    }
+
+    [Fact]
+    public async Task P2_52_another_customer_gets_403_without_payment_data_and_no_token_is_401()
+    {
+        await using RefundEnv e = await RefundEnv.StartAsync(postgres);
+        Guid order = await e.SeedOrderAsync();
+
+        IdentityTestEnv.Api other = await e.Env.GetAsync($"/api/v1/orders/{order}", e.TokenB);
+        Assert.Equal(HttpStatusCode.Forbidden, other.Status);
+        Assert.DoesNotContain("amountDue", other.Text);
+        Assert.DoesNotContain("captured", other.Text);
+        Assert.DoesNotContain("25.00", other.Text);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await e.Env.GetAsync($"/api/v1/orders/{order}")).Status);
+    }
+
+    [Fact]
+    public async Task P2_52_admin_order_detail_embeds_the_payment_card()
+    {
+        await using RefundEnv e = await RefundEnv.StartAsync(postgres);
+        Guid order = await e.SeedOrderAsync();
+
+        IdentityTestEnv.Api admin = await e.Env.GetAsync($"/api/v1/admin/orders/{order}", e.Admin);
+
+        Assert.Equal(HttpStatusCode.OK, admin.Status);
+        System.Text.Json.JsonElement payment = admin.Json.GetProperty("order").GetProperty("payment");
+        Assert.Equal("25.00", payment.GetProperty("captured").GetProperty("amount").GetString());
+        Assert.Equal("card", payment.GetProperty("method").GetString());
+    }
 }
