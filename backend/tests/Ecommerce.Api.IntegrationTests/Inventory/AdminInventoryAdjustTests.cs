@@ -154,6 +154,19 @@ public class AdminInventoryAdjustTests(PostgresFixture postgres)
         Assert.Equal(0, await InventoryEnv.CountAsync(f.Env, "SELECT count(*) FROM inventory_stock"));
     }
 
+    [Fact]
+    public async Task Both_endpoints_are_403_for_support_and_write_nothing()
+    {
+        await using Fixture f = await StartAsync();
+        Guid variant = await InventoryEnv.AddVariantAsync(f.Env, "AUTH-2");
+        await f.Env.AddUserAsync("support@example.test", UserRole.Support);
+        string support = await f.Env.AccessTokenAsync("support@example.test");
+
+        Assert.Equal(HttpStatusCode.Forbidden, (await f.Env.GetAsync("/api/v1/admin/inventory", support)).Status);
+        Assert.Equal(HttpStatusCode.Forbidden, (await f.AdjustAsync(variant, 1, 0, "x", support)).Status);
+        Assert.Equal(0, await InventoryEnv.CountAsync(f.Env, "SELECT count(*) FROM inventory_stock"));
+    }
+
     [Theory]
     [InlineData(0, 0, "Reason")]
     [InlineData(1_000_001, 0, "Reason")]
