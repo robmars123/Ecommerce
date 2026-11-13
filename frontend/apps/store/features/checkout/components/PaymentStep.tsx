@@ -1,5 +1,6 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { Link } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 
 import { ActionButton } from '@/components/ActionButton';
@@ -9,6 +10,7 @@ import type { Money } from '@/features/catalog/types';
 import { useOrderQuery } from '@/features/orders/hooks/useOrderQuery';
 import { ApiError, userMessage } from '@/lib/api-client';
 import { formatMoney } from '@/lib/money';
+import { queryKeys } from '@/lib/query-keys';
 import { PaymentForm, type PaymentFormResult } from '@/lib/platform';
 
 import { useRetryPaymentMutation } from '../hooks/useRetryPaymentMutation';
@@ -35,9 +37,16 @@ export function PaymentStep({ orderId, initialSecret, placedTotal, startConfirmi
   const [declined, setDeclined] = useState<string | null>(null);
   const order = useOrderQuery(orderId, confirming);
   const retry = useRetryPaymentMutation(orderId);
+  const client = useQueryClient();
 
   const total = placedTotal ?? order.data?.grandTotal;
   const status = order.data?.status;
+  // The server removes the cart lines when the order leaves PendingPayment: refetch once per transition so the header badge follows.
+  useEffect(() => {
+    if (status !== undefined && status !== 'PendingPayment') {
+      void client.invalidateQueries({ queryKey: queryKeys.cart });
+    }
+  }, [client, status]);
   const expired = retry.error instanceof ApiError && retry.error.problemType === 'reservation-expired';
 
   function onResult(result: PaymentFormResult) {
