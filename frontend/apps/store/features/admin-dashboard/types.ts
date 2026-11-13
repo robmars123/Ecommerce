@@ -20,6 +20,10 @@ export type Dashboard = {
   ordersByStatus: { status: string; count: number }[];
   topProducts: { productId: string; name: string; units: number }[];
   lowStock: { variantId: string; productName: string; sku: string; available: number }[];
+  /** Every low-stock variant: uncapped, unlike lowStock (which stops at 20). */
+  lowStockCount: number;
+  /** Orders cancelled within the period's window (distinct orders). */
+  cancelledCount: number;
   needsAttention: {
     pendingReturns: number;
     deadLetters: { consumer: string; count: number }[];

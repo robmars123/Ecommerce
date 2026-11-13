@@ -2,6 +2,7 @@ import { fireEvent, screen, waitFor, within } from 'expo-router/testing-library'
 import { Text } from 'react-native';
 
 import AdminDashboardScreen from '@/app/admin/index';
+import { DashboardView } from '@/features/admin-dashboard/components/DashboardView';
 import { resetSession } from '@/features/auth/session';
 import { makeDashboard, makeRecentOrder, makeRecentOrdersPage } from '@/tests/admin-dashboard-fixtures';
 import { calledUrls, jsonResponse, problemResponse } from '@/tests/fetch-mock';
@@ -479,5 +480,28 @@ describe('DashboardView period, refresh and as-of (P2.14-P2.16)', () => {
 
     expect(await screen.findByText('Period: 30 days')).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: 'Today' })).toBeSelected();
+  });
+});
+
+describe('DashboardView greeting', () => {
+  const renderGreeting = (now: () => Date) =>
+    renderRouterWithQuery({ 'admin/index': () => <DashboardView now={now} /> }, { initialUrl: '/admin' });
+
+  it('G3: Admin at 09:00 is greeted by name', async () => {
+    await signInAs('Admin');
+    mockApi();
+
+    await renderGreeting(() => new Date(2026, 10, 12, 9, 0));
+
+    expect(await screen.findByText('Good morning, Admin User')).toBeOnTheScreen();
+  });
+
+  it('G4: Support at 20:00 is greeted by name', async () => {
+    await signInAs('Support');
+    mockApi();
+
+    await renderGreeting(() => new Date(2026, 10, 12, 20, 0));
+
+    expect(await screen.findByText('Good evening, Support User')).toBeOnTheScreen();
   });
 });

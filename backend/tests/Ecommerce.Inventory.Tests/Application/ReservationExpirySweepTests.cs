@@ -33,6 +33,7 @@ public class ReservationExpirySweepTests
     private sealed class FakeStore(IReadOnlyList<Order> orders) : IInventoryStore
     {
     public Task<IReadOnlyList<LowStockItem>> ListLowAsync(int threshold, int max, CancellationToken ct) => throw new NotSupportedException();
+    public Task<int> CountLowAsync(int threshold, CancellationToken ct) => throw new NotSupportedException();
 
         public Task<IReadOnlyList<Guid>> FindExpiredOrderIdsAsync(DateTimeOffset now, int max, CancellationToken ct) =>
             Task.FromResult<IReadOnlyList<Guid>>(orders.Select(o => o.Id).ToList());

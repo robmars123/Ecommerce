@@ -13,6 +13,7 @@ public class CatalogStockAndImageTests(PostgresFixture postgres)
     private sealed class FakeInventoryReader : IInventoryReader
     {
         public Task<IReadOnlyList<LowStockItem>> ListLowStockAsync(int max, CancellationToken ct) => throw new NotSupportedException();
+        public Task<int> CountLowStockAsync(CancellationToken ct) => throw new NotSupportedException();
 
         public Dictionary<Guid, StockStatus> Statuses { get; } = [];
         public List<IReadOnlyCollection<Guid>> Calls { get; } = [];

@@ -246,4 +246,75 @@ public class AdminDashboardApiTests(PostgresFixture postgres)
         Assert.Contains(lagging.EnumerateArray(), p => p.GetProperty("name").GetString() == "admin.dashboard" && p.GetProperty("lagSeconds").GetInt32() >= 300);
         Assert.Equal(0, dashboard.Json.GetProperty("kpis").GetProperty("orderCount").GetInt32());
     }
+
+    [Fact]
+    public async Task Low_stock_count_counts_every_low_variant_while_the_list_stops_at_20()
+    {
+        await using ProjectionEnv e = await ProjectionEnv.StartAsync(postgres);
+        int baseline = (await e.OkDashboardAsync()).Json.GetProperty("lowStockCount").GetInt32();
+        for (int i = 0; i < 20; i++)
+        {
+            await e.F.Cart.VariantAsync("CNT-" + i, stock: 1 + (i % 3));
+        }
+        await e.F.Cart.VariantAsync("CNT-EDGE", stock: 3);
+        await e.F.Cart.VariantAsync("CNT-ABOVE", stock: 4);
+
+        IdentityTestEnv.Api dashboard = await e.OkDashboardAsync();
+
+        Assert.Equal(baseline + 21, dashboard.Json.GetProperty("lowStockCount").GetInt32());
+        Assert.Equal(20, dashboard.Json.GetProperty("lowStock").GetArrayLength());
+    }
+
+    [Fact]
+    public async Task Support_gets_the_same_low_stock_count_as_Admin_and_kpis_null()
+    {
+        await using ProjectionEnv e = await ProjectionEnv.StartAsync(postgres);
+        await e.F.Cart.VariantAsync("SUP-LOW", stock: 1);
+
+        IdentityTestEnv.Api admin = await e.DashboardAsync(e.R.Admin, "today");
+        IdentityTestEnv.Api support = await e.DashboardAsync(e.R.Support, "today");
+
+        Assert.Equal(HttpStatusCode.OK, support.Status);
+        Assert.Equal(JsonValueKind.Null, support.Json.GetProperty("kpis").ValueKind);
+        Assert.True(admin.Json.GetProperty("lowStockCount").GetInt32() >= 1);
+        Assert.Equal(admin.Json.GetProperty("lowStockCount").GetInt32(), support.Json.GetProperty("lowStockCount").GetInt32());
+    }
+
+    [Fact]
+    public async Task Cancelled_count_counts_orders_cancelled_in_the_period()
+    {
+        await using ProjectionEnv e = await ProjectionEnv.StartAsync(postgres);
+        int baseline = (await e.OkDashboardAsync()).Json.GetProperty("cancelledCount").GetInt32();
+        Guid variant = await e.F.Cart.VariantAsync("CAN-1", stock: 5);
+        await e.F.PlaceOrderAsync(variant, 1, "can-" + Guid.NewGuid().ToString("N"));
+        e.Env.Clock.UtcNow = e.Env.Clock.UtcNow.AddMinutes(16);
+        Assert.Equal(1, await e.F.SweepAsync());
+
+        // The clock moved past the access-token lifetime, so sign in again.
+        IdentityTestEnv.Api admin = await e.DashboardAsync(await e.Env.AccessTokenAsync("admin@example.test"), "today");
+        IdentityTestEnv.Api support = await e.DashboardAsync(await e.Env.AccessTokenAsync("support@example.test"), "today");
+
+        Assert.Equal(baseline + 1, admin.Json.GetProperty("cancelledCount").GetInt32());
+        Assert.Equal(HttpStatusCode.OK, support.Status);
+        Assert.Equal(baseline + 1, support.Json.GetProperty("cancelledCount").GetInt32());
+    }
+
+    [Fact]
+    public async Task Cancelled_count_leaves_the_period_when_the_cancellation_is_older_and_a_Paid_order_never_counts()
+    {
+        await using ProjectionEnv e = await ProjectionEnv.StartAsync(postgres);
+        await e.PaidOrderAsync("CAN-PAID");
+        Guid variant = await e.F.Cart.VariantAsync("CAN-2", stock: 5);
+        await e.F.PlaceOrderAsync(variant, 1, "can-" + Guid.NewGuid().ToString("N"));
+        e.Env.Clock.UtcNow = e.Env.Clock.UtcNow.AddMinutes(16);
+        Assert.Equal(1, await e.F.SweepAsync());
+        e.Env.Clock.UtcNow = e.Env.Clock.UtcNow.AddDays(2);
+
+        string admin = await e.Env.AccessTokenAsync("admin@example.test");
+        IdentityTestEnv.Api today = await e.DashboardAsync(admin, "today");
+        IdentityTestEnv.Api week = await e.DashboardAsync(admin, "7d");
+
+        Assert.Equal(0, today.Json.GetProperty("cancelledCount").GetInt32());
+        Assert.Equal(1, week.Json.GetProperty("cancelledCount").GetInt32());
+    }
 }

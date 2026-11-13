@@ -37,12 +37,18 @@ internal sealed class InventoryStore(EcommerceDbContext db) : IInventoryStore
     }
 
     public async Task<IReadOnlyList<LowStockItem>> ListLowAsync(int threshold, int max, CancellationToken ct) =>
-        await db.Set<InventoryStock>().AsNoTracking()
-            .Where(s => s.QuantityOnHand - s.QuantityReserved <= threshold)
+        await LowStock(threshold)
             .OrderBy(s => s.QuantityOnHand - s.QuantityReserved).ThenBy(s => s.ProductVariantId)
             .Take(max)
             .Select(s => new LowStockItem(s.ProductVariantId, s.QuantityOnHand - s.QuantityReserved))
             .ToListAsync(ct);
+
+    public async Task<int> CountLowAsync(int threshold, CancellationToken ct) =>
+        await LowStock(threshold).CountAsync(ct);
+
+    // One predicate for the list and the count, so they cannot drift.
+    private IQueryable<InventoryStock> LowStock(int threshold) =>
+        db.Set<InventoryStock>().AsNoTracking().Where(s => s.QuantityOnHand - s.QuantityReserved <= threshold);
 
     public async Task<IReadOnlyList<Guid>> FindExpiredOrderIdsAsync(DateTimeOffset now, int max, CancellationToken ct) =>
         await db.Set<InventoryReservation>().AsNoTracking()

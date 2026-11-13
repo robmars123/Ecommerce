@@ -37,6 +37,8 @@ internal sealed record DashboardResponse(
     IReadOnlyList<StatusCount> OrdersByStatus,
     IReadOnlyList<TopProductResponse> TopProducts,
     IReadOnlyList<LowStockResponse> LowStock,
+    int LowStockCount,
+    int CancelledCount,
     NeedsAttentionResponse NeedsAttention);
 
 internal sealed record RecentOrderResponse(
@@ -75,6 +77,8 @@ internal sealed class AdminDashboardController(DashboardQueryService dashboard) 
             view.OrdersByStatus,
             view.TopProducts.Select(t => new TopProductResponse(t.ProductId, t.Name, t.Units)).ToList(),
             view.LowStock.Select(l => new LowStockResponse(l.VariantId, l.ProductName, l.Sku, l.Available)).ToList(),
+            view.LowStockCount,
+            view.CancelledCount,
             new NeedsAttentionResponse(
                 view.NeedsAttention.PendingReturns,
                 view.NeedsAttention.DeadLetters.Select(d => new DeadLetterResponse(d.Consumer, d.Count)).ToList(),

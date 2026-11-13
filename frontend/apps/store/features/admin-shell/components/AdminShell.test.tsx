@@ -4,6 +4,7 @@ import { Slot } from 'expo-router';
 import { Text } from 'react-native';
 
 import { AdminShell } from '@/features/admin-shell/components/AdminShell';
+import type { AttentionState } from '@/features/admin-shell/attention';
 import { ADMIN_NAV } from '@/features/admin-shell/nav';
 import { resetSession } from '@/features/auth/session';
 import { sidebarBreakpoint } from '@/lib/design-tokens';
@@ -474,5 +475,139 @@ describe('AdminShell theme toggle', () => {
     expect(screen.getByRole('switch', { name: 'Dark mode' })).not.toBeChecked();
     expect(useThemeStore.getState().mode).toBe('light');
     expect(screen.queryByLabelText('Close menu')).toBeNull();
+  });
+});
+
+describe('AdminShell badges', () => {
+  const badges = { '/admin/inventory': '3 low' };
+
+  async function renderWithBadges(width: number, shellBadges: Record<string, string>) {
+    mockUseWindowDimensions.mockReturnValue({ width, height: 800, scale: 1, fontScale: 1 });
+    return await renderRouter(
+      {
+        index: () => (
+          <AdminShell badges={shellBadges}>
+            <Text>Body</Text>
+          </AdminShell>
+        ),
+      },
+      { initialUrl: '/' },
+    );
+  }
+
+  it('B4: Admin, wide, the Inventory link carries its badge and Orders is unchanged', async () => {
+    await signInAs('Admin');
+    await renderWithBadges(1024, badges);
+
+    const nav = within(screen.getByLabelText('Admin navigation'));
+    expect(nav.getByRole('link', { name: 'Inventory, 3 low' })).toBeTruthy();
+    expect(nav.getByText('3 low')).toBeTruthy();
+    expect(nav.getByRole('link', { name: 'Orders' })).toBeTruthy();
+  });
+
+  it('B4: Admin, narrow with the menu open, shows the same badge', async () => {
+    await signInAs('Admin');
+    await renderWithBadges(390, badges);
+    await fireEvent.press(screen.getByRole('button', { name: 'Open menu' }));
+
+    const nav = within(screen.getByLabelText('Admin navigation'));
+    expect(nav.getByRole('link', { name: 'Inventory, 3 low' })).toBeTruthy();
+    expect(nav.getByRole('link', { name: 'Orders' })).toBeTruthy();
+  });
+
+  it('B5: Support has no Inventory item, so no badge shows', async () => {
+    await signInAs('Support');
+    await renderWithBadges(1024, badges);
+
+    expect(screen.queryByText('3 low')).toBeNull();
+  });
+
+  it('B6: an empty badge map leaves the plain Inventory link', async () => {
+    await signInAs('Admin');
+    await renderWithBadges(1024, {});
+
+    expect(screen.getByRole('link', { name: 'Inventory' })).toBeTruthy();
+    expect(screen.queryByText(/low/)).toBeNull();
+  });
+});
+
+describe('AdminShell needs attention card', () => {
+  async function renderWithAttention(attention?: AttentionState) {
+    mockUseWindowDimensions.mockReturnValue({ width: 1024, height: 800, scale: 1, fontScale: 1 });
+    const stub = (name: string) => () => <Text>{`${name} page`}</Text>;
+    return await renderRouter(
+      {
+        index: () => (
+          <AdminShell attention={attention}>
+            <Text>Body</Text>
+          </AdminShell>
+        ),
+        'admin/index': stub('Admin'),
+        'admin/inventory': stub('Inventory'),
+      },
+      { initialUrl: '/' },
+    );
+  }
+
+  it('C1: the card lists its items and a link item goes to its page', async () => {
+    await signInAs('Admin');
+    await renderWithAttention({
+      kind: 'ready',
+      items: [
+        { text: '2 low-stock variants', href: '/admin/inventory', tone: 'warning' },
+        { text: '5 failed events', tone: 'danger' },
+      ],
+    });
+
+    const nav = within(screen.getByLabelText('Admin navigation'));
+    expect(nav.getByText('Needs attention')).toBeTruthy();
+    expect(nav.getByText('5 failed events')).toBeTruthy();
+    await fireEvent.press(nav.getByRole('link', { name: '2 low-stock variants' }));
+
+    expect(await screen.findByText('Inventory page')).toBeTruthy();
+  });
+
+  it('C2: no items reads All clear.', async () => {
+    await signInAs('Admin');
+    await renderWithAttention({ kind: 'ready', items: [] });
+
+    expect(screen.getByText('All clear.')).toBeTruthy();
+  });
+
+  it('C4: narrow, pressing an attention link navigates and closes the menu overlay', async () => {
+    await signInAs('Admin');
+    mockUseWindowDimensions.mockReturnValue({ width: 390, height: 800, scale: 1, fontScale: 1 });
+    const attention: AttentionState = {
+      kind: 'ready',
+      items: [{ text: '2 low-stock variants', href: '/admin/inventory', tone: 'warning' }],
+    };
+    // The shell lives in a layout so it survives navigation, as the real admin layout does.
+    await renderRouter(
+      {
+        _layout: () => (
+          <AdminShell attention={attention}>
+            <Slot />
+          </AdminShell>
+        ),
+        index: () => <Text>Home page</Text>,
+        'admin/inventory': () => <Text>Inventory page</Text>,
+      },
+      { initialUrl: '/' },
+    );
+    await fireEvent.press(await screen.findByRole('button', { name: 'Open menu' }));
+    await fireEvent.press(within(screen.getByLabelText('Admin navigation')).getByRole('link', { name: '2 low-stock variants' }));
+
+    expect(await screen.findByText('Inventory page')).toBeTruthy();
+    expect(screen.queryByLabelText('Close menu')).toBeNull();
+  });
+
+  it('C3: unavailable says so, and no prop shows no card', async () => {
+    await signInAs('Admin');
+    const first = await renderWithAttention({ kind: 'unavailable' });
+    expect(screen.getByText('Alerts unavailable right now.')).toBeTruthy();
+    first.unmount();
+
+    await renderWithAttention(undefined);
+    expect(screen.queryByText('Needs attention')).toBeNull();
   });
 });

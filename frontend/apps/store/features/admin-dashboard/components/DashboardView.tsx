@@ -16,6 +16,7 @@ import { formatMoney } from '@/lib/money';
 
 import { useDashboardQuery, useRecentOrdersQuery } from '../hooks/hooks';
 import { asOfParts } from '../as-of';
+import { greeting } from '../greeting';
 import { kpiCards } from '../kpi-cards';
 import { parseDashboardPeriod, PERIODS } from '../period';
 import type { Dashboard, DashboardPeriod } from '../types';
@@ -154,18 +155,20 @@ function QuickActions({ role }: { role: UserRole | null }) {
 }
 
 /** The admin home (arch 8.8.5, app context 4.8). Every figure is what the server returned; "as of" says how fresh it is. */
-export function DashboardView() {
+export function DashboardView({ now = () => new Date() }: { now?: () => Date } = {}) {
   const params = useLocalSearchParams<{ period?: string | string[] }>();
   const router = useRouter();
   const period = parseDashboardPeriod(params.period);
   const choosePeriod = (next: DashboardPeriod) => router.setParams({ period: next === 'today' ? undefined : next });
   const query = useDashboardQuery(period);
   const data = query.data;
-  const role = useSession().user?.role ?? null;
+  const user = useSession().user;
+  const role = user?.role ?? null;
 
   return (
     <ScrollView contentContainerClassName="w-full max-w-content gap-md self-center p-lg">
       <ScreenTitle title="Admin dashboard" />
+      <Text className="text-body text-muted">{greeting(now(), user?.displayName)}</Text>
       <View className="flex-row flex-wrap gap-sm">
         {PERIODS.map((p) => (
           <Pressable

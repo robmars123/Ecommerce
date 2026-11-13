@@ -11,6 +11,7 @@ public class InventoryStockReaderTests
     private sealed class FakeStore(Dictionary<Guid, StockCounts> counts) : IInventoryStore
     {
     public Task<IReadOnlyList<LowStockItem>> ListLowAsync(int threshold, int max, CancellationToken ct) => throw new NotSupportedException();
+    public Task<int> CountLowAsync(int threshold, CancellationToken ct) => throw new NotSupportedException();
 
         public List<IReadOnlyCollection<Guid>> Calls { get; } = [];
 

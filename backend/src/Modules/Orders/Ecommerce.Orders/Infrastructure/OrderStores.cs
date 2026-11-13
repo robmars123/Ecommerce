@@ -119,6 +119,11 @@ internal sealed class OrderReadStore(EcommerceDbContext db) : IOrderReadStore
     public Task<int> CountPendingReturnsAsync(CancellationToken ct) =>
         db.Set<ReturnRequest>().AsNoTracking().CountAsync(r => r.Status == ReturnStatus.Requested, ct);
 
+    public Task<int> CountCancelledAsync(DateTimeOffset from, DateTimeOffset to, CancellationToken ct) =>
+        db.Set<OrderStatusChange>().AsNoTracking()
+            .Where(h => h.ToStatus == OrderStatus.Cancelled && h.CreatedAt >= from && h.CreatedAt <= to)
+            .Select(h => h.OrderId).Distinct().CountAsync(ct);
+
     public async Task<CustomerOrders> GetCustomerOrdersAsync(Guid userId, int recentTake, CancellationToken ct)
     {
         IQueryable<Order> mine = db.Set<Order>().AsNoTracking().Where(o => o.UserId == userId);

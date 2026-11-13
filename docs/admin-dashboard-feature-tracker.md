@@ -37,11 +37,11 @@ Match the target screenshot across all admin screens. Rows are ordered MVP-first
 | P2.14 | Period filter: Today / 7 days / 30 days | `admin-dashboard` | Done |
 | P2.15 | Refresh button; keeps old figures on error | `admin-dashboard` | Done |
 | P2.16 | As-of line: time, period, currency, lag | `admin-dashboard` | Done |
-| P2.13 | Greeting by device time | `admin-dashboard` | Todo |
+| P2.13 | Greeting by device time | `admin-dashboard` | Done |
 | **3** | **Post-MVP: shell shortcuts** | | |
 | P2.10 | Orders badge: Paid count, links to the filtered list | `admin-shell` | Todo |
-| P2.11 | Inventory badge: "N low" | `admin-shell` | Todo |
-| P2.12 | Needs attention card: low stock, cancelled, pending returns, dead letters, lag | `admin-shell` | Todo |
+| P2.11 | Inventory badge: "N low" | `admin-shell` | Done |
+| P2.12 | Needs attention card: low stock, cancelled, pending returns, dead letters, lag | `admin-shell` | Done |
 | **4** | **Post-MVP: charts, insights, settings, export** | | |
 | P2.23 | Orders card: cancelled and completed (Delivered) in the period | Admin, `admin-dashboard` | Todo |
 | P2.22 | "vs previous period" chip; the API adds previous revenue | Admin, `admin-dashboard` | Todo |

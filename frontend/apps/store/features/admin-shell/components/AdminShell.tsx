@@ -6,11 +6,14 @@ import { useSession } from '@/features/auth/hooks/useSession';
 import type { SessionUser } from '@/features/auth/types';
 import { AdminSearch } from '@/features/admin-shell/components/AdminSearch';
 import { breadcrumbFor } from '@/features/admin-shell/breadcrumb';
+import type { AttentionItem, AttentionState } from '@/features/admin-shell/attention';
+import type { NavBadges } from '@/features/admin-shell/badges';
 import { visibleNav, type NavGroup } from '@/features/admin-shell/nav';
+import { AdminPanel } from '@/components/AdminPanel';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { sidebarBreakpoint } from '@/lib/design-tokens';
 
-type AdminShellProps = { children: ReactNode };
+type AdminShellProps = { children: ReactNode; badges?: NavBadges; attention?: AttentionState };
 
 function Brand() {
   return (
@@ -37,6 +40,34 @@ function SidebarFooter({ user }: { user: SessionUser }) {
         {user.role}
       </Text>
     </View>
+  );
+}
+
+const toneClass = { warning: 'text-warning', danger: 'text-danger' } as const;
+
+function AttentionRow({ item, onNavigate }: { item: AttentionItem; onNavigate?: () => void }) {
+  const text = <Text className={`text-body ${item.tone ? toneClass[item.tone] : 'text-foreground'}`}>{item.text}</Text>;
+  if (!item.href) return text;
+  return (
+    <Link href={item.href as never} asChild>
+      <Pressable accessibilityRole="link" onPress={onNavigate} className="min-h-touch justify-center">
+        {text}
+      </Pressable>
+    </Link>
+  );
+}
+
+function AttentionCard({ attention, onNavigate }: { attention: AttentionState; onNavigate?: () => void }) {
+  return (
+    <AdminPanel title="Needs attention">
+      {attention.kind === 'unavailable' ? (
+        <Text className="text-body text-muted">Alerts unavailable right now.</Text>
+      ) : attention.items.length === 0 ? (
+        <Text className="text-body text-muted">All clear.</Text>
+      ) : (
+        attention.items.map((item) => <AttentionRow key={item.text} item={item} onNavigate={onNavigate} />)
+      )}
+    </AdminPanel>
   );
 }
 
@@ -72,9 +103,16 @@ function Breadcrumb() {
   );
 }
 
-type SidebarProps = { groups: NavGroup[]; user: SessionUser | null; onNavigate?: () => void; onClose?: () => void };
+type SidebarProps = {
+  groups: NavGroup[];
+  user: SessionUser | null;
+  badges?: NavBadges;
+  attention?: AttentionState;
+  onNavigate?: () => void;
+  onClose?: () => void;
+};
 
-function Sidebar({ groups, user, onNavigate, onClose }: SidebarProps) {
+function Sidebar({ groups, user, badges, attention, onNavigate, onClose }: SidebarProps) {
   return (
     <View accessibilityLabel="Admin navigation" className="h-full w-sidebar max-w-full gap-xl bg-surface p-lg">
       <View className="flex-row flex-wrap items-center justify-between gap-md">
@@ -96,15 +134,18 @@ function Sidebar({ groups, user, onNavigate, onClose }: SidebarProps) {
             <Text accessibilityRole="header" className="px-md text-caption text-muted">
               {group.title}
             </Text>
-            {group.items.map((item) =>
-              item.ready ? (
+            {group.items.map((item) => {
+              const badge = badges?.[item.href];
+              return item.ready ? (
                 <Link key={item.label} href={item.href as never} asChild>
                   <Pressable
                     accessibilityRole="link"
+                    {...(badge ? { accessibilityLabel: `${item.label}, ${badge}` } : {})}
                     onPress={onNavigate}
-                    className="min-h-touch min-w-touch justify-center rounded-control px-md"
+                    className="min-h-touch min-w-touch flex-row items-center justify-between gap-md rounded-control px-md"
                   >
                     <Text className="text-body text-foreground">{item.label}</Text>
+                    {badge ? <Text className="rounded-control border border-warning px-sm text-caption text-warning">{badge}</Text> : null}
                   </Pressable>
                 </Link>
               ) : (
@@ -118,10 +159,11 @@ function Sidebar({ groups, user, onNavigate, onClose }: SidebarProps) {
                   <Text className="text-body text-muted">{item.label}</Text>
                   <Text className="text-caption text-muted">Soon</Text>
                 </Pressable>
-              ),
-            )}
+              );
+            })}
           </View>
         ))}
+        {attention ? <AttentionCard attention={attention} onNavigate={onNavigate} /> : null}
       </ScrollView>
       {user ? <SidebarFooter user={user} /> : null}
     </View>
@@ -129,7 +171,7 @@ function Sidebar({ groups, user, onNavigate, onClose }: SidebarProps) {
 }
 
 /** Frames the admin Stack: fixed sidebar at tablet/desktop width, a top bar with a menu overlay on phones. */
-export function AdminShell({ children }: AdminShellProps) {
+export function AdminShell({ children, badges, attention }: AdminShellProps) {
   const { width } = useWindowDimensions();
   const { user } = useSession();
   const groups = visibleNav(user?.role ?? null);
@@ -140,7 +182,7 @@ export function AdminShell({ children }: AdminShellProps) {
     return (
       <View className="flex-1 flex-row bg-background">
         <View className="border-r border-border bg-surface">
-          <Sidebar groups={groups} user={user} />
+          <Sidebar groups={groups} user={user} badges={badges} attention={attention} />
         </View>
         <View className="flex-1">
           <View className="min-h-touch flex-row items-start justify-between gap-md border-b border-border bg-surface px-lg">
@@ -182,7 +224,7 @@ export function AdminShell({ children }: AdminShellProps) {
       <View className="flex-1">{children}</View>
       {isOpen ? (
         <View className="absolute inset-0 flex-row">
-          <Sidebar groups={groups} user={user} onNavigate={close} onClose={close} />
+          <Sidebar groups={groups} user={user} badges={badges} attention={attention} onNavigate={close} onClose={close} />
           <Pressable accessibilityRole="button" accessibilityLabel="Close menu" onPress={close} className="flex-1 bg-scrim" />
         </View>
       ) : null}

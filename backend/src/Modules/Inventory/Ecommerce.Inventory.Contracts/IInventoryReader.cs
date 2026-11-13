@@ -21,4 +21,7 @@ public interface IInventoryReader
 
     /// <summary>Stock rows with available at or below the low-stock threshold (0 included), lowest first, then variant id. Display-only, no locks.</summary>
     Task<IReadOnlyList<LowStockItem>> ListLowStockAsync(int max, CancellationToken ct);
+
+    /// <summary>How many stock rows are at or below the low-stock threshold (uncapped; the list is capped). Display-only, no locks.</summary>
+    Task<int> CountLowStockAsync(CancellationToken ct);
 }

@@ -89,6 +89,7 @@ internal sealed class FakeAdminReadStore(FakeProductWriteStore source) : IAdminC
 internal sealed class CountingInventory : IInventoryReader
 {
     public Task<IReadOnlyList<LowStockItem>> ListLowStockAsync(int max, CancellationToken ct) => throw new NotSupportedException();
+    public Task<int> CountLowStockAsync(CancellationToken ct) => throw new NotSupportedException();
 
     public List<IReadOnlyCollection<Guid>> Calls { get; } = [];
 

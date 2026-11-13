@@ -19,6 +19,8 @@ export function makeDashboard(overrides: Partial<Dashboard> = {}): Dashboard {
     ],
     topProducts: [{ productId: 'p-1', name: 'Blue Shirt', units: 9 }],
     lowStock: [{ variantId: 'v-1', productName: 'Blue Shirt', sku: 'BS-M', available: 2 }],
+    lowStockCount: 1,
+    cancelledCount: 0,
     needsAttention: { pendingReturns: 0, deadLetters: [], laggingProjectors: [] },
     ...overrides,
   };

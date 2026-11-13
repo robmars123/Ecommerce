@@ -25,6 +25,8 @@ internal sealed record DashboardView(
     IReadOnlyList<StatusCount> OrdersByStatus,
     IReadOnlyList<TopProduct> TopProducts,
     IReadOnlyList<LowStockRow> LowStock,
+    int LowStockCount,
+    int CancelledCount,
     NeedsAttention NeedsAttention);
 
 internal sealed record RecentOrderRow(Guid Id, string OrderNumber, string CustomerEmail, DateTimeOffset CreatedAt, decimal GrandTotal, string Currency, string Status);
@@ -70,6 +72,8 @@ internal sealed class DashboardQueryService(
             statuses,
             top,
             lowStock,
+            await inventory.CountLowStockAsync(ct),
+            await orders.CountCancelledAsync(from, now, ct),
             new NeedsAttention(
                 await orders.CountPendingReturnsAsync(ct),
                 dead,

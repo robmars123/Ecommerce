@@ -29,6 +29,9 @@ internal interface IInventoryStore
     /// <summary>No-tracking: variants with available at or below the threshold, lowest first.</summary>
     Task<IReadOnlyList<LowStockItem>> ListLowAsync(int threshold, int max, CancellationToken ct);
 
+    /// <summary>No-tracking: how many variants have available at or below the threshold (same rule as <see cref="ListLowAsync"/>).</summary>
+    Task<int> CountLowAsync(int threshold, CancellationToken ct);
+
     Task<IReadOnlyList<Guid>> FindExpiredOrderIdsAsync(DateTimeOffset now, int max, CancellationToken ct);
 
     /// <summary>One order's Active reservations, FOR UPDATE.</summary>

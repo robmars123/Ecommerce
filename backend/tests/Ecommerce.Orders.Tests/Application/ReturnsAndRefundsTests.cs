@@ -50,6 +50,7 @@ internal sealed class FakeOrderReadStore : IOrderReadStore
     public Task<RecentOrderPage> ListForAdminAsync(AdminOrderFilter filter, int page, int pageSize, CancellationToken ct) => throw new NotSupportedException();
 
     public Task<int> CountPendingReturnsAsync(CancellationToken ct) => throw new NotSupportedException();
+    public Task<int> CountCancelledAsync(DateTimeOffset from, DateTimeOffset to, CancellationToken ct) => throw new NotSupportedException();
 
     public Task<CustomerOrders> GetCustomerOrdersAsync(Guid userId, int recentTake, CancellationToken ct) => throw new NotSupportedException();
 
