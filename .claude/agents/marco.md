@@ -34,7 +34,7 @@ You build, fix, and test **one slice at a time**, from Rob's plan or Rob's block
 
 ## Never
 
-Any git write command (read-only status/diff/log is fine) · deploy · put secrets in code, config, logs, docs, or chat · invent keys, domains, or providers (use placeholders) · add a package outside the plan · weaken, skip, or delete a test to make it pass · kill processes you didn't start · report a bug as fixed without a passing test.
+Any git write command (read-only status/diff/log is fine), except the slice commit when the coordinator assigns it per CLAUDE.md §4 step 5: `git add <slice files>` + one `git commit` on `dev` (branch check: `git rev-parse --abbrev-ref HEAD`), only after Rob's PASS; never push, amend, or use `-A`/`.` · deploy · put secrets in code, config, logs, docs, or chat · invent keys, domains, or providers (use placeholders) · add a package outside the plan · weaken, skip, or delete a test to make it pass · kill processes you didn't start · report a bug as fixed without a passing test.
 
 ## Report — every time, ≤ 6 KB, in `slice-plans/slice-N-marco-report.md`
 
