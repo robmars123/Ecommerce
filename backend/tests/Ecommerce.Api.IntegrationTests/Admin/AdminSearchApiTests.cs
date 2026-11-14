@@ -224,4 +224,27 @@ public class AdminSearchApiTests(PostgresFixture postgres)
         Assert.Equal(["ORD-2026-000999"], Names(await f.SearchAsync("ord-2026"), "orders", "orderNumber"));
         Assert.Equal(["Blue Mug"], Names(await f.SearchAsync("MUG"), "products", "name"));
     }
+
+    [Fact]
+    public async Task I11_Repeated_q_uses_the_first_value()
+    {
+        await using Fixture f = await StartAsync();
+
+        IdentityTestEnv.Api shortFirst = await f.SearchAsync("a&q=bb");
+        Assert.Equal(HttpStatusCode.BadRequest, shortFirst.Status);
+        Assert.True(shortFirst.Json.GetProperty("errors").TryGetProperty("q", out _));
+        Assert.Equal(HttpStatusCode.OK, (await f.SearchAsync("bb&q=a")).Status);
+    }
+
+    [Fact]
+    public async Task I12_Error_messages_are_exact()
+    {
+        await using Fixture f = await StartAsync();
+
+        IdentityTestEnv.Api missing = await f.Env.GetAsync(Url, f.Admin);
+        Assert.Equal("q is required.", missing.Json.GetProperty("errors").GetProperty("q")[0].GetString());
+        Assert.Equal("application/problem+json", missing.Response.Content.Headers.ContentType?.MediaType);
+        Assert.Equal("q is required.", (await f.SearchAsync("")).Json.GetProperty("errors").GetProperty("q")[0].GetString());
+        Assert.Equal("q must be between 2 and 100 characters.", (await f.SearchAsync("a")).Json.GetProperty("errors").GetProperty("q")[0].GetString());
+    }
 }

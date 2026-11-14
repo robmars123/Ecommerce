@@ -29,6 +29,7 @@ public static class AdminModule
     public static IEndpointRouteBuilder MapAdminEndpoints(this IEndpointRouteBuilder app)
     {
         AdminSettingsEndpoints.Map(app);
+        AdminSearchEndpoints.Map(app);
         return app;
     }
 }

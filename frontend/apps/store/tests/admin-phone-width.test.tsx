@@ -1,4 +1,17 @@
-import { renderRouter, screen } from 'expo-router/testing-library';
+import { screen } from 'expo-router/testing-library';
+
+import AdminLayout from '@/app/admin/_layout';
+import AdminDashboardScreen from '@/app/admin/index';
+import AdminCategoriesScreen from '@/app/admin/categories';
+import AdminCustomerDetailScreen from '@/app/admin/customers/[id]';
+import AdminCustomersScreen from '@/app/admin/customers/index';
+import AdminInventoryScreen from '@/app/admin/inventory';
+import AdminOrderDetailScreen from '@/app/admin/orders/[id]';
+import AdminOrdersScreen from '@/app/admin/orders/index';
+import AdminProductDetailScreen from '@/app/admin/products/[id]';
+import AdminProductsScreen from '@/app/admin/products/index';
+import AdminProductNewScreen from '@/app/admin/products/new';
+import AdminReturnsScreen from '@/app/admin/returns';
 
 import { resetSession } from '@/features/auth/session';
 import { makeDashboard, makeRecentOrder, makeRecentOrdersPage } from '@/tests/admin-dashboard-fixtures';
@@ -7,6 +20,7 @@ import { makeCustomerDetail, makeCustomerItem, makeCustomerPage } from '@/tests/
 import { makeAdminListItem, makeAdminListPage, makeAdminOrderDetail, makeReturnPage, makeReturnRow } from '@/tests/admin-order-fixtures';
 import { jsonResponse } from '@/tests/fetch-mock';
 import { makeInventoryItem, makeInventoryPage } from '@/tests/fixtures';
+import { renderRouterWithQuery } from '@/tests/render-with-query';
 import { signInAs } from '@/tests/session';
 
 jest.mock('expo-secure-store');
@@ -59,6 +73,21 @@ function mockAdminApi() {
   });
 }
 
+const ADMIN_ROUTES = {
+  'admin/_layout': AdminLayout,
+  'admin/index': AdminDashboardScreen,
+  'admin/orders/index': AdminOrdersScreen,
+  'admin/orders/[id]': AdminOrderDetailScreen,
+  'admin/returns': AdminReturnsScreen,
+  'admin/products/index': AdminProductsScreen,
+  'admin/products/new': AdminProductNewScreen,
+  'admin/products/[id]': AdminProductDetailScreen,
+  'admin/categories': AdminCategoriesScreen,
+  'admin/inventory': AdminInventoryScreen,
+  'admin/customers/index': AdminCustomersScreen,
+  'admin/customers/[id]': AdminCustomerDetailScreen,
+};
+
 // url, title, paged
 const ROUTES: [string, string, boolean][] = [
   ['/admin', 'Admin dashboard', true],
@@ -89,7 +118,7 @@ describe('admin routes at 375 px', () => {
   it.each(ROUTES)('PW1: %s mounts in the phone shell with long content', async (url, title, paged) => {
     await signInAs('Admin');
     mockAdminApi();
-    await renderRouter('./app', { initialUrl: url });
+    await renderRouterWithQuery(ADMIN_ROUTES, { initialUrl: url });
 
     expect((await screen.findAllByRole('header', { name: title })).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByRole('button', { name: 'Open menu' })).toBeOnTheScreen();
