@@ -12,6 +12,7 @@ using Ecommerce.SharedKernel.Outbox;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -31,6 +32,12 @@ public static class IdentityModule
         AddInfrastructure(services);
         AddAuthenticationAndAuthorization(services);
         return services;
+    }
+
+    public static IEndpointRouteBuilder MapIdentityEndpoints(this IEndpointRouteBuilder app)
+    {
+        AuthEndpoints.Map(app);
+        return app;
     }
 
     private static void AddOptions(IServiceCollection services)

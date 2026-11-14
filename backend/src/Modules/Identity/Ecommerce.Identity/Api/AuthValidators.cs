@@ -2,7 +2,6 @@ using Ecommerce.Identity.Application;
 using Ecommerce.Identity.Domain;
 using FluentValidation;
 using FluentValidation.Results;
-using Microsoft.AspNetCore.Mvc;
 
 namespace Ecommerce.Identity.Api;
 
@@ -79,15 +78,11 @@ internal static class AuthRules
 
 internal static class ValidationProblems
 {
-    /// <summary>FluentValidation result to a 400 problem. Keys are camelCase, matching the JSON the client sent.</summary>
-    public static ActionResult ToProblem(this ControllerBase controller, FluentValidation.Results.ValidationResult result)
-    {
-        foreach (ValidationFailure? error in result.Errors)
-        {
-            controller.ModelState.AddModelError(CamelCase(error.PropertyName), error.ErrorMessage);
-        }
-        return controller.ValidationProblem(controller.ModelState);
-    }
+    /// <summary>FluentValidation result to the errors of a 400 problem. Keys are camelCase, matching the JSON the client sent.</summary>
+    public static Dictionary<string, string[]> ToErrors(this ValidationResult result) =>
+        result.Errors
+            .GroupBy(e => CamelCase(e.PropertyName))
+            .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray());
 
     private static string CamelCase(string path) =>
         string.Join('.', path.Split('.').Select(s => s.Length == 0 ? s : char.ToLowerInvariant(s[0]) + s[1..]));
