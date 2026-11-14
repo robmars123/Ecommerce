@@ -6,6 +6,7 @@ using Ecommerce.Inventory.Infrastructure.DevSeed;
 using Ecommerce.Inventory.Infrastructure.Persistence;
 using Ecommerce.Persistence;
 using FluentValidation;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -38,6 +39,12 @@ public static class InventoryModule
         services.AddHostedService<ReservationExpiryWorker>();
         services.AddScoped<IValidator<AdjustStockRequest>, AdjustStockRequestValidator>();
         return services;
+    }
+
+    public static IEndpointRouteBuilder MapInventoryEndpoints(this IEndpointRouteBuilder app)
+    {
+        AdminInventoryEndpoints.Map(app);
+        return app;
     }
 
     /// <summary>Registers the development stock seed. The host decides whether the environment allows it.</summary>
