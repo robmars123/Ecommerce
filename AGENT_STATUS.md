@@ -5,9 +5,9 @@ Agents update this at the **start and end of every task**.
 
 | Agent | Status | Slice | Task | Fix round | Updated |
 |---|---|---|---|---|---|
-| Marco (developer) | 🟢 AVAILABLE | P2.58 | Build done, verify PASS | 0 | 2026-11-13 |
+| Marco (developer) | 🟢 AVAILABLE | P2.59 | Build done, verify PASS | 0 | 2026-11-14 |
 | Shin (developer 2) | 🟢 AVAILABLE | — | Ready | 0 | 2026-11-08 18:45 |
-| Rob (architect, on demand) | 🟢 AVAILABLE | Minimal API | Plan done → slice-plans/minimal-api-migration-plan.md (needs Nathaniel decision) | 0 | 2026-11-13 |
+| Rob (architect, on demand) | 🟢 AVAILABLE | P2.59 | Review R1 BLOCKED → slice-plans/slice-P2.59-rob-review.md | 0 | 2026-11-14 |
 
 **Rules**
 

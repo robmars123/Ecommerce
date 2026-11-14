@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using Ecommerce.Api.Health;
 using Ecommerce.Api.Observability;
@@ -29,14 +30,9 @@ builder.Services.AddProblemDetails(o => o.CustomizeProblemDetails = ctx =>
         ctx.ProblemDetails.Extensions["correlationId"] = id;
     }
 });
+builder.Services.ConfigureHttpJsonOptions(o => UseStrictJson(o.SerializerOptions));
 builder.Services.AddControllers()
-    .AddJsonOptions(o =>
-    {
-        o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
-        // Strict request binding: an unknown member ("role", "isActive", "price" on the wrong DTO) is a 400, never
-        // silently ignored. This is the mass-assignment defense (D13).
-        o.JsonSerializerOptions.UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow;
-    })
+    .AddJsonOptions(o => UseStrictJson(o.JsonSerializerOptions))
     .AddModuleControllers();
 builder.Services.AddOptions<CorsOptions>()
     .Configure<IConfiguration>((o, config) =>
@@ -136,6 +132,14 @@ app.MapFallback(context =>
 }).AllowAnonymous();
 
 app.Run();
+
+static void UseStrictJson(JsonSerializerOptions json)
+{
+    json.Converters.Add(new JsonStringEnumConverter());
+    // Strict request binding: an unknown member ("role", "isActive", "price" on the wrong DTO) is a 400, never
+    // silently ignored. This is the mass-assignment defense (D13).
+    json.UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow;
+}
 
 public partial class Program
 {

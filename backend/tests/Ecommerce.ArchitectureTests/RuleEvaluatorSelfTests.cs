@@ -71,4 +71,17 @@ public class RuleEvaluatorSelfTests
         Assert.Empty(SourceRules.Violations("Catalog", "Application", "Synthetic.cs",
             ["using Ecommerce.Inventory.Contracts;"], modules));
     }
+
+    [Fact]
+    public void Endpoint_rule_rejects_a_mapping_outside_the_Api_folder()
+    {
+        Assert.Single(EndpointRules.Violations("Application/Foo.cs", ["app.MapGet(\"x\", () => 1);"]));
+    }
+
+    [Fact]
+    public void Endpoint_rule_accepts_a_mapping_in_the_Api_folder_and_a_module_class_calling_it()
+    {
+        Assert.Empty(EndpointRules.Violations("Api/FooEndpoints.cs", ["app.MapGet(\"x\", () => 1);"]));
+        Assert.Empty(EndpointRules.Violations("CatalogModule.cs", ["CategoryEndpoints.Map(app);"]));
+    }
 }

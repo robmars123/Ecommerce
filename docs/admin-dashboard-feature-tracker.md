@@ -74,5 +74,29 @@ Match the target screenshot across all admin screens. Rows are ordered MVP-first
 | P2.57 | Theme toggle label names the theme it switches to: in Light it shows "Dark", in Dark it shows "Light" | `components` | Done |
 | **F** | **Product edit form** | | |
 | P2.58 | Product edit: "Save changes" is disabled while the form has no unsaved changes (matches the loaded product); enabled once a field or image changes, disabled again if changes are reverted | `admin-catalog` | Done |
+| **G** | **Minimal API migration** | | |
+| P2.59 | Shared setup: endpoint/policy inventory and HTTP contract pins, shared JSON options for minimal APIs, architecture rule for endpoints; Categories endpoint reviewed and adopted | API, Catalog | Done |
+| P2.60 | Products endpoints (list, by slug) to Minimal API | Catalog | Todo |
+| P2.61 | Images endpoint to Minimal API | Catalog | Todo |
+| P2.62 | Admin settings endpoint to Minimal API; CORS by route prefix applies to minimal endpoints | Admin, API | Todo |
+| P2.63 | Admin search endpoint to Minimal API | Admin | Todo |
+| P2.64 | Admin customers endpoints to Minimal API | Admin | Todo |
+| P2.65 | Admin dashboard endpoints (KPIs, recent orders) to Minimal API | Admin | Todo |
+| P2.66 | Admin insights endpoints (trend, export) to Minimal API | Admin | Todo |
+| P2.67 | Admin projections replay endpoint to Minimal API | Admin | Todo |
+| P2.68 | Admin categories endpoints to Minimal API | Catalog | Todo |
+| P2.69 | Admin products endpoints, including image upload, to Minimal API | Catalog | Todo |
+| P2.70 | Admin inventory endpoints (list, adjust) to Minimal API | Inventory | Todo |
+| P2.71 | Auth endpoints to Minimal API; no-store headers kept | Identity | Todo |
+| P2.72 | Cart endpoints to Minimal API | Cart | Todo |
+| P2.73 | Admin order read endpoints (list, detail) to Minimal API | Orders | Todo |
+| P2.74 | Customer return request endpoint to Minimal API | Orders | Todo |
+| P2.75 | Admin returns endpoints (list, approve, decline) to Minimal API | Orders | Todo |
+| P2.76 | Admin order action endpoints (process, ship, deliver, override, unfulfillable) to Minimal API | Orders | Todo |
+| P2.77 | Customer orders endpoints, including retry payment, to Minimal API | Orders | Todo |
+| P2.78 | Admin refund endpoint to Minimal API | Payments | Todo |
+| P2.79 | Checkout endpoints (shipping methods, checkout) to Minimal API | Orders | Todo |
+| P2.80 | Stripe webhook endpoint to Minimal API | Payments | Todo |
+| P2.81 | Remove MVC: controllers, controller discovery and MVC JSON options deleted | API | Todo |
 
 **Every new endpoint:** tests for the happy path, 401/403 and 400. **Every screen:** Jest tests. **Restyle rows:** existing tests unchanged. **Theme rows:** P2.47 and P2.46 close tier 1 as a sweep; each tier-1 row already uses theme tokens only.
