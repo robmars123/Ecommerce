@@ -84,7 +84,7 @@ Match the target screenshot across all admin screens. Rows are ordered MVP-first
 | P2.65 | Admin dashboard endpoints (KPIs, recent orders) to Minimal API | Admin | Done |
 | P2.66 | Admin insights endpoints (trend, export) to Minimal API | Admin | Done |
 | P2.67 | Admin projections replay endpoint to Minimal API | Admin | Done |
-| P2.68 | Admin categories endpoints to Minimal API | Catalog | Todo |
+| P2.68 | Admin categories endpoints to Minimal API | Catalog | Done |
 | P2.69 | Admin products endpoints, including image upload, to Minimal API | Catalog | Todo |
 | P2.70 | Admin inventory endpoints (list, adjust) to Minimal API | Inventory | Todo |
 | P2.71 | Auth endpoints to Minimal API; no-store headers kept | Identity | Todo |

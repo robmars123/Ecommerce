@@ -164,6 +164,12 @@ internal static class AdminValidationProblems
         return controller.ValidationProblem(controller.ModelState);
     }
 
+    /// <summary>The same camelCase keys as <see cref="ToProblem"/>, as the dictionary a minimal API ValidationProblem takes.</summary>
+    public static Dictionary<string, string[]> ToErrors(this FluentValidation.Results.ValidationResult result) =>
+        result.Errors
+            .GroupBy(e => CamelCase(e.PropertyName))
+            .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray());
+
     private static string CamelCase(string path) =>
         string.Join('.', path.Split('.').Select(s => s.Length == 0 ? s : char.ToLowerInvariant(s[0]) + s[1..]));
 }
