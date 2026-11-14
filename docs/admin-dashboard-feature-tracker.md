@@ -76,7 +76,7 @@ Match the target screenshot across all admin screens. Rows are ordered MVP-first
 | P2.58 | Product edit: "Save changes" is disabled while the form has no unsaved changes (matches the loaded product); enabled once a field or image changes, disabled again if changes are reverted | `admin-catalog` | Done |
 | **G** | **Minimal API migration** | | |
 | P2.59 | Shared setup: endpoint/policy inventory and HTTP contract pins, shared JSON options for minimal APIs, architecture rule for endpoints; Categories endpoint reviewed and adopted | API, Catalog | Done |
-| P2.60 | Products endpoints (list, by slug) to Minimal API | Catalog | Todo |
+| P2.60 | Products endpoints (list, by slug) to Minimal API | Catalog | Done |
 | P2.61 | Images endpoint to Minimal API | Catalog | Todo |
 | P2.62 | Admin settings endpoint to Minimal API; CORS by route prefix applies to minimal endpoints | Admin, API | Todo |
 | P2.63 | Admin search endpoint to Minimal API | Admin | Todo |

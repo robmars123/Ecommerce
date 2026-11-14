@@ -64,6 +64,7 @@ public static class CatalogModule
     public static IEndpointRouteBuilder MapCatalogEndpoints(this IEndpointRouteBuilder app)
     {
         CategoryEndpoints.Map(app);
+        ProductEndpoints.Map(app);
         return app;
     }
 }
