@@ -98,6 +98,6 @@ Match the target screenshot across all admin screens. Rows are ordered MVP-first
 | P2.79 | Checkout endpoints (shipping methods, checkout) to Minimal API | Orders | Todo |
 | P2.80 | Stripe webhook endpoint to Minimal API | Payments | Todo |
 | P2.81 | Remove MVC: controllers, controller discovery and MVC JSON options deleted | API | Todo |
-| P2.82 | Body endpoints answer a missing Content-Type like MVC did (415/400, not 404) | Catalog, Inventory, Identity, API | Todo |
+| P2.82 | Body endpoints answer a missing Content-Type like MVC did (415/400, not 404) | Catalog, Inventory, Identity, API | Done |
 
 **Every new endpoint:** tests for the happy path, 401/403 and 400. **Every screen:** Jest tests. **Restyle rows:** existing tests unchanged. **Theme rows:** P2.47 and P2.46 close tier 1 as a sweep; each tier-1 row already uses theme tokens only.

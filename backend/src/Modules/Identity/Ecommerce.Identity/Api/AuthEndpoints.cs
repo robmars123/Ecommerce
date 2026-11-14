@@ -18,9 +18,8 @@ internal static class AuthEndpoints
         RouteGroupBuilder group = app.MapGroup("api/v1/auth").AddEndpointFilter(NoStore);
         group.MapPost("register", Register).AllowAnonymous();
         group.MapPost("login", Login).AllowAnonymous();
-        // "*/*": a request with no body and no Content-Type must reach the handler, not the 404 fallback (AE6).
-        group.MapPost("refresh", Refresh).AllowAnonymous().Accepts<RefreshRequest>(isOptional: true, "application/json", "*/*");
-        group.MapPost("logout", Logout).AllowAnonymous().Accepts<LogoutRequest>(isOptional: true, "application/json", "*/*");
+        group.MapPost("refresh", Refresh).AllowAnonymous();
+        group.MapPost("logout", Logout).AllowAnonymous();
         group.MapPost("password-reset", RequestPasswordReset).AllowAnonymous();
         group.MapPost("password-reset/confirm", ConfirmPasswordReset).AllowAnonymous();
         group.MapGet("me", Me).RequireAuthorization();

@@ -38,6 +38,7 @@ Scope: 22 controller classes (Categories already converted in commit `d01ae3c`, 
 | D12 | **Auth no-store (P2.71):** the `[ResponseCache(NoStore)]` becomes one endpoint filter on the auth group that sets the same `Cache-Control`/`Pragma` headers | No `ResponseCache` in minimal APIs | Header code in every handler |
 | D13 | **Webhook (P2.80):** no body parameter; the handler reads `HttpRequest.Body`; `.WithMetadata(new RequestSizeLimitAttribute(262144))` | Raw bytes for the signature check | Binding a DTO |
 | D14 | **MVC removal (P2.81):** delete `AddControllers`, `MapControllers`, `AddModuleControllers`, `ModuleControllerFeatureProvider`, `ModuleAssemblies`, the Mvc JSON half of D6, the CORS call on `MapControllers`. D10(a) tightens to "no `ControllerBase` subtype anywhere"; `Host_composes_every_module_assembly` is replaced by a check that every module implementation with `Api/*Endpoints.cs` contributes ≥ 1 endpoint (handler `MethodInfo` metadata → declaring assembly) | Proves composition at runtime instead of a list only MVC used | Keeping a test-only manifest |
+| D15 | **Content-Type (P2.82):** body routes need no per-route `.Accepts`; the host convention `AcceptAnyContentType` (`Program.cs`) adds `*/*` to every JSON-body route in `moduleEndpoints`, so binding answers 415/400 after auth instead of the anonymous 404 fallback. Multipart routes are left alone (the upload keeps MVC's 404, IP6/IP7/IU5). CT4 fails for any JSON-body route without `*/*` | One place covers P2.72–P2.79 | Per-route `.Accepts(..., "*/*")` |
 
 ### 2.2 Files per slice
 

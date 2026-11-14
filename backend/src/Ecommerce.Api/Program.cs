@@ -11,6 +11,7 @@ using Ecommerce.SharedKernel.Time;
 using Ecommerce.Persistence;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Cors.Infrastructure;
+using Microsoft.AspNetCore.Http.Metadata;
 using Microsoft.AspNetCore.Routing;
 using Serilog;
 
@@ -112,6 +113,8 @@ app.MapNotificationsHub();
 RouteGroupBuilder moduleEndpoints = app.MapGroup("");
 moduleEndpoints.MapModuleEndpoints();
 AddCorsByRoutePrefix(moduleEndpoints);
+// Routing must not reject on Content-Type: body binding answers 415/400 as MVC did (P2.82).
+AcceptAnyContentType(moduleEndpoints);
 AddCorsByRoutePrefix(app.MapControllers());
 
 // Unknown routes: the authenticated-user fallback policy would otherwise turn a 404 into a 401 and leak nothing useful.
@@ -141,6 +144,17 @@ static void AddCorsByRoutePrefix(IEndpointConventionBuilder endpoints) =>
         else if (route.StartsWith("api/v1/cart", StringComparison.OrdinalIgnoreCase))
         {
             endpoint.Metadata.Add(new EnableCorsAttribute(CartCorsPolicy));
+        }
+    });
+
+static void AcceptAnyContentType(IEndpointConventionBuilder endpoints) =>
+    endpoints.Finally(builder =>
+    {
+        IAcceptsMetadata? accepts = builder.Metadata.OfType<IAcceptsMetadata>().LastOrDefault();
+        // JSON routes only: the image upload stays multipart-only and answers a wrong Content-Type with 404 (IP6, IP7, IU5).
+        if (accepts is not null && accepts.ContentTypes.Contains("application/json"))
+        {
+            builder.Metadata.Add(new AcceptsMetadata([.. accepts.ContentTypes, "*/*"], accepts.RequestType, accepts.IsOptional));
         }
     });
 
