@@ -581,4 +581,51 @@ public class AdminDashboardApiTests(PostgresFixture postgres)
         Assert.Equal(Sorted("items", "page", "pageSize", "totalCount"), Names(recent.Json));
         Assert.Equal(Sorted("id", "orderNumber", "customerEmail", "createdAt", "grandTotal", "status"), Names(recent.Json.GetProperty("items")[0]));
     }
+
+    // ---- P2.67 pins: replay result shapes, written on MVC before the Minimal API conversion ----
+
+    [Fact]
+    public async Task Replay_404_is_a_problem_and_202_has_no_body_or_location()
+    {
+        await using ProjectionEnv e = await ProjectionEnv.StartAsync(postgres);
+
+        IdentityTestEnv.Api missing = await e.Env.PostAsync("/api/v1/admin/projections/nope/replay", null, e.R.Admin);
+        IdentityTestEnv.Api accepted = await e.Env.PostAsync("/api/v1/admin/projections/admin.dashboard/replay", null, e.R.Admin);
+
+        Assert.Equal(HttpStatusCode.NotFound, missing.Status);
+        Assert.Equal("application/problem+json", missing.Response.Content.Headers.ContentType?.MediaType);
+        Assert.Equal(404, missing.Json.GetProperty("status").GetInt32());
+        Assert.Equal("Projection not found", missing.Str("title"));
+        Assert.Equal("https://tools.ietf.org/html/rfc9110#section-15.5.5", missing.Str("type"));
+        Assert.False(missing.Json.TryGetProperty("detail", out _));
+        Assert.False(string.IsNullOrEmpty(missing.Str("traceId")));
+        Assert.Equal("id-test-1", missing.Str("correlationId"));
+        Assert.Equal(HttpStatusCode.Accepted, accepted.Status);
+        Assert.Equal("", accepted.Text);
+        Assert.Null(accepted.Response.Headers.Location);
+        Assert.Null(accepted.Response.Content.Headers.ContentType);
+    }
+
+    [Fact]
+    public async Task Replay_409_is_a_problem_with_the_busy_title_and_detail()
+    {
+        await using ProjectionEnv e = await ProjectionEnv.StartAsync(postgres);
+        await using NpgsqlConnection holder = new(ProjectionTestSupport.ConnectionString(e.Env));
+        await holder.OpenAsync(Ct);
+        await using (NpgsqlCommand cmd = new("SELECT pg_advisory_lock(hashtext('projection:admin.dashboard'))", holder))
+        {
+            await cmd.ExecuteScalarAsync(Ct);
+        }
+
+        IdentityTestEnv.Api r = await e.Env.PostAsync("/api/v1/admin/projections/admin.dashboard/replay", null, e.R.Admin);
+
+        Assert.Equal(HttpStatusCode.Conflict, r.Status);
+        Assert.Equal("application/problem+json", r.Response.Content.Headers.ContentType?.MediaType);
+        Assert.Equal(409, r.Json.GetProperty("status").GetInt32());
+        Assert.Equal("Projection busy", r.Str("title"));
+        Assert.Equal("projection-busy: another worker is running this projector.", r.Str("detail"));
+        Assert.Equal("https://tools.ietf.org/html/rfc9110#section-15.5.10", r.Str("type"));
+        Assert.False(string.IsNullOrEmpty(r.Str("traceId")));
+        Assert.Equal("id-test-1", r.Str("correlationId"));
+    }
 }
