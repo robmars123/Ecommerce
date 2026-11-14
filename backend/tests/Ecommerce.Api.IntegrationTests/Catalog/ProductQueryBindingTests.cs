@@ -80,4 +80,15 @@ public class ProductQueryBindingTests(PostgresFixture postgres)
             Assert.Null(response.Headers.CacheControl);
         }
     }
+
+    [Fact]
+    public async Task B6_a_repeated_page_key_reads_the_first_value()
+    {
+        await using CatalogTestEnv env = await CatalogTestEnv.StartAsync(postgres);
+
+        (HttpStatusCode status, JsonDocument body) = await env.GetAsync("/api/v1/products?page=2&page=abc");
+
+        Assert.Equal(HttpStatusCode.OK, status);
+        Assert.Equal(2, body.RootElement.GetProperty("page").GetInt32());
+    }
 }

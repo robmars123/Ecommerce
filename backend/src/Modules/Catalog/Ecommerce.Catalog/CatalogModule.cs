@@ -67,6 +67,7 @@ public static class CatalogModule
         ProductEndpoints.Map(app);
         ImageEndpoints.Map(app);
         AdminCategoriesEndpoints.Map(app);
+        AdminProductsEndpoints.Map(app);
         return app;
     }
 }
