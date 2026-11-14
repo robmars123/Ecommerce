@@ -445,4 +445,140 @@ public class AdminDashboardApiTests(PostgresFixture postgres)
         Assert.Equal(0, today.Json.GetProperty("deliveredCount").GetInt32());
         Assert.Equal(1, week.Json.GetProperty("deliveredCount").GetInt32());
     }
+
+    // ---- P2.65 pins: query handling and response shape, written on MVC before the Minimal API conversion ----
+
+    private const string RecentUrl = "/api/v1/admin/dashboard/recent-orders";
+
+    private static string[] Names(JsonElement element) =>
+        [.. element.EnumerateObject().Select(p => p.Name).Order(StringComparer.Ordinal)];
+
+    private static string[] Sorted(params string[] names) => [.. names.Order(StringComparer.Ordinal)];
+
+    private static void AssertValidationProblem(IdentityTestEnv.Api r)
+    {
+        Assert.Equal(HttpStatusCode.BadRequest, r.Status);
+        Assert.Equal("application/problem+json", r.Response.Content.Headers.ContentType?.MediaType);
+        Assert.Equal("https://tools.ietf.org/html/rfc9110#section-15.5.1", r.Str("type"));
+        Assert.Equal("One or more validation errors occurred.", r.Str("title"));
+        Assert.False(string.IsNullOrEmpty(r.Str("traceId")));
+    }
+
+    [Fact]
+    public async Task Dashboard_period_blank_whitespace_and_repeated_keys_follow_MVC()
+    {
+        await using ProjectionEnv e = await ProjectionEnv.StartAsync(postgres);
+        const string url = "/api/v1/admin/dashboard";
+
+        IdentityTestEnv.Api blank = await e.Env.GetAsync(url + "?period=", e.R.Admin);
+        IdentityTestEnv.Api whitespace = await e.Env.GetAsync(url + "?period=%20", e.R.Admin);
+        IdentityTestEnv.Api firstWins = await e.Env.GetAsync(url + "?period=7d&period=bogus", e.R.Admin);
+        IdentityTestEnv.Api firstBad = await e.Env.GetAsync(url + "?period=bogus&period=7d", e.R.Admin);
+
+        Assert.Equal(HttpStatusCode.OK, blank.Status);
+        Assert.Equal("today", blank.Str("period"));
+        Assert.Equal(HttpStatusCode.OK, whitespace.Status);
+        Assert.Equal("today", whitespace.Str("period"));
+        Assert.Equal(HttpStatusCode.OK, firstWins.Status);
+        Assert.Equal("7d", firstWins.Str("period"));
+        Assert.Equal(HttpStatusCode.BadRequest, firstBad.Status);
+        Assert.True(firstBad.Json.GetProperty("errors").TryGetProperty("period", out _));
+    }
+
+    [Fact]
+    public async Task Unknown_period_is_a_400_problem_with_the_exact_text()
+    {
+        await using ProjectionEnv e = await ProjectionEnv.StartAsync(postgres);
+
+        IdentityTestEnv.Api r = await e.DashboardAsync(e.R.Admin, "1d");
+
+        AssertValidationProblem(r);
+        Assert.Equal("period must be one of: today, 7d, 30d.", r.Json.GetProperty("errors").GetProperty("period")[0].GetString());
+    }
+
+    [Fact]
+    public async Task Recent_orders_bad_numbers_are_400_with_the_binding_message_only()
+    {
+        await using ProjectionEnv e = await ProjectionEnv.StartAsync(postgres);
+
+        IdentityTestEnv.Api page = await e.Env.GetAsync(RecentUrl + "?page=abc", e.R.Admin);
+        IdentityTestEnv.Api both = await e.Env.GetAsync(RecentUrl + "?page=abc&pageSize=500", e.R.Admin);
+        IdentityTestEnv.Api fraction = await e.Env.GetAsync(RecentUrl + "?pageSize=1.5", e.R.Admin);
+
+        Assert.Equal(HttpStatusCode.BadRequest, page.Status);
+        Assert.Equal("The value 'abc' is not valid.", page.Json.GetProperty("errors").GetProperty("page")[0].GetString());
+        Assert.Equal(HttpStatusCode.BadRequest, both.Status);
+        Assert.True(both.Json.GetProperty("errors").TryGetProperty("page", out _));
+        Assert.False(both.Json.GetProperty("errors").TryGetProperty("pageSize", out _));
+        Assert.Equal(HttpStatusCode.BadRequest, fraction.Status);
+        Assert.True(fraction.Json.GetProperty("errors").TryGetProperty("pageSize", out _));
+    }
+
+    [Fact]
+    public async Task Recent_orders_blank_values_use_the_defaults()
+    {
+        await using ProjectionEnv e = await ProjectionEnv.StartAsync(postgres);
+
+        IdentityTestEnv.Api r = await e.Env.GetAsync(RecentUrl + "?page=&pageSize=", e.R.Admin);
+
+        Assert.Equal(HttpStatusCode.OK, r.Status);
+        Assert.Equal(1, r.Json.GetProperty("page").GetInt32());
+        Assert.Equal(10, r.Json.GetProperty("pageSize").GetInt32());
+    }
+
+    [Fact]
+    public async Task Recent_orders_repeated_keys_use_the_first_value()
+    {
+        await using ProjectionEnv e = await ProjectionEnv.StartAsync(postgres);
+        Guid older = await e.PaidOrderAsync("RECENT-REP-A");
+        e.Env.Clock.UtcNow = e.Env.Clock.UtcNow.AddMinutes(1);
+        Guid variant = await e.F.Cart.VariantAsync("RECENT-REP-B", stock: 5);
+        await e.F.PlaceOrderAsync(variant, 1, "recent-" + Guid.NewGuid().ToString("N"));
+
+        IdentityTestEnv.Api r = await e.Env.GetAsync(RecentUrl + "?pageSize=1&page=2&page=abc", e.R.Admin);
+
+        Assert.Equal(HttpStatusCode.OK, r.Status);
+        Assert.Equal(2, r.Json.GetProperty("page").GetInt32());
+        JsonElement[] items = [.. r.Json.GetProperty("items").EnumerateArray()];
+        Assert.Equal(older, Assert.Single(items).GetProperty("id").GetGuid());
+    }
+
+    [Fact]
+    public async Task Recent_orders_range_errors_are_collected_with_exact_texts_and_shape()
+    {
+        await using ProjectionEnv e = await ProjectionEnv.StartAsync(postgres);
+
+        IdentityTestEnv.Api r = await e.Env.GetAsync(RecentUrl + "?page=0&pageSize=51", e.R.Admin);
+
+        AssertValidationProblem(r);
+        JsonElement errors = r.Json.GetProperty("errors");
+        Assert.Equal("page must be 1 or greater.", errors.GetProperty("page")[0].GetString());
+        Assert.Equal("pageSize must be between 1 and 50.", errors.GetProperty("pageSize")[0].GetString());
+    }
+
+    [Fact]
+    public async Task Response_property_names_are_unchanged()
+    {
+        await using ProjectionEnv e = await ProjectionEnv.StartAsync(postgres);
+        await e.PaidOrderAsync("N7-PAID");
+        await e.F.Cart.VariantAsync("N7-LOW", stock: 1);
+        await e.DrainAsync();
+
+        IdentityTestEnv.Api admin = await e.DashboardAsync(e.R.Admin, "today");
+        IdentityTestEnv.Api support = await e.DashboardAsync(e.R.Support, "today");
+        IdentityTestEnv.Api recent = await e.Env.GetAsync(RecentUrl, e.R.Admin);
+
+        string[] root = Sorted("period", "asOf", "currency", "kpis", "ordersByStatus", "topProducts", "lowStock", "lowStockCount", "cancelledCount", "deliveredCount", "needsAttention");
+        Assert.Equal(root, Names(admin.Json));
+        JsonElement kpis = admin.Json.GetProperty("kpis");
+        Assert.Equal(Sorted("revenue", "orderCount", "averageOrderValue", "customers", "previousRevenue", "revenueChangePercent"), Names(kpis));
+        Assert.Equal(Sorted("total", "new", "returning"), Names(kpis.GetProperty("customers")));
+        Assert.Equal(Sorted("amount", "currency"), Names(kpis.GetProperty("averageOrderValue")));
+        Assert.Equal(Sorted("pendingReturns", "deadLetters", "laggingProjectors"), Names(admin.Json.GetProperty("needsAttention")));
+        Assert.Equal(Sorted("variantId", "productName", "sku", "available"), Names(admin.Json.GetProperty("lowStock")[0]));
+        Assert.Equal(root, Names(support.Json));
+        Assert.Equal(JsonValueKind.Null, support.Json.GetProperty("kpis").ValueKind);
+        Assert.Equal(Sorted("items", "page", "pageSize", "totalCount"), Names(recent.Json));
+        Assert.Equal(Sorted("id", "orderNumber", "customerEmail", "createdAt", "grandTotal", "status"), Names(recent.Json.GetProperty("items")[0]));
+    }
 }

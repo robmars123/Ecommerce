@@ -31,6 +31,7 @@ public static class AdminModule
         AdminSettingsEndpoints.Map(app);
         AdminSearchEndpoints.Map(app);
         AdminCustomersEndpoints.Map(app);
+        AdminDashboardEndpoints.Map(app);
         return app;
     }
 }

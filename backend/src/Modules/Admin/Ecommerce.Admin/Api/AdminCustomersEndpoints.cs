@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Security.Claims;
 using Ecommerce.Admin.Application;
 using Ecommerce.Identity.Contracts;
@@ -58,8 +57,8 @@ internal static class AdminCustomersEndpoints
     {
         // Bad numbers are reported alone, before the range checks, as MVC model binding did.
         Dictionary<string, string[]> errors = new Dictionary<string, string[]>();
-        int? pageNumber = ReadInt(page?.FirstOrDefault(), "page", errors);
-        int? pageSizeNumber = ReadInt(pageSize?.FirstOrDefault(), "pageSize", errors);
+        int? pageNumber = QueryValues.ReadInt(page, "page", errors);
+        int? pageSizeNumber = QueryValues.ReadInt(pageSize, "pageSize", errors);
         if (errors.Count > 0)
         {
             return TypedResults.ValidationProblem(errors);
@@ -113,21 +112,5 @@ internal static class AdminCustomersEndpoints
             view.RefundCount,
             view.RecentRefunds.Select(r => new AdminCustomerRefundResponse(
                 r.Refund.RefundId, r.Refund.OrderId, r.OrderNumber, MoneyResponse.From(r.Refund.Amount, r.Refund.Currency), r.Refund.Status, r.Refund.Automatic, r.Refund.CreatedAt)).ToList()));
-    }
-
-    private static int? ReadInt(string? raw, string field, Dictionary<string, string[]> errors)
-    {
-        if (string.IsNullOrWhiteSpace(raw))
-        {
-            return null;
-        }
-
-        if (int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out int value))
-        {
-            return value;
-        }
-
-        errors[field] = [$"The value '{raw}' is not valid."];
-        return null;
     }
 }
