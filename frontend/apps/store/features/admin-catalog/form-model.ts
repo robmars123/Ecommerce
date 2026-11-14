@@ -99,3 +99,8 @@ export function toCreateRequest(state: ProductFormState): CreateProductRequest {
 export function toUpdateRequest(state: ProductFormState, version: number): UpdateProductRequest {
   return { ...common(state, true), version };
 }
+
+/** True when the update request built from `state` would differ from the one built from `baseline`. */
+export function hasChanges(baseline: ProductFormState, state: ProductFormState): boolean {
+  return JSON.stringify(common(baseline, true)) !== JSON.stringify(common(state, true));
+}

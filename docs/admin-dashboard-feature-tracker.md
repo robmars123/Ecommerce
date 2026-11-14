@@ -72,5 +72,7 @@ Match the target screenshot across all admin screens. Rows are ordered MVP-first
 | P2.56 | Product image upload: "Add image" picks a file and uploads it; image bytes stored in Postgres and served by the API (replaces the unconfigured Spaces storage). Admin only | Catalog, `admin-catalog` | Done |
 | **E** | **Theme toggle** | | |
 | P2.57 | Theme toggle label names the theme it switches to: in Light it shows "Dark", in Dark it shows "Light" | `components` | Done |
+| **F** | **Product edit form** | | |
+| P2.58 | Product edit: "Save changes" is disabled while the form has no unsaved changes (matches the loaded product); enabled once a field or image changes, disabled again if changes are reverted | `admin-catalog` | Done |
 
 **Every new endpoint:** tests for the happy path, 401/403 and 400. **Every screen:** Jest tests. **Restyle rows:** existing tests unchanged. **Theme rows:** P2.47 and P2.46 close tier 1 as a sweep; each tier-1 row already uses theme tokens only.
