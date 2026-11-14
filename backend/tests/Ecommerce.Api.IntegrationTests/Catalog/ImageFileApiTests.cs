@@ -94,4 +94,48 @@ public class ImageFileApiTests(PostgresFixture postgres)
         using HttpResponseMessage image = await env.Client.GetAsync(url, TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.OK, image.StatusCode);
     }
+
+    [Fact]
+    public async Task Unknown_image_key_is_a_404_problem()
+    {
+        await using IdentityTestEnv env = await IdentityTestEnv.StartAsync(postgres);
+        using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/images/products/nope.png");
+        request.Headers.Add("X-Correlation-ID", "image-test-1");
+
+        using HttpResponseMessage response = await env.Client.SendAsync(request, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+        JsonElement root = JsonDocument.Parse(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken)).RootElement;
+        Assert.Equal("https://tools.ietf.org/html/rfc9110#section-15.5.5", root.GetProperty("type").GetString());
+        Assert.Equal("Not Found", root.GetProperty("title").GetString());
+        Assert.False(string.IsNullOrEmpty(root.GetProperty("traceId").GetString()));
+        Assert.Equal("image-test-1", root.GetProperty("correlationId").GetString());
+        Assert.DoesNotContain("immutable", response.Headers.CacheControl?.ToString() ?? "");
+    }
+
+    [Theory]
+    [InlineData("/api/v1/images")]
+    [InlineData("/api/v1/images/")]
+    public async Task Empty_image_key_is_a_400_validation_problem(string path)
+    {
+        await using IdentityTestEnv env = await IdentityTestEnv.StartAsync(postgres);
+        using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, path);
+        request.Headers.Add("X-Correlation-ID", "image-test-1");
+
+        using HttpResponseMessage response = await env.Client.SendAsync(request, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+        JsonElement root = JsonDocument.Parse(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken)).RootElement;
+        Assert.Equal("https://tools.ietf.org/html/rfc9110#section-15.5.1", root.GetProperty("type").GetString());
+        Assert.Equal("One or more validation errors occurred.", root.GetProperty("title").GetString());
+        Assert.Equal(400, root.GetProperty("status").GetInt32());
+        JsonElement errors = root.GetProperty("errors");
+        Assert.Single(errors.EnumerateObject());
+        Assert.Equal(new[] { "The key field is required." }, errors.GetProperty("key").EnumerateArray().Select(e => e.GetString()));
+        Assert.False(string.IsNullOrEmpty(root.GetProperty("traceId").GetString()));
+        Assert.Equal("image-test-1", root.GetProperty("correlationId").GetString());
+        Assert.DoesNotContain("immutable", response.Headers.CacheControl?.ToString() ?? "");
+    }
 }
