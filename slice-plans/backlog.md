@@ -121,3 +121,6 @@
 - P2.65 plan (Rob): `QueryValues` extracted in Admin with P2.65 (Admin's last integer-query user); line 115's "third consumer" trigger is closed for Admin. Catalog keeps its copy.
 - P2.65 R1 (Rob): `AdminDashboardApiTests` N3 `?pageSize=1.5` asserts the `pageSize` key only; add the `"The value '1.5' is not valid."` text next touch.
 - P2.65 R1 (Rob): N7 pins every dashboard record's property names except `ordersByStatus` items (`StatusCount`, SharedKernel); add when P2.67 touches JSON options.
+- P2.66 plan (Rob, N+1 over projectors): the P2.65 `GetProjectorsAsync` loop also runs on every `dashboard/trend` and `dashboard/export` (`Admin/Application/RevenueTrendService.cs:11`): 3 × 2 projectors = 6 of the 8 queries per request, used only for `asOf`.
+- P2.66 plan (Rob, aggregate in memory, accepted by 13.2 "Admin dashboard tier 4"): `ReadRevenueEventsAsync` loads every paid and refund row of the window (`Admin/Infrastructure/DashboardStore.cs:28-33`) and `TrendCalculator` buckets in C#; fine at today's volume, move bucketing to SQL if 30d row counts grow.
+- P2.66 plan (Rob): export reads the clock twice (service `now`, then the filename in the handler); at 00:00 UTC the filename date can differ from the window. Use `view.To` for the filename next touch, with a pinned-clock test.

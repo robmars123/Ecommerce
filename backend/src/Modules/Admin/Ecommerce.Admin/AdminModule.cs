@@ -32,6 +32,7 @@ public static class AdminModule
         AdminSearchEndpoints.Map(app);
         AdminCustomersEndpoints.Map(app);
         AdminDashboardEndpoints.Map(app);
+        AdminInsightsEndpoints.Map(app);
         return app;
     }
 }

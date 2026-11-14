@@ -170,4 +170,105 @@ public class AdminInsightsApiTests(PostgresFixture postgres)
         Assert.Equal("USD", r.Str("currency"));
         Assert.Equal(3, r.Json.GetProperty("lowStockThreshold").GetInt32());
     }
+
+    // ---- P2.66 pins: query handling and response shape, written on MVC before the Minimal API conversion ----
+
+    private static string[] Names(JsonElement element) =>
+        [.. element.EnumerateObject().Select(p => p.Name).Order(StringComparer.Ordinal)];
+
+    private static string[] Sorted(params string[] names) => [.. names.Order(StringComparer.Ordinal)];
+
+    private static void AssertValidationProblem(IdentityTestEnv.Api r)
+    {
+        Assert.Equal(HttpStatusCode.BadRequest, r.Status);
+        Assert.Equal("application/problem+json", r.Response.Content.Headers.ContentType?.MediaType);
+        Assert.Equal("https://tools.ietf.org/html/rfc9110#section-15.5.1", r.Str("type"));
+        Assert.Equal("One or more validation errors occurred.", r.Str("title"));
+        Assert.False(string.IsNullOrEmpty(r.Str("traceId")));
+        Assert.Equal("period must be one of: today, 7d, 30d.", r.Json.GetProperty("errors").GetProperty("period")[0].GetString());
+    }
+
+    // P1
+    [Fact]
+    public async Task Period_blank_whitespace_and_repeated_keys_follow_MVC_on_trend_and_export()
+    {
+        await using ProjectionEnv e = await ProjectionEnv.StartAsync(postgres);
+        DateTimeOffset t = PinNoon(e);
+        string admin = await e.Env.AccessTokenAsync("admin@example.test");
+
+        IdentityTestEnv.Api blank = await e.Env.GetAsync(Trend + "?period=", admin);
+        IdentityTestEnv.Api whitespace = await e.Env.GetAsync(Trend + "?period=%20", admin);
+        IdentityTestEnv.Api firstWins = await e.Env.GetAsync(Trend + "?period=7d&period=bogus", admin);
+        IdentityTestEnv.Api firstBad = await e.Env.GetAsync(Trend + "?period=bogus&period=7d", admin);
+        using HttpResponseMessage export = await RawGetAsync(e, Export + "?period=7d&period=bogus", admin);
+        IdentityTestEnv.Api exportFirstBad = await e.Env.GetAsync(Export + "?period=bogus&period=7d", admin);
+
+        Assert.Equal(HttpStatusCode.OK, blank.Status);
+        Assert.Equal("today", blank.Str("period"));
+        Assert.Equal(HttpStatusCode.OK, whitespace.Status);
+        Assert.Equal("today", whitespace.Str("period"));
+        Assert.Equal(HttpStatusCode.OK, firstWins.Status);
+        Assert.Equal("7d", firstWins.Str("period"));
+        Assert.Equal(HttpStatusCode.BadRequest, firstBad.Status);
+        Assert.True(firstBad.Json.GetProperty("errors").TryGetProperty("period", out _));
+        Assert.Equal(HttpStatusCode.OK, export.StatusCode);
+        Assert.Equal("dashboard-7d-" + t.UtcDateTime.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) + ".csv", export.Content.Headers.ContentDisposition!.FileName);
+        Assert.Equal(HttpStatusCode.BadRequest, exportFirstBad.Status);
+        Assert.True(exportFirstBad.Json.GetProperty("errors").TryGetProperty("period", out _));
+    }
+
+    // P2
+    [Fact]
+    public async Task Unknown_period_is_a_400_problem_with_the_exact_text_on_both_routes()
+    {
+        await using ProjectionEnv e = await ProjectionEnv.StartAsync(postgres);
+
+        AssertValidationProblem(await e.Env.GetAsync(Trend + "?period=1d", e.R.Admin));
+        AssertValidationProblem(await e.Env.GetAsync(Export + "?period=1d", e.R.Admin));
+    }
+
+    // P3
+    [Fact]
+    public async Task Export_headers_are_exact_and_the_body_has_no_BOM()
+    {
+        await using ProjectionEnv e = await ProjectionEnv.StartAsync(postgres);
+        DateTimeOffset t = PinNoon(e);
+        string admin = await e.Env.AccessTokenAsync("admin@example.test");
+
+        using HttpResponseMessage response = await RawGetAsync(e, Export + "?period=7d", admin);
+        byte[] body = await response.Content.ReadAsByteArrayAsync(Ct);
+
+        Assert.Equal("text/csv; charset=utf-8", response.Content.Headers.ContentType!.ToString());
+        Assert.Equal("dashboard-7d-" + t.UtcDateTime.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) + ".csv", response.Content.Headers.ContentDisposition!.FileNameStar);
+        Assert.Equal((byte)'b', body[0]);
+    }
+
+    // P4
+    [Fact]
+    public async Task Export_for_Support_is_403_with_no_amount_and_no_csv()
+    {
+        await using ProjectionEnv e = await ProjectionEnv.StartAsync(postgres);
+
+        using HttpResponseMessage response = await RawGetAsync(e, Export + "?period=7d", e.R.Support);
+        string body = await response.Content.ReadAsStringAsync(Ct);
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        Assert.DoesNotContain("amount", body);
+        Assert.NotEqual("text/csv", response.Content.Headers.ContentType?.MediaType);
+    }
+
+    // P5
+    [Fact]
+    public async Task Trend_response_has_exactly_the_documented_properties()
+    {
+        await using ProjectionEnv e = await ProjectionEnv.StartAsync(postgres);
+
+        JsonElement trend = (await e.Env.GetAsync(Trend + "?period=today", e.R.Admin)).Json;
+
+        Assert.Equal(Sorted("asOf", "buckets", "currency", "granularity", "orderCount", "period", "total"), Names(trend));
+        Assert.Equal(Sorted("amount", "currency"), Names(trend.GetProperty("total")));
+        JsonElement bucket = trend.GetProperty("buckets")[0];
+        Assert.Equal(Sorted("orders", "revenue", "start"), Names(bucket));
+        Assert.Equal(Sorted("amount", "currency"), Names(bucket.GetProperty("revenue")));
+    }
 }
