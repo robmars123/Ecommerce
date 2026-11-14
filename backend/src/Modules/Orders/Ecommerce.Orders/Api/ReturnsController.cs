@@ -131,39 +131,3 @@ internal sealed class AdminReturnsController(ReturnService returns, IValidator<D
         };
     }
 }
-
-/// <summary>Order list and detail for the admin screens (D14, 13.2): Admin and Support may read; only Admin acts (other controllers).</summary>
-[ApiController]
-[Route("api/v1/admin/orders")]
-[Authorize(Policy = AuthorizationPolicies.AdminOrSupport)]
-internal sealed class AdminOrderReadsController(OrderQueryService orders, IValidator<AdminOrderListQuery> validator) : ControllerBase
-{
-    [HttpGet("")]
-    public async Task<IActionResult> List([FromQuery] AdminOrderListQuery query, CancellationToken ct)
-    {
-        ValidationResult validation = await validator.ValidateAsync(query, ct);
-        if (!validation.IsValid)
-        {
-            ModelState.Clear(); // bound query values keep their PascalCase keys otherwise; the contract is camelCase
-            return this.InvalidProblem(validation);
-        }
-
-        OrderStatus? status = null;
-        if (query.Status is not null)
-        {
-            StatusOverrideRequestValidator.TryParseStatus(query.Status, out OrderStatus parsed);
-            status = parsed;
-        }
-        AdminOrderFilter filter = new AdminOrderFilter(status, query.From, query.To, null, query.OrderNumber?.Trim());
-        AdminOrderListPage page = await orders.ListForAdminAsync(
-            filter, query.Customer?.Trim(), query.Page ?? 1, query.PageSize ?? AdminOrderListQueryValidator.DefaultPageSize, ct);
-        return Ok(page.ToResponse());
-    }
-
-    [HttpGet("{id:guid}")]
-    public async Task<IActionResult> Get(Guid id, CancellationToken ct)
-    {
-        AdminOrderDetailView? view = await orders.GetForAdminAsync(id, ct);
-        return view is null ? Problem(statusCode: StatusCodes.Status404NotFound, title: "Order not found") : Ok(view.ToResponse());
-    }
-}
