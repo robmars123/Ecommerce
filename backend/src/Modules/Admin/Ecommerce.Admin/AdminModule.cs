@@ -30,6 +30,7 @@ public static class AdminModule
     {
         AdminSettingsEndpoints.Map(app);
         AdminSearchEndpoints.Map(app);
+        AdminCustomersEndpoints.Map(app);
         return app;
     }
 }
