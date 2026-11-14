@@ -109,19 +109,10 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapEcommerceHealthEndpoints();
 app.MapNotificationsHub();
-app.MapModuleEndpoints();
-app.MapControllers().Add(endpoint =>
-{
-    if (endpoint is RouteEndpointBuilder { RoutePattern.RawText: { } route } &&
-        (route.StartsWith("api/v1/auth", StringComparison.OrdinalIgnoreCase) || route.StartsWith("api/v1/admin", StringComparison.OrdinalIgnoreCase)))
-    {
-        endpoint.Metadata.Add(new EnableCorsAttribute(CredentialedCorsPolicy));
-    }
-    else if (endpoint is RouteEndpointBuilder { RoutePattern.RawText: { } cartRoute } && cartRoute.StartsWith("api/v1/cart", StringComparison.OrdinalIgnoreCase))
-    {
-        endpoint.Metadata.Add(new EnableCorsAttribute(CartCorsPolicy));
-    }
-});
+RouteGroupBuilder moduleEndpoints = app.MapGroup("");
+moduleEndpoints.MapModuleEndpoints();
+AddCorsByRoutePrefix(moduleEndpoints);
+AddCorsByRoutePrefix(app.MapControllers());
 
 // Unknown routes: the authenticated-user fallback policy would otherwise turn a 404 into a 401 and leak nothing useful.
 // An anonymous terminal endpoint keeps them 404 (problem+json via status code pages).
@@ -132,6 +123,26 @@ app.MapFallback(context =>
 }).AllowAnonymous();
 
 app.Run();
+
+// Same rule for module endpoints and MVC controllers. A group's RawText starts with "/", so it is trimmed first.
+static void AddCorsByRoutePrefix(IEndpointConventionBuilder endpoints) =>
+    endpoints.Add(endpoint =>
+    {
+        if (endpoint is not RouteEndpointBuilder { RoutePattern.RawText: { } rawText })
+        {
+            return;
+        }
+
+        string route = rawText.TrimStart('/');
+        if (route.StartsWith("api/v1/auth", StringComparison.OrdinalIgnoreCase) || route.StartsWith("api/v1/admin", StringComparison.OrdinalIgnoreCase))
+        {
+            endpoint.Metadata.Add(new EnableCorsAttribute(CredentialedCorsPolicy));
+        }
+        else if (route.StartsWith("api/v1/cart", StringComparison.OrdinalIgnoreCase))
+        {
+            endpoint.Metadata.Add(new EnableCorsAttribute(CartCorsPolicy));
+        }
+    });
 
 static void UseStrictJson(JsonSerializerOptions json)
 {

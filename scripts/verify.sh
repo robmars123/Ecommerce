@@ -26,7 +26,9 @@ step_secrets() {
 }
 # Code lines in backend .cs that use `var` (IDE0008 skips anonymous types). Comment lines are skipped; strings and trailing comments stripped first.
 cs_var_hits() {
-  g ls-files --cached --others --exclude-standard -- 'backend/*.cs' | grep -vE '/(bin|obj)/' | xargs awk '
+  g ls-files --cached --others --exclude-standard -- 'backend/*.cs' | grep -vE '/(bin|obj)/' |
+    while IFS= read -r f; do if [ -f "$f" ]; then printf '%s\n' "$f"; fi; done |
+    xargs awk '
     /^[[:space:]]*(\/\/|\/\*|\*)/ { next }
     { s = $0; gsub(/[@$]*"([^"\\]|\\.)*"/, "\"\"", s); sub(/\/\/.*/, "", s) }
     s ~ /(^|[^[:alnum:]_.@])var([[:space:]]+[@_[:alpha:]]|[[:space:]]*\()/ { print FILENAME ":" FNR ": " $0 }'
@@ -39,8 +41,10 @@ step_hygiene() {
   if gg '(^|[^[:alnum:]_.])((it|test|describe)\.only|fit|fdescribe)[(.]' -- '*.test.ts' '*.test.tsx'; then
     echo "Focused test found"; return 1
   fi
-  if cs_var_hits | grep .; then
-    echo "C# var found (explicit types only)"; return 1
+  local hits
+  hits=$(cs_var_hits) || { echo "C# var scan failed"; return 1; }
+  if [ -n "$hits" ]; then
+    echo "$hits"; echo "C# var found (explicit types only)"; return 1
   fi
   echo "no matches"
 }

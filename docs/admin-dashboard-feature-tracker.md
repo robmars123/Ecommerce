@@ -78,7 +78,7 @@ Match the target screenshot across all admin screens. Rows are ordered MVP-first
 | P2.59 | Shared setup: endpoint/policy inventory and HTTP contract pins, shared JSON options for minimal APIs, architecture rule for endpoints; Categories endpoint reviewed and adopted | API, Catalog | Done |
 | P2.60 | Products endpoints (list, by slug) to Minimal API | Catalog | Done |
 | P2.61 | Images endpoint to Minimal API | Catalog | Done |
-| P2.62 | Admin settings endpoint to Minimal API; CORS by route prefix applies to minimal endpoints | Admin, API | Todo |
+| P2.62 | Admin settings endpoint to Minimal API; CORS by route prefix applies to minimal endpoints | Admin, API | Done |
 | P2.63 | Admin search endpoint to Minimal API | Admin | Todo |
 | P2.64 | Admin customers endpoints to Minimal API | Admin | Todo |
 | P2.65 | Admin dashboard endpoints (KPIs, recent orders) to Minimal API | Admin | Todo |
