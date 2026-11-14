@@ -27,6 +27,9 @@ public static class ModuleComposition
     public static IServiceCollection AddEcommerceModules(this IServiceCollection services, IConfiguration configuration) =>
         services.AddAdminModule(configuration).AddCartModule(configuration).AddCatalogModule(configuration).AddIdentityModule(configuration).AddInventoryModule(configuration).AddNotificationsModule(configuration).AddOrdersModule(configuration).AddPaymentsModule(configuration);
 
+    public static IEndpointRouteBuilder MapModuleEndpoints(this IEndpointRouteBuilder app) =>
+        app.MapCatalogEndpoints();
+
     public static IMvcBuilder AddModuleControllers(this IMvcBuilder mvc) =>
         mvc.ConfigureApplicationPartManager(m =>
         {

@@ -113,6 +113,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapEcommerceHealthEndpoints();
 app.MapNotificationsHub();
+app.MapModuleEndpoints();
 app.MapControllers().Add(endpoint =>
 {
     if (endpoint is RouteEndpointBuilder { RoutePattern.RawText: { } route } &&

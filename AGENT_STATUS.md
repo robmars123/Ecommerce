@@ -7,7 +7,7 @@ Agents update this at the **start and end of every task**.
 |---|---|---|---|---|---|
 | Marco (developer) | 🟢 AVAILABLE | P2.58 | Build done, verify PASS | 0 | 2026-11-13 |
 | Shin (developer 2) | 🟢 AVAILABLE | — | Ready | 0 | 2026-11-08 18:45 |
-| Rob (architect, on demand) | 🟢 AVAILABLE | P2.58 | Review PASS → slice-plans/slice-P2.58-rob-review.md | 0 | 2026-11-13 |
+| Rob (architect, on demand) | 🟢 AVAILABLE | Minimal API | Plan done → slice-plans/minimal-api-migration-plan.md (needs Nathaniel decision) | 0 | 2026-11-13 |
 
 **Rules**
 
