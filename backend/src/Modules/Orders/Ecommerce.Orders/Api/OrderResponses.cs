@@ -186,3 +186,5 @@ internal static class AdminResponseMapping
     }
 }
 internal sealed record UnfulfillableResponse(Guid SagaId, string Status, MoneyResponse RefundAmount);
+
+internal sealed record ReturnCreatedResponse(Guid ReturnId);

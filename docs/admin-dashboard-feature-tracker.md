@@ -90,7 +90,7 @@ Match the target screenshot across all admin screens. Rows are ordered MVP-first
 | P2.71 | Auth endpoints to Minimal API; no-store headers kept | Identity | Done |
 | P2.72 | Cart endpoints to Minimal API | Cart | Done |
 | P2.73 | Admin order read endpoints (list, detail) to Minimal API | Orders | Done |
-| P2.74 | Customer return request endpoint to Minimal API | Orders | Todo |
+| P2.74 | Customer return request endpoint to Minimal API | Orders | Done |
 | P2.75 | Admin returns endpoints (list, approve, decline) to Minimal API | Orders | Todo |
 | P2.76 | Admin order action endpoints (process, ship, deliver, override, unfulfillable) to Minimal API | Orders | Todo |
 | P2.77 | Customer orders endpoints, including retry payment, to Minimal API | Orders | Todo |

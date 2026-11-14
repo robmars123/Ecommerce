@@ -9,8 +9,6 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Ecommerce.Orders.Api;
 
-internal sealed record ReturnCreatedResponse(Guid ReturnId);
-
 internal static class ControllerValidation
 {
     public static ActionResult InvalidProblem(this ControllerBase controller, ValidationResult result)
@@ -21,45 +19,6 @@ internal static class ControllerValidation
             controller.ModelState.AddModelError(key, error.ErrorMessage);
         }
         return controller.ValidationProblem(controller.ModelState);
-    }
-}
-
-/// <summary>The owner asks to return part of a Delivered order (arch 4.7, D12). No money moves here.</summary>
-[ApiController]
-[Route("api/v1/orders/{id:guid}/return-request")]
-[Authorize]
-internal sealed class ReturnsController(ReturnService returns, IValidator<ReturnRequestBody> validator) : ControllerBase
-{
-    [HttpPost("")]
-    public async Task<IActionResult> RequestReturn(Guid id, ReturnRequestBody body, CancellationToken ct)
-    {
-        if (!Guid.TryParse(User.FindFirst("sub")?.Value, out Guid userId))
-        {
-            return Unauthorized();
-        }
-        ValidationResult validation = await validator.ValidateAsync(body, ct);
-        if (!validation.IsValid)
-        {
-            return this.InvalidProblem(validation);
-        }
-
-        List<ReturnItem> items = body.Items!.Select(i => new ReturnItem(i.VariantId!.Value, i.Quantity!.Value)).ToList();
-        switch (await returns.RequestAsync(userId, id, items, body.Reason!, ct))
-        {
-            case ReturnRequestResult.Created created:
-                return Created($"/api/v1/orders/{id}", new ReturnCreatedResponse(created.ReturnId));
-            case ReturnRequestResult.Forbidden:
-                return Problem(statusCode: StatusCodes.Status403Forbidden, title: "Forbidden");
-            case ReturnRequestResult.NotDelivered:
-                return Problem(statusCode: StatusCodes.Status409Conflict, title: "Only a delivered order can be returned", type: "not-delivered");
-            case ReturnRequestResult.AlreadyOpen:
-                return Problem(statusCode: StatusCodes.Status409Conflict, title: "This order already has an open return request", type: "return-already-open");
-            case ReturnRequestResult.Invalid invalid:
-                ModelState.AddModelError(invalid.Field, invalid.Message);
-                return ValidationProblem(ModelState);
-            default:
-                return Problem(statusCode: StatusCodes.Status404NotFound, title: "Order not found");
-        }
     }
 }
 

@@ -78,6 +78,7 @@ public static class OrdersModule
     public static IEndpointRouteBuilder MapOrdersEndpoints(this IEndpointRouteBuilder app)
     {
         AdminOrderReadsEndpoints.Map(app);
+        ReturnsEndpoints.Map(app);
         return app;
     }
 }
