@@ -88,7 +88,7 @@ Match the target screenshot across all admin screens. Rows are ordered MVP-first
 | P2.69 | Admin products endpoints, including image upload, to Minimal API | Catalog | Done |
 | P2.70 | Admin inventory endpoints (list, adjust) to Minimal API | Inventory | Done |
 | P2.71 | Auth endpoints to Minimal API; no-store headers kept | Identity | Done |
-| P2.72 | Cart endpoints to Minimal API | Cart | Todo |
+| P2.72 | Cart endpoints to Minimal API | Cart | Done |
 | P2.73 | Admin order read endpoints (list, detail) to Minimal API | Orders | Todo |
 | P2.74 | Customer return request endpoint to Minimal API | Orders | Todo |
 | P2.75 | Admin returns endpoints (list, approve, decline) to Minimal API | Orders | Todo |

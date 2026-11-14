@@ -5,6 +5,7 @@ using Ecommerce.Cart.Infrastructure;
 using Ecommerce.Cart.Infrastructure.Persistence;
 using Ecommerce.Persistence;
 using FluentValidation;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -43,5 +44,11 @@ public static class CartModule
         services.AddScoped<IValidator<SetCartItemRequest>, SetCartItemRequestValidator>();
         services.AddScoped<IValidator<MergeCartRequest>, MergeCartRequestValidator>();
         return services;
+    }
+
+    public static IEndpointRouteBuilder MapCartEndpoints(this IEndpointRouteBuilder app)
+    {
+        CartEndpoints.Map(app);
+        return app;
     }
 }
