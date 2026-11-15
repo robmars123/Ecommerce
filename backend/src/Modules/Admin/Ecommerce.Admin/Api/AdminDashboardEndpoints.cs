@@ -98,12 +98,14 @@ internal static class AdminDashboardEndpoints
     }
 
     private static async Task<Results<Ok<RecentOrdersResponse>, ValidationProblem>> RecentOrders(
-        [FromQuery] string[]? page, [FromQuery] string[]? pageSize, [FromServices] DashboardQueryService dashboard, CancellationToken ct)
+        [AsParameters] RecentOrdersQuery query,
+        [FromServices] DashboardQueryService dashboard,
+        CancellationToken ct)
     {
         // Bad numbers are reported alone, before the range checks, as MVC model binding did.
         Dictionary<string, string[]> errors = new Dictionary<string, string[]>();
-        int? pageNumber = QueryValues.ReadInt(page, "page", errors);
-        int? pageSizeNumber = QueryValues.ReadInt(pageSize, "pageSize", errors);
+        int? pageNumber = QueryValues.ReadInt(query.Page, "page", errors);
+        int? pageSizeNumber = QueryValues.ReadInt(query.PageSize, "pageSize", errors);
         if (errors.Count > 0)
         {
             return TypedResults.ValidationProblem(errors);

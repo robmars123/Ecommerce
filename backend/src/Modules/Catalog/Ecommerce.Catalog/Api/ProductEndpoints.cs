@@ -16,25 +16,20 @@ internal static class ProductEndpoints
         group.MapGet("products/{slug}", Get);
     }
 
-    // Query values arrive as string[] so a repeated key reads its first value, and page/pageSize as text so a bad value gets the same errors body as the other 400s.
     private static async Task<Results<Ok<ProductListResponse>, ValidationProblem>> List(
-        [FromQuery] string[]? search,
-        [FromQuery] string[]? category,
-        [FromQuery] string[]? sort,
-        [FromQuery] string[]? page,
-        [FromQuery] string[]? pageSize,
+        [AsParameters] ProductListQuery query,
         [FromServices] CatalogBrowseService catalog,
         CancellationToken ct)
     {
         Dictionary<string, string[]> errors = new Dictionary<string, string[]>();
-        int? pageNumber = QueryValues.ReadInt(page, "page", errors);
-        int? pageSizeNumber = QueryValues.ReadInt(pageSize, "pageSize", errors);
+        int? pageNumber = QueryValues.ReadInt(query.Page, "page", errors);
+        int? pageSizeNumber = QueryValues.ReadInt(query.PageSize, "pageSize", errors);
         if (errors.Count > 0)
         {
             return TypedResults.ValidationProblem(errors);
         }
 
-        CriteriaResult parsed = ProductSearchCriteria.Create(search?.FirstOrDefault(), category?.FirstOrDefault(), sort?.FirstOrDefault(), pageNumber, pageSizeNumber);
+        CriteriaResult parsed = ProductSearchCriteria.Create(query.Search?.FirstOrDefault(), query.Category?.FirstOrDefault(), query.Sort?.FirstOrDefault(), pageNumber, pageSizeNumber);
         if (!parsed.IsValid)
         {
             return TypedResults.ValidationProblem(parsed.Errors!);
