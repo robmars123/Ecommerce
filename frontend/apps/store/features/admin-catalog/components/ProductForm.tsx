@@ -5,7 +5,7 @@ import { ActionButton } from '@/components/ActionButton';
 import { TextField } from '@/components/TextField';
 import { ApiError, userMessage } from '@/lib/api-client';
 
-import type { ProductFormState } from '../form-model';
+import { hasChanges, type ProductFormState } from '../form-model';
 import { ImageKeysEditor } from './ImageKeysEditor';
 import { VariantRowsEditor } from './VariantRowsEditor';
 
@@ -25,6 +25,7 @@ type ProductFormProps = {
 
 export function ProductForm({ mode, productId, initial, onSubmit, pending, error, onReload }: ProductFormProps) {
   const [state, setState] = useState(initial);
+  const [baseline] = useState(initial);
   const isEdit = mode === 'edit';
 
   const fieldErrors = error instanceof ApiError ? (error.fieldErrors ?? {}) : {};
@@ -87,7 +88,12 @@ export function ProductForm({ mode, productId, initial, onSubmit, pending, error
       <VariantRowsEditor rows={state.variants} onChange={(rows) => set('variants', rows)} isEdit={isEdit} errorFor={errorFor} />
       <ImageKeysEditor productId={productId} rows={state.images} onChange={(rows) => set('images', rows)} errorFor={errorFor} />
 
-      <ActionButton label={isEdit ? 'Save changes' : 'Create product'} onPress={() => onSubmit(state)} pending={pending} />
+      <ActionButton
+        label={isEdit ? 'Save changes' : 'Create product'}
+        onPress={() => onSubmit(state)}
+        pending={pending}
+        disabled={isEdit && !hasChanges(baseline, state)}
+      />
     </View>
   );
 }

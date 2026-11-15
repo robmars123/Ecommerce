@@ -37,7 +37,7 @@ The canonical list. Breaking any rule blocks a merge (quality bar ยง1). Rules 1โ
 4. **Postgres is truth.** Redis is cache only. Checkout never reads stock from cache. Losing Redis loses nothing.
 5. **Webhook is truth for payment.** Signature verified, unsigned requests rejected. Frontend success is a hint.
 6. **Side effects via outbox**, inserted in the same transaction as the state change. No external call (Stripe, email, SignalR) inside a database transaction.
-7. **Thin controllers.** Validate, call an application service, map the response. No business logic.
+7. **Thin endpoints.** An HTTP endpoint handler (Minimal API) validates, calls an application service, maps the response. No business logic. Owner decision (Nathaniel, 2026-11-14): controllers migrate to Minimal API one controller per slice.
 8. **Module boundaries.** No cross-module `DbSet` and no cross-module SQL join in application code.
 9. **No `DateTime.UtcNow`** in domain or application code. Inject `IClock`.
 10. **No secrets** in git, code, logs, or chat. No card numbers, passwords, full JWTs, or Stripe secrets in logs. Secrets live in env vars / secret manager.

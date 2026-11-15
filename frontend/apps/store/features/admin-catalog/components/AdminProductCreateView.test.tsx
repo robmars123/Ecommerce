@@ -32,6 +32,12 @@ async function fillValid() {
 }
 
 describe('AdminProductCreateView', () => {
+  it('Create stays enabled on a blank form so the server can return field errors', async () => {
+    await render();
+
+    expect(screen.getByRole('button', { name: 'Create product' })).toBeEnabled();
+  });
+
   it('sends prices exactly as typed, never sends isActive, and invalidates the admin and public lists', async () => {
     const spy = jest.spyOn(globalThis, 'fetch').mockImplementation(async () => jsonResponse(201, makeAdminProduct()));
     const client = createTestQueryClient();

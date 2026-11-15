@@ -13,7 +13,7 @@ export function ThemeToggle() {
       onPress={toggle}
       className="min-h-touch min-w-touch items-center justify-center rounded-control border border-border px-md"
     >
-      <Text className="text-body text-foreground">{mode === 'dark' ? 'Dark' : 'Light'}</Text>
+      <Text className="text-body text-foreground">{mode === 'dark' ? 'Light' : 'Dark'}</Text>
     </Pressable>
   );
 }

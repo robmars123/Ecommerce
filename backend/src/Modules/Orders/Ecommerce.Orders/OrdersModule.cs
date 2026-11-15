@@ -5,6 +5,7 @@ using Ecommerce.Orders.Infrastructure;
 using Ecommerce.Orders.Infrastructure.Persistence;
 using Ecommerce.Persistence;
 using FluentValidation;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -72,5 +73,12 @@ public static class OrdersModule
         services.AddScoped<IValidator<ReturnRequestBody>, ReturnRequestBodyValidator>();
         services.AddScoped<IValidator<DecisionRequest>, DecisionRequestValidator>();
         return services;
+    }
+
+    public static IEndpointRouteBuilder MapOrdersEndpoints(this IEndpointRouteBuilder app)
+    {
+        AdminOrderReadsEndpoints.Map(app);
+        ReturnsEndpoints.Map(app);
+        return app;
     }
 }

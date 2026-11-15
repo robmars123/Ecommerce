@@ -1,8 +1,10 @@
+using Ecommerce.Admin.Api;
 using Ecommerce.Admin.Application;
 using Ecommerce.Admin.Infrastructure;
 using Ecommerce.Admin.Infrastructure.Persistence;
 using Ecommerce.Persistence;
 using Ecommerce.SharedKernel.Projections;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -22,5 +24,16 @@ public static class AdminModule
         services.AddScoped<CustomerQueryService>();
         services.AddScoped<AdminSearchService>();
         return services;
+    }
+
+    public static IEndpointRouteBuilder MapAdminEndpoints(this IEndpointRouteBuilder app)
+    {
+        AdminSettingsEndpoints.Map(app);
+        AdminSearchEndpoints.Map(app);
+        AdminCustomersEndpoints.Map(app);
+        AdminDashboardEndpoints.Map(app);
+        AdminInsightsEndpoints.Map(app);
+        AdminProjectionsEndpoints.Map(app);
+        return app;
     }
 }

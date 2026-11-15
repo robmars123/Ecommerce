@@ -284,4 +284,87 @@ public class AdminCustomersApiTests(PostgresFixture postgres)
         Assert.Equal(0, none.Json.GetProperty("returnCount").GetInt32());
         Assert.Equal("0.00", none.Json.GetProperty("totalSpent").GetProperty("amount").GetString());
     }
+
+    [Fact]
+    public async Task I9_bad_paging_values_are_400_with_the_binding_message_only()
+    {
+        await using Fixture f = await StartAsync();
+
+        IdentityTestEnv.Api badPage = await f.ListAsync("?page=abc");
+        Assert.Equal(HttpStatusCode.BadRequest, badPage.Status);
+        Assert.Equal("The value 'abc' is not valid.", badPage.Json.GetProperty("errors").GetProperty("page")[0].GetString());
+
+        // The binding error comes first: the range check on pageSize=500 never runs.
+        JsonElement both = (await f.ListAsync("?page=abc&pageSize=500")).Json.GetProperty("errors");
+        Assert.True(both.TryGetProperty("page", out _));
+        Assert.False(both.TryGetProperty("pageSize", out _));
+
+        IdentityTestEnv.Api badSize = await f.ListAsync("?pageSize=1.5");
+        Assert.Equal(HttpStatusCode.BadRequest, badSize.Status);
+        Assert.True(badSize.Json.GetProperty("errors").TryGetProperty("pageSize", out _));
+    }
+
+    [Fact]
+    public async Task I10_blank_paging_and_search_use_the_defaults()
+    {
+        await using Fixture f = await StartAsync();
+
+        IdentityTestEnv.Api r = await f.ListAsync("?page=&pageSize=&search=");
+
+        Assert.Equal(HttpStatusCode.OK, r.Status);
+        Assert.Equal(1, r.Json.GetProperty("page").GetInt32());
+        Assert.Equal(20, r.Json.GetProperty("pageSize").GetInt32());
+    }
+
+    [Fact]
+    public async Task I11_repeated_keys_use_the_first_value()
+    {
+        await using Fixture f = await StartAsync();
+        await f.CustomerAsync("ann@example.test", null, Day);
+        await f.CustomerAsync("bob@example.test", null, Day.AddDays(-1));
+
+        IdentityTestEnv.Api paged = await f.ListAsync("?pageSize=1&page=2&page=abc");
+        Assert.Equal(HttpStatusCode.OK, paged.Status);
+        Assert.Equal(2, paged.Json.GetProperty("page").GetInt32());
+        Assert.Single(Emails(paged));
+
+        Assert.Equal(["ann@example.test"], Emails(await f.ListAsync("?search=ann&search=bob")));
+    }
+
+    [Fact]
+    public async Task I12_range_errors_are_collected_with_exact_texts_and_shape()
+    {
+        await using Fixture f = await StartAsync();
+
+        IdentityTestEnv.Api r = await f.ListAsync("?page=0&pageSize=101&search=" + new string('a', 101));
+
+        Assert.Equal(HttpStatusCode.BadRequest, r.Status);
+        Assert.Equal("application/problem+json", r.Response.Content.Headers.ContentType?.MediaType);
+        Assert.Equal("https://tools.ietf.org/html/rfc9110#section-15.5.1", r.Str("type"));
+        Assert.Equal("One or more validation errors occurred.", r.Str("title"));
+        JsonElement errors = r.Json.GetProperty("errors");
+        Assert.Equal("page must be 1 or greater.", errors.GetProperty("page")[0].GetString());
+        Assert.Equal("pageSize must be between 1 and 100.", errors.GetProperty("pageSize")[0].GetString());
+        Assert.Equal("search must be at most 100 characters.", errors.GetProperty("search")[0].GetString());
+        Assert.False(string.IsNullOrEmpty(r.Str("traceId")));
+    }
+
+    [Fact]
+    public async Task I13_unknown_detail_is_a_404_problem()
+    {
+        await using Fixture f = await StartAsync();
+
+        IdentityTestEnv.Api r = await f.DetailAsync(Guid.NewGuid());
+
+        Assert.Equal(HttpStatusCode.NotFound, r.Status);
+        Assert.Equal("application/problem+json", r.Response.Content.Headers.ContentType?.MediaType);
+        Assert.Equal("https://tools.ietf.org/html/rfc9110#section-15.5.5", r.Str("type"));
+        Assert.Equal("Not Found", r.Str("title"));
+        Assert.Equal(404, r.Json.GetProperty("status").GetInt32());
+        Assert.False(string.IsNullOrEmpty(r.Str("traceId")));
+
+        IdentityTestEnv.Api malformed = await f.Env.GetAsync(Url + "/not-a-guid", f.Admin);
+        Assert.Equal(HttpStatusCode.NotFound, malformed.Status);
+        Assert.Equal("application/problem+json", malformed.Response.Content.Headers.ContentType?.MediaType);
+    }
 }

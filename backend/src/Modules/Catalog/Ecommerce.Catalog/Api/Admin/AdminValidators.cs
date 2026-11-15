@@ -3,7 +3,6 @@ using System.Text.RegularExpressions;
 using Ecommerce.Catalog.Domain;
 using FluentValidation;
 using FluentValidation.Results;
-using Microsoft.AspNetCore.Mvc;
 
 namespace Ecommerce.Catalog.Api.Admin;
 
@@ -103,10 +102,10 @@ internal sealed class CreateProductRequestValidator : AbstractValidator<CreatePr
     public CreateProductRequestValidator()
     {
         ProductFieldRules.AddDetailRules(this, r => r.Slug, r => r.Name, r => r.Description, r => r.CategorySlug);
-        RuleFor(r => r.Variants).NotNull()
+        RuleFor(r => r.Variants).Cascade(CascadeMode.Stop).NotNull()
             .Must(v => v.Count <= Product.MaxVariants).WithMessage($"A product can have at most {Product.MaxVariants} variants.");
         RuleForEach(r => r.Variants).SetValidator(new CreateVariantRequestValidator());
-        RuleFor(r => r.Images).NotNull()
+        RuleFor(r => r.Images).Cascade(CascadeMode.Stop).NotNull()
             .Must(i => i.Count <= Product.MaxImages).WithMessage($"A product can have at most {Product.MaxImages} images.");
         RuleForEach(r => r.Images).SetValidator(new ImageRequestValidator());
     }
@@ -117,10 +116,10 @@ internal sealed class UpdateProductRequestValidator : AbstractValidator<UpdatePr
     public UpdateProductRequestValidator()
     {
         ProductFieldRules.AddDetailRules(this, r => r.Slug, r => r.Name, r => r.Description, r => r.CategorySlug);
-        RuleFor(r => r.Variants).NotNull()
+        RuleFor(r => r.Variants).Cascade(CascadeMode.Stop).NotNull()
             .Must(v => v.Count <= Product.MaxVariants).WithMessage($"A product can have at most {Product.MaxVariants} variants.");
         RuleForEach(r => r.Variants).SetValidator(new UpdateVariantRequestValidator());
-        RuleFor(r => r.Images).NotNull()
+        RuleFor(r => r.Images).Cascade(CascadeMode.Stop).NotNull()
             .Must(i => i.Count <= Product.MaxImages).WithMessage($"A product can have at most {Product.MaxImages} images.");
         RuleForEach(r => r.Images).SetValidator(new ImageRequestValidator());
     }
@@ -154,15 +153,11 @@ internal static class CategoryFieldRules
 
 internal static class AdminValidationProblems
 {
-    /// <summary>FluentValidation result to a 400 problem. Keys are camelCase paths, like variants[0].price.amount.</summary>
-    public static ActionResult ToProblem(this ControllerBase controller, FluentValidation.Results.ValidationResult result)
-    {
-        foreach (ValidationFailure? error in result.Errors)
-        {
-            controller.ModelState.AddModelError(CamelCase(error.PropertyName), error.ErrorMessage);
-        }
-        return controller.ValidationProblem(controller.ModelState);
-    }
+    /// <summary>FluentValidation result as the dictionary a minimal API ValidationProblem takes. Keys are camelCase paths, like variants[0].price.amount.</summary>
+    public static Dictionary<string, string[]> ToErrors(this FluentValidation.Results.ValidationResult result) =>
+        result.Errors
+            .GroupBy(e => CamelCase(e.PropertyName))
+            .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray());
 
     private static string CamelCase(string path) =>
         string.Join('.', path.Split('.').Select(s => s.Length == 0 ? s : char.ToLowerInvariant(s[0]) + s[1..]));

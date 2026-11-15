@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using Ecommerce.Api.Health;
 using Ecommerce.Api.Observability;
@@ -10,6 +11,7 @@ using Ecommerce.SharedKernel.Time;
 using Ecommerce.Persistence;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Cors.Infrastructure;
+using Microsoft.AspNetCore.Http.Metadata;
 using Microsoft.AspNetCore.Routing;
 using Serilog;
 
@@ -29,14 +31,9 @@ builder.Services.AddProblemDetails(o => o.CustomizeProblemDetails = ctx =>
         ctx.ProblemDetails.Extensions["correlationId"] = id;
     }
 });
+builder.Services.ConfigureHttpJsonOptions(o => UseStrictJson(o.SerializerOptions));
 builder.Services.AddControllers()
-    .AddJsonOptions(o =>
-    {
-        o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
-        // Strict request binding: an unknown member ("role", "isActive", "price" on the wrong DTO) is a 400, never
-        // silently ignored. This is the mass-assignment defense (D13).
-        o.JsonSerializerOptions.UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow;
-    })
+    .AddJsonOptions(o => UseStrictJson(o.JsonSerializerOptions))
     .AddModuleControllers();
 builder.Services.AddOptions<CorsOptions>()
     .Configure<IConfiguration>((o, config) =>
@@ -113,18 +110,12 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapEcommerceHealthEndpoints();
 app.MapNotificationsHub();
-app.MapControllers().Add(endpoint =>
-{
-    if (endpoint is RouteEndpointBuilder { RoutePattern.RawText: { } route } &&
-        (route.StartsWith("api/v1/auth", StringComparison.OrdinalIgnoreCase) || route.StartsWith("api/v1/admin", StringComparison.OrdinalIgnoreCase)))
-    {
-        endpoint.Metadata.Add(new EnableCorsAttribute(CredentialedCorsPolicy));
-    }
-    else if (endpoint is RouteEndpointBuilder { RoutePattern.RawText: { } cartRoute } && cartRoute.StartsWith("api/v1/cart", StringComparison.OrdinalIgnoreCase))
-    {
-        endpoint.Metadata.Add(new EnableCorsAttribute(CartCorsPolicy));
-    }
-});
+RouteGroupBuilder moduleEndpoints = app.MapGroup("");
+moduleEndpoints.MapModuleEndpoints();
+AddCorsByRoutePrefix(moduleEndpoints);
+// Routing must not reject on Content-Type: body binding answers 415/400 as MVC did (P2.82).
+AcceptAnyContentType(moduleEndpoints);
+AddCorsByRoutePrefix(app.MapControllers());
 
 // Unknown routes: the authenticated-user fallback policy would otherwise turn a 404 into a 401 and leak nothing useful.
 // An anonymous terminal endpoint keeps them 404 (problem+json via status code pages).
@@ -135,6 +126,45 @@ app.MapFallback(context =>
 }).AllowAnonymous();
 
 app.Run();
+
+// Same rule for module endpoints and MVC controllers. A group's RawText starts with "/", so it is trimmed first.
+static void AddCorsByRoutePrefix(IEndpointConventionBuilder endpoints) =>
+    endpoints.Add(endpoint =>
+    {
+        if (endpoint is not RouteEndpointBuilder { RoutePattern.RawText: { } rawText })
+        {
+            return;
+        }
+
+        string route = rawText.TrimStart('/');
+        if (route.StartsWith("api/v1/auth", StringComparison.OrdinalIgnoreCase) || route.StartsWith("api/v1/admin", StringComparison.OrdinalIgnoreCase))
+        {
+            endpoint.Metadata.Add(new EnableCorsAttribute(CredentialedCorsPolicy));
+        }
+        else if (route.StartsWith("api/v1/cart", StringComparison.OrdinalIgnoreCase))
+        {
+            endpoint.Metadata.Add(new EnableCorsAttribute(CartCorsPolicy));
+        }
+    });
+
+static void AcceptAnyContentType(IEndpointConventionBuilder endpoints) =>
+    endpoints.Finally(builder =>
+    {
+        IAcceptsMetadata? accepts = builder.Metadata.OfType<IAcceptsMetadata>().LastOrDefault();
+        // JSON routes only: the image upload stays multipart-only and answers a wrong Content-Type with 404 (IP6, IP7, IU5).
+        if (accepts is not null && accepts.ContentTypes.Contains("application/json"))
+        {
+            builder.Metadata.Add(new AcceptsMetadata([.. accepts.ContentTypes, "*/*"], accepts.RequestType, accepts.IsOptional));
+        }
+    });
+
+static void UseStrictJson(JsonSerializerOptions json)
+{
+    json.Converters.Add(new JsonStringEnumConverter());
+    // Strict request binding: an unknown member ("role", "isActive", "price" on the wrong DTO) is a 400, never
+    // silently ignored. This is the mass-assignment defense (D13).
+    json.UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow;
+}
 
 public partial class Program
 {

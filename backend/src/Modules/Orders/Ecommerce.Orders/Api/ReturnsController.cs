@@ -9,8 +9,6 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Ecommerce.Orders.Api;
 
-internal sealed record ReturnCreatedResponse(Guid ReturnId);
-
 internal static class ControllerValidation
 {
     public static ActionResult InvalidProblem(this ControllerBase controller, ValidationResult result)
@@ -21,45 +19,6 @@ internal static class ControllerValidation
             controller.ModelState.AddModelError(key, error.ErrorMessage);
         }
         return controller.ValidationProblem(controller.ModelState);
-    }
-}
-
-/// <summary>The owner asks to return part of a Delivered order (arch 4.7, D12). No money moves here.</summary>
-[ApiController]
-[Route("api/v1/orders/{id:guid}/return-request")]
-[Authorize]
-internal sealed class ReturnsController(ReturnService returns, IValidator<ReturnRequestBody> validator) : ControllerBase
-{
-    [HttpPost("")]
-    public async Task<IActionResult> RequestReturn(Guid id, ReturnRequestBody body, CancellationToken ct)
-    {
-        if (!Guid.TryParse(User.FindFirst("sub")?.Value, out Guid userId))
-        {
-            return Unauthorized();
-        }
-        ValidationResult validation = await validator.ValidateAsync(body, ct);
-        if (!validation.IsValid)
-        {
-            return this.InvalidProblem(validation);
-        }
-
-        List<ReturnItem> items = body.Items!.Select(i => new ReturnItem(i.VariantId!.Value, i.Quantity!.Value)).ToList();
-        switch (await returns.RequestAsync(userId, id, items, body.Reason!, ct))
-        {
-            case ReturnRequestResult.Created created:
-                return Created($"/api/v1/orders/{id}", new ReturnCreatedResponse(created.ReturnId));
-            case ReturnRequestResult.Forbidden:
-                return Problem(statusCode: StatusCodes.Status403Forbidden, title: "Forbidden");
-            case ReturnRequestResult.NotDelivered:
-                return Problem(statusCode: StatusCodes.Status409Conflict, title: "Only a delivered order can be returned", type: "not-delivered");
-            case ReturnRequestResult.AlreadyOpen:
-                return Problem(statusCode: StatusCodes.Status409Conflict, title: "This order already has an open return request", type: "return-already-open");
-            case ReturnRequestResult.Invalid invalid:
-                ModelState.AddModelError(invalid.Field, invalid.Message);
-                return ValidationProblem(ModelState);
-            default:
-                return Problem(statusCode: StatusCodes.Status404NotFound, title: "Order not found");
-        }
     }
 }
 
@@ -129,41 +88,5 @@ internal sealed class AdminReturnsController(ReturnService returns, IValidator<D
             DecisionOutcome.NotFound => Problem(statusCode: StatusCodes.Status404NotFound, title: "Return request not found"),
             _ => Problem(statusCode: StatusCodes.Status409Conflict, title: "Conflict", detail: result.Message),
         };
-    }
-}
-
-/// <summary>Order list and detail for the admin screens (D14, 13.2): Admin and Support may read; only Admin acts (other controllers).</summary>
-[ApiController]
-[Route("api/v1/admin/orders")]
-[Authorize(Policy = AuthorizationPolicies.AdminOrSupport)]
-internal sealed class AdminOrderReadsController(OrderQueryService orders, IValidator<AdminOrderListQuery> validator) : ControllerBase
-{
-    [HttpGet("")]
-    public async Task<IActionResult> List([FromQuery] AdminOrderListQuery query, CancellationToken ct)
-    {
-        ValidationResult validation = await validator.ValidateAsync(query, ct);
-        if (!validation.IsValid)
-        {
-            ModelState.Clear(); // bound query values keep their PascalCase keys otherwise; the contract is camelCase
-            return this.InvalidProblem(validation);
-        }
-
-        OrderStatus? status = null;
-        if (query.Status is not null)
-        {
-            StatusOverrideRequestValidator.TryParseStatus(query.Status, out OrderStatus parsed);
-            status = parsed;
-        }
-        AdminOrderFilter filter = new AdminOrderFilter(status, query.From, query.To, null, query.OrderNumber?.Trim());
-        AdminOrderListPage page = await orders.ListForAdminAsync(
-            filter, query.Customer?.Trim(), query.Page ?? 1, query.PageSize ?? AdminOrderListQueryValidator.DefaultPageSize, ct);
-        return Ok(page.ToResponse());
-    }
-
-    [HttpGet("{id:guid}")]
-    public async Task<IActionResult> Get(Guid id, CancellationToken ct)
-    {
-        AdminOrderDetailView? view = await orders.GetForAdminAsync(id, ct);
-        return view is null ? Problem(statusCode: StatusCodes.Status404NotFound, title: "Order not found") : Ok(view.ToResponse());
     }
 }

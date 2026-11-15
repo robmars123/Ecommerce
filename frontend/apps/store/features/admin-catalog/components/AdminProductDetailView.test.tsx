@@ -126,6 +126,43 @@ describe('AdminProductDetailView', () => {
     expect(screen.queryByRole('button', { name: 'Remove variant 1' })).toBeNull();
   });
 
+  describe('save gate', () => {
+    it('Save is disabled on a pristine form and enables only while the form differs', async () => {
+      const spy = mockApi((_m, path) => (path === '/api/v1/admin/products/a-1' ? jsonResponse(200, makeAdminProduct()) : undefined));
+      await render();
+
+      const save = await screen.findByRole('button', { name: 'Save changes' });
+      expect(save).toBeDisabled();
+      await fireEvent.press(save);
+      expect(calls(spy, 'PUT', '/a-1')).toHaveLength(0);
+
+      await fireEvent.changeText(screen.getByLabelText('Name'), 'My edit');
+      expect(screen.getByRole('button', { name: 'Save changes' })).toBeEnabled();
+      await fireEvent.changeText(screen.getByLabelText('Name'), 'Linen shirt');
+      expect(screen.getByRole('button', { name: 'Save changes' })).toBeDisabled();
+    });
+
+    it('a successful save re-baselines on the refetched version', async () => {
+      let saved = false;
+      mockApi((method, path) => {
+        if (method === 'PUT') {
+          saved = true;
+          return jsonResponse(200, makeAdminProduct({ version: 101, name: 'My edit' }));
+        }
+        if (path === '/api/v1/admin/products/a-1')
+          return jsonResponse(200, saved ? makeAdminProduct({ version: 101, name: 'My edit' }) : makeAdminProduct({ version: 100 }));
+        return undefined;
+      });
+      await render();
+
+      await fireEvent.changeText(await screen.findByLabelText('Name'), 'My edit');
+      await fireEvent.press(screen.getByRole('button', { name: 'Save changes' }));
+
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Save changes' })).toBeDisabled());
+      expect(screen.getByLabelText('Name').props.value).toBe('My edit');
+    });
+  });
+
   describe('images', () => {
     const KEY = 'products/a-1/new.png';
     const pickedForm = () => {

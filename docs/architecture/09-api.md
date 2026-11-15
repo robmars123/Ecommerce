@@ -41,7 +41,7 @@ Base `/api/v1`. Errors are Problem Details (`application/problem+json`). Lists a
 - Money on the wire: `{ "amount": "24.50", "currency": "USD" }` — amount is a decimal **string**; clients format only. `stockStatus` = `Unknown | InStock | Low | Out`.
 
 **Auth and admin contract (Slice 1b):**
-- **Every endpoint requires authentication** (fallback policy) unless it is explicitly `[AllowAnonymous]`. A test pins the full anonymous list.
+- **Every endpoint requires authentication** (fallback policy) unless it is explicitly `.AllowAnonymous()` (`[AllowAnonymous]` on a controller until P2.81). A test pins the full anonymous list.
 - Status codes: no or invalid token → 401, wrong role → 403. Both are Problem Details.
 - **Unknown JSON request fields → 400** (strict binding; no mass assignment).
 - Token responses are `{ accessToken, accessTokenExpiresAt, refreshToken, refreshTokenExpiresAt, user }` with `Cache-Control: no-store`.

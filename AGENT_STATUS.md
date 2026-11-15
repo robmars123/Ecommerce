@@ -1,17 +1,17 @@
 # Agent Status
 
 Agents update this at the **start and end of every task**.
-🟢 AVAILABLE — no task in progress · 🔴 BUSY — task in progress
+🟢 AVAILABLE — no task in progress · 🔴 AVAILABLE — task in progress
 
 | Agent | Status | Slice | Task | Fix round | Updated |
 |---|---|---|---|---|---|
-| Marco (developer) | 🟢 AVAILABLE | P2.56 | Build done, verify PASS | 0 | 2026-11-13 |
+| Marco (developer) | 🟢 AVAILABLE | P2.74 | Built, verify PASS | 0 | 2026-11-14 |
 | Shin (developer 2) | 🟢 AVAILABLE | — | Ready | 0 | 2026-11-08 18:45 |
-| Rob (architect, on demand) | 🟢 AVAILABLE | P2.56 | Review R1 PASS → slice-plans/slice-P2.56-rob-review.md | 0 | 2026-11-13 |
+| Rob (architect, on demand) | 🟢 AVAILABLE | P2.74 | Review PASS → slice-P2.74-rob-review.md | 0 | 2026-11-14 |
 
 **Rules**
 
-- Never leave a task BUSY after reporting it done.
+- Never leave a task AVAILABLE after reporting it done.
 - Never mark AVAILABLE while the slice's tests are failing.
 - `Updated` uses the format `YYYY-MM-DD HH:MM` (local time).
 

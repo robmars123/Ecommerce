@@ -1,3 +1,4 @@
+using Ecommerce.Catalog.Api;
 using Ecommerce.Catalog.Api.Admin;
 using Ecommerce.Catalog.Contracts;
 using Ecommerce.Catalog.Application;
@@ -8,6 +9,7 @@ using Ecommerce.Catalog.Infrastructure.Persistence;
 using Ecommerce.Persistence;
 using Ecommerce.SharedKernel.Projections;
 using FluentValidation;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -57,5 +59,15 @@ public static class CatalogModule
     {
         services.AddHostedService<CatalogDevSeedHostedService>();
         return services;
+    }
+
+    public static IEndpointRouteBuilder MapCatalogEndpoints(this IEndpointRouteBuilder app)
+    {
+        CategoryEndpoints.Map(app);
+        ProductEndpoints.Map(app);
+        ImageEndpoints.Map(app);
+        AdminCategoriesEndpoints.Map(app);
+        AdminProductsEndpoints.Map(app);
+        return app;
     }
 }

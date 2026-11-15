@@ -53,7 +53,7 @@ public class ModuleVisibilityTests
     }
 
     [Fact]
-    public void Controllers_live_only_in_a_module_Api_namespace()
+    public void Http_endpoints_are_declared_only_in_a_module_Api_namespace()
     {
         List<string> problems = new List<string>();
         int controllers = 0;
@@ -70,7 +70,22 @@ public class ModuleVisibilityTests
             }
         }
 
-        Assert.True(controllers > 0, "No controllers found; the scan is vacuous.");
+        int endpointFiles = 0;
+        foreach (BackendProject project in SolutionLayout.Modules(ProjectKind.ModuleImpl))
+        {
+            foreach (string file in SolutionLayout.SourceFiles(project.Directory))
+            {
+                string[] lines = File.ReadAllLines(file);
+                string pathInModule = Path.GetRelativePath(project.Directory, file);
+                problems.AddRange(EndpointRules.Violations(pathInModule, lines));
+                if (pathInModule.StartsWith("Api" + Path.DirectorySeparatorChar, StringComparison.Ordinal) && lines.Any(EndpointRules.IsMapping))
+                {
+                    endpointFiles++;
+                }
+            }
+        }
+
+        Assert.True(controllers + endpointFiles > 0, "No controllers or endpoint files found; the scan is vacuous.");
         Assert.True(problems.Count == 0, string.Join(Environment.NewLine, problems));
     }
 

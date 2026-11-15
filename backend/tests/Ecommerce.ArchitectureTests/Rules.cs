@@ -249,3 +249,28 @@ internal static partial class SourceRules
         return $"names {name}, which a {layer} layer must not reference";
     }
 }
+
+/// <summary>HTTP endpoints are declared only under a module's Api folder (D10). Text scan, comments included.</summary>
+internal static class EndpointRules
+{
+    private static readonly Regex Mapping = new(@"\.Map(Get|Post|Put|Delete|Patch|Methods|Group)\(");
+
+    public static bool IsMapping(string line) => Mapping.IsMatch(line);
+
+    public static List<string> Violations(string pathInModule, IReadOnlyList<string> lines)
+    {
+        List<string> violations = new List<string>();
+        if (pathInModule.Replace(Path.DirectorySeparatorChar, '/').StartsWith("Api/", StringComparison.Ordinal))
+        {
+            return violations;
+        }
+        for (int i = 0; i < lines.Count; i++)
+        {
+            if (IsMapping(lines[i]))
+            {
+                violations.Add($"{pathInModule}:{i + 1} maps an HTTP endpoint outside the module's Api folder");
+            }
+        }
+        return violations;
+    }
+}

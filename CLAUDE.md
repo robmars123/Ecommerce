@@ -17,9 +17,10 @@ Single-store ecommerce (web, Android, iOS). Checkout, inventory, payments and no
 ## 2. Architecture (arch §2, §3.4, §6.2)
 
 - **Stack locked:** .NET 10 modular monolith · EF Core · PostgreSQL 17 · Redis 7 (cache only) · Stripe PaymentIntents + signed webhooks · Expo + RN Web (one codebase, EAS builds). No native `android/`/`ios/`, separate web app, Capacitor or Kubernetes.
-- **Hard rules (§3.4):** server computes all money · lock stock rows in variant-ID order, reserve in one tx, commit on Paid · signed webhook is the only payment proof, deduped by event ID · side effects via outbox in the same tx, no external call inside a tx · thin controllers · no cross-module `DbSet`/join · `IClock`, never `DateTime.UtcNow`.
+- **Hard rules (§3.4):** server computes all money · lock stock rows in variant-ID order, reserve in one tx, commit on Paid · signed webhook is the only payment proof, deduped by event ID · side effects via outbox in the same tx, no external call inside a tx · thin endpoints (Minimal API handlers) · no cross-module `DbSet`/join · `IClock`, never `DateTime.UtcNow`.
 - **Layout:** `backend/src/{Ecommerce.Api, Ecommerce.Persistence, Ecommerce.SharedKernel, Modules/<M>}`; modules: Admin, Cart, Catalog, Identity, Inventory, Notifications, Orders, Payments. A module references only SharedKernel, Persistence and other `*.Contracts`; only `<M>Module` is public (`Ecommerce.ArchitectureTests`). Tests: `backend/tests/Ecommerce.<M>.Tests`, `Ecommerce.Api.IntegrationTests`. Frontend: `frontend/apps/store/{app, features/<f>, lib, components, tests}`.
 - **C#:** no `var` (IDE0008 error + hygiene step); named records, no anonymous types.
+- **Code style (Nathaniel, 2026-11-14):** minimal code, efficient, very easy to read. Plain over clever: no clever abstractions, generic helpers or one-liners that hide intent.
 
 ## 3. Tests (arch §11)
 
@@ -47,6 +48,7 @@ Nathaniel: owner. Rob (opus): plans and reviews, no code. Marco, Shin (sonnet): 
 
 ## 5. Review budget
 
+- **Every review (Nathaniel, 2026-11-14):** Rob reviews properly, whatever the tier: hunts N+1 queries, extra round-trips and over-fetching, bugs, missed edge cases, and code that is clever or longer than it needs to be.
 - One review per slice. **High risk** (money, stock, payment, idempotency, auth, state transitions): full review + §3 mutations. **Low** (read-only endpoints, copy, layout, docs): Marco's tests + `verify.sh`, Rob reads the diff, no mutations.
 - Re-reviews: Marco quotes red for each of Rob's mutations; Rob re-runs ≤ 2 and checks only the blocking diff, on `model: sonnet` unless a new BLOCKING issue appears.
 - `verify.sh`: full on build and in Rob's PASS round; fix rounds use `verify.sh changed` + touched test projects. One `verify.sh`/integration run at a time (shared Postgres and Release output).
