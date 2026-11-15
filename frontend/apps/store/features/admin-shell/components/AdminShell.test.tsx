@@ -147,11 +147,11 @@ describe('AdminShell', () => {
     expect(className.split(' ')).not.toContain('flex-1');
   });
 
-  it('S8: Admin sees the three headers in order and 10 working links', async () => {
+  it('S8: Admin sees the three headers in order and 10 working links plus the account link', async () => {
     const first = await renderShellWithRoutes(1024);
 
     expect(screen.getAllByRole('header').map((h) => h.props.children)).toEqual(['Overview', 'Manage', 'Insights']);
-    expect(screen.getAllByRole('link')).toHaveLength(10);
+    expect(screen.getAllByRole('link')).toHaveLength(11); // 10 nav links + the footer account link (P2.85)
     await first.unmount();
 
     // The shell sits on the index route in this harness, so each link is pressed on a fresh render.
@@ -174,7 +174,7 @@ describe('AdminShell', () => {
     for (const name of ['Dashboard', 'User Stories', 'Orders', 'Customers']) {
       expect(screen.getByRole('link', { name })).toBeTruthy();
     }
-    expect(screen.getAllByRole('link')).toHaveLength(4);
+    expect(screen.getAllByRole('link')).toHaveLength(5); // 4 nav links + the footer account link (P2.85)
     for (const text of ['Products', 'Categories', 'Inventory', 'Returns', 'Analytics', 'Settings', 'Insights']) {
       expect(screen.queryByText(text)).toBeNull();
     }
@@ -194,7 +194,7 @@ describe('AdminShell', () => {
     await signInAs('Customer');
     await renderShellWithRoutes(1024);
 
-    expect(screen.queryAllByRole('link')).toHaveLength(0);
+    expect(screen.queryAllByRole('link')).toHaveLength(1); // only the footer account link (P2.85)
     expect(screen.queryAllByRole('header')).toHaveLength(0);
     expect(screen.getByText('Store Admin')).toBeTruthy();
   });

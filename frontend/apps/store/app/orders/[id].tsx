@@ -1,7 +1,7 @@
 import { useLocalSearchParams } from 'expo-router';
 
 import { OrderDetailView } from '@/features/orders/components/OrderDetailView';
-import { RequireSignIn } from '@/features/orders/components/RequireSignIn';
+import { RequireSignIn } from '@/features/auth/components/RequireSignIn';
 
 export default function OrderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();

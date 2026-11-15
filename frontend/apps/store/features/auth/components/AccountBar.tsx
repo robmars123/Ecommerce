@@ -1,5 +1,5 @@
 import { Link } from 'expo-router';
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { ActionButton } from '@/components/ActionButton';
 
@@ -33,12 +33,18 @@ export function AccountBar() {
   const isStaff = session.user.role === 'Admin' || session.user.role === 'Support';
   return (
     <View className="flex-row flex-wrap items-center gap-md">
-      <View accessible accessibilityLabel={`Signed in as ${name}`} className="flex-row items-center gap-sm">
-        <View className="h-[28px] w-[28px] items-center justify-center rounded-pill bg-primary-subtle">
-          <Text className="text-small font-bold text-primary-text">{avatarInitial(session.user)}</Text>
-        </View>
-        <Text className="text-body text-foreground">{name}</Text>
-      </View>
+      <Link href="/account" asChild>
+        <Pressable
+          accessibilityRole="link"
+          accessibilityLabel={`Signed in as ${name}`}
+          className="min-h-touch flex-row items-center gap-sm"
+        >
+          <View className="h-[28px] w-[28px] items-center justify-center rounded-pill bg-primary-subtle">
+            <Text className="text-small font-bold text-primary-text">{avatarInitial(session.user)}</Text>
+          </View>
+          <Text className="text-body text-foreground">{name}</Text>
+        </Pressable>
+      </Link>
       {isStaff ? (
         <Link href="/admin" asChild>
           <Text className="min-h-touch py-md text-body text-foreground">Admin</Text>

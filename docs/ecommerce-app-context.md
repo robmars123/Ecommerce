@@ -273,6 +273,7 @@ Added by Nathaniel on 2026-11-10. The rows are in `docs/admin-dashboard-feature-
 | `/checkout` | Customer | Address, shipping, authoritative total, payment |
 | `/orders`, `/orders/[id]` | Customer | History; detail, timeline, tracking, return request |
 | `/login`, `/register`, `/reset-password` | Public | Auth, returning to checkout when applicable |
+| `/account` | Customer, Support, Admin | Own name, email and role (read-only), log out; reached from the top-bar avatar and the admin sidebar footer (P2.85) |
 | `/admin` | Admin, Support | Dashboard |
 | `/admin/products`, `/admin/products/new`, `/admin/products/[id]` | Admin | Catalog: list, create, and edit with a customer preview |
 | `/admin/categories` | Admin | Categories: list with parent, create, edit slug and name, delete |

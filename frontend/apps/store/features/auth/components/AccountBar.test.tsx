@@ -1,3 +1,4 @@
+import { Text } from 'react-native';
 import { fireEvent, screen, waitFor, within } from 'expo-router/testing-library';
 
 import { endSession, getSessionSnapshot, resetSession } from '@/features/auth/session';
@@ -20,7 +21,9 @@ afterEach(() => {
   delete process.env.EXPO_PUBLIC_API_BASE_URL;
 });
 
-const render = (client = createTestQueryClient()) => renderRouterWithQuery({ index: AccountBar }, { initialUrl: '/', client });
+const AccountStub = () => <Text>Account page</Text>;
+const render = (client = createTestQueryClient()) =>
+  renderRouterWithQuery({ index: AccountBar, account: AccountStub }, { initialUrl: '/', client });
 
 describe('AccountBar', () => {
   it('shows nothing while the session is being restored', async () => {
@@ -109,5 +112,15 @@ describe('AccountBar', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Log out' }));
 
     await waitFor(() => expect(getSessionSnapshot().status).toBe('signed-out'));
+  });
+
+  it('A7: the avatar and name group is a link to /account', async () => {
+    await signInAs('Customer');
+    await render();
+
+    const link = screen.getByRole('link', { name: 'Signed in as Customer User' });
+    await fireEvent.press(link);
+
+    await waitFor(() => expect(screen).toHavePathname('/account'));
   });
 });
