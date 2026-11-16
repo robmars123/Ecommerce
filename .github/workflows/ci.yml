@@ -35,7 +35,7 @@ jobs:
         run: dotnet test Ecommerce.slnx --no-build -c Release --collect "Code Coverage;Format=cobertura" --logger trx --results-directory artifacts/test-results
       - name: Upload backend test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: backend-test-results
           path: artifacts/test-results
@@ -75,7 +75,7 @@ jobs:
         run: npm test -- --ci --coverage
       - name: Upload frontend coverage
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: frontend-coverage
           path: frontend/apps/store/coverage
