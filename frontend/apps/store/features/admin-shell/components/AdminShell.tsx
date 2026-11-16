@@ -2,6 +2,9 @@ import { Link, usePathname } from 'expo-router';
 import { useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
 
+import { ActionButton } from '@/components/ActionButton';
+import { shownName } from '@/features/auth/avatar-initial';
+import { useLogoutMutation } from '@/features/auth/hooks/useLogoutMutation';
 import { useSession } from '@/features/auth/hooks/useSession';
 import type { SessionUser } from '@/features/auth/types';
 import { AdminSearch } from '@/features/admin-shell/components/AdminSearch';
@@ -30,15 +33,25 @@ function Brand() {
 }
 
 function SidebarFooter({ user }: { user: SessionUser }) {
-  const name = user.displayName.trim() || user.email;
+  const name = shownName(user);
+  const logout = useLogoutMutation();
   return (
-    <View accessible accessibilityLabel={`Signed in as ${name}, ${user.role}`} className="mt-[14px] border-t border-border pt-[14px]">
-      <Text numberOfLines={1} className="text-ui-sm font-bold text-foreground">
-        {name}
-      </Text>
-      <Text numberOfLines={1} className="text-caption text-subtle">
-        {user.role}
-      </Text>
+    <View className="mt-[14px] border-t border-border pt-[14px]">
+      <Link href="/account" asChild>
+        <Pressable
+          accessibilityRole="link"
+          accessibilityLabel={`Signed in as ${name}, ${user.role}`}
+          className="mb-sm min-h-touch justify-center"
+        >
+          <Text numberOfLines={1} className="text-ui-sm font-bold text-foreground">
+            {name}
+          </Text>
+          <Text numberOfLines={1} className="text-caption text-subtle">
+            {user.role}
+          </Text>
+        </Pressable>
+      </Link>
+      <ActionButton label="Log out" onPress={() => logout.mutate()} pending={logout.isPending} />
     </View>
   );
 }

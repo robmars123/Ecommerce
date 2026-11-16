@@ -99,5 +99,9 @@ Match the target screenshot across all admin screens. Rows are ordered MVP-first
 | P2.80 | Stripe webhook endpoint to Minimal API | Payments | Todo |
 | P2.81 | Remove MVC: controllers, controller discovery and MVC JSON options deleted | API | Todo |
 | P2.82 | Body endpoints answer a missing Content-Type like MVC did (415/400, not 404) | Catalog, Inventory, Identity, API | Done |
+| P2.83 | Query values in one `[AsParameters]` record per endpoint (D16) on every converted endpoint with 2+ query values; same binding, same 400 bodies | Catalog, Admin, Inventory, Orders | Done |
+| **H** | **Account** | | |
+| P2.84 | Admin logout: "Log out" in the admin sidebar footer; revokes the refresh token via `POST /api/v1/auth/logout`, clears the session, goes to sign-in | `admin-shell` | Done |
+| P2.85 | Account page for every signed-in user (Customer, Support, Admin): name, email and role, with a log out button; reached from the top-bar avatar and the admin sidebar footer. Signed-out users go to sign-in | `account`, Identity | Done |
 
 **Every new endpoint:** tests for the happy path, 401/403 and 400. **Every screen:** Jest tests. **Restyle rows:** existing tests unchanged. **Theme rows:** P2.47 and P2.46 close tier 1 as a sweep; each tier-1 row already uses theme tokens only.

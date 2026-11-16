@@ -30,26 +30,21 @@ internal static class AdminProductsEndpoints
             .DisableAntiforgery();
     }
 
-    // Query values arrive as string[] so a repeated key reads its first value, as MVC did.
     private static async Task<Results<Ok<AdminProductListResponse>, ValidationProblem>> List(
-        [FromQuery] string[]? search,
-        [FromQuery] string[]? category,
-        [FromQuery] string[]? status,
-        [FromQuery] string[]? page,
-        [FromQuery] string[]? pageSize,
+        [AsParameters] AdminProductListQuery query,
         [FromServices] AdminProductService products,
         CancellationToken ct)
     {
         Dictionary<string, string[]> errors = new Dictionary<string, string[]>();
-        int? pageNumber = QueryValues.ReadInt(page, "page", errors);
-        int? pageSizeNumber = QueryValues.ReadInt(pageSize, "pageSize", errors);
+        int? pageNumber = QueryValues.ReadInt(query.Page, "page", errors);
+        int? pageSizeNumber = QueryValues.ReadInt(query.PageSize, "pageSize", errors);
         if (errors.Count > 0)
         {
             return TypedResults.ValidationProblem(errors);
         }
 
         AdminCriteriaResult parsed = AdminProductListCriteria.Create(
-            search?.FirstOrDefault(), category?.FirstOrDefault(), status?.FirstOrDefault(), pageNumber, pageSizeNumber);
+            query.Search?.FirstOrDefault(), query.Category?.FirstOrDefault(), query.Status?.FirstOrDefault(), pageNumber, pageSizeNumber);
         if (!parsed.IsValid)
         {
             return TypedResults.ValidationProblem(parsed.Errors!);

@@ -27,12 +27,15 @@ jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({
 
 async function renderShell(width: number) {
   mockUseWindowDimensions.mockReturnValue({ width, height: 800, scale: 1, fontScale: 1 });
+  const client = createTestQueryClient();
   return await renderRouter(
     {
       index: () => (
-        <AdminShell>
-          <Text>Body</Text>
-        </AdminShell>
+        <QueryClientProvider client={client}>
+          <AdminShell>
+            <Text>Body</Text>
+          </AdminShell>
+        </QueryClientProvider>
       ),
     },
     { initialUrl: '/' },
@@ -42,12 +45,15 @@ async function renderShell(width: number) {
 async function renderShellWithRoutes(width: number) {
   mockUseWindowDimensions.mockReturnValue({ width, height: 800, scale: 1, fontScale: 1 });
   const stub = (name: string) => () => <Text>{`${name} page`}</Text>;
+  const client = createTestQueryClient();
   return await renderRouter(
     {
       index: () => (
-        <AdminShell>
-          <Text>Body</Text>
-        </AdminShell>
+        <QueryClientProvider client={client}>
+          <AdminShell>
+            <Text>Body</Text>
+          </AdminShell>
+        </QueryClientProvider>
       ),
       'admin/index': stub('Admin'),
       'admin/orders': stub('Orders'),
@@ -141,11 +147,11 @@ describe('AdminShell', () => {
     expect(className.split(' ')).not.toContain('flex-1');
   });
 
-  it('S8: Admin sees the three headers in order and 10 working links', async () => {
+  it('S8: Admin sees the three headers in order and 10 working links plus the account link', async () => {
     const first = await renderShellWithRoutes(1024);
 
     expect(screen.getAllByRole('header').map((h) => h.props.children)).toEqual(['Overview', 'Manage', 'Insights']);
-    expect(screen.getAllByRole('link')).toHaveLength(10);
+    expect(screen.getAllByRole('link')).toHaveLength(11); // 10 nav links + the footer account link (P2.85)
     await first.unmount();
 
     // The shell sits on the index route in this harness, so each link is pressed on a fresh render.
@@ -168,7 +174,7 @@ describe('AdminShell', () => {
     for (const name of ['Dashboard', 'User Stories', 'Orders', 'Customers']) {
       expect(screen.getByRole('link', { name })).toBeTruthy();
     }
-    expect(screen.getAllByRole('link')).toHaveLength(4);
+    expect(screen.getAllByRole('link')).toHaveLength(5); // 4 nav links + the footer account link (P2.85)
     for (const text of ['Products', 'Categories', 'Inventory', 'Returns', 'Analytics', 'Settings', 'Insights']) {
       expect(screen.queryByText(text)).toBeNull();
     }
@@ -188,7 +194,7 @@ describe('AdminShell', () => {
     await signInAs('Customer');
     await renderShellWithRoutes(1024);
 
-    expect(screen.queryAllByRole('link')).toHaveLength(0);
+    expect(screen.queryAllByRole('link')).toHaveLength(1); // only the footer account link (P2.85)
     expect(screen.queryAllByRole('header')).toHaveLength(0);
     expect(screen.getByText('Store Admin')).toBeTruthy();
   });
@@ -290,10 +296,13 @@ describe('AdminShell footer', () => {
 
 async function renderShellAt(width: number, url: string) {
   mockUseWindowDimensions.mockReturnValue({ width, height: 800, scale: 1, fontScale: 1 });
+  const client = createTestQueryClient();
   const shell = () => (
-    <AdminShell>
-      <Text>Body</Text>
-    </AdminShell>
+    <QueryClientProvider client={client}>
+      <AdminShell>
+        <Text>Body</Text>
+      </AdminShell>
+    </QueryClientProvider>
   );
   const stub = (name: string) => () => <Text>{`${name} page`}</Text>;
   return await renderRouter(
@@ -309,6 +318,34 @@ async function renderShellAt(width: number, url: string) {
     { initialUrl: url },
   );
 }
+
+describe('AdminShell logout', () => {
+  it('O1: wide, Log out is in the navigation, outside the "Signed in as" group', async () => {
+    await signInAs('Admin');
+    await renderShell(1024);
+
+    const nav = within(screen.getByLabelText('Admin navigation'));
+    expect(nav.getByRole('button', { name: 'Log out' })).toBeTruthy();
+    const group = screen.getByLabelText('Signed in as Admin User, Admin');
+    expect(within(group).queryByRole('button', { name: 'Log out' })).toBeNull();
+  });
+
+  it('O2: narrow, Log out appears only once the menu is open', async () => {
+    await signInAs('Admin');
+    await renderShell(390);
+    expect(screen.queryByRole('button', { name: 'Log out' })).toBeNull();
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Open menu' }));
+
+    expect(screen.getByRole('button', { name: 'Log out' })).toBeTruthy();
+  });
+
+  it('O3: signed out, there is no Log out button', async () => {
+    await renderShell(1024);
+
+    expect(screen.queryByRole('button', { name: 'Log out' })).toBeNull();
+  });
+});
 
 describe('AdminShell breadcrumb', () => {
   it('S19: wide, order detail shows linked ancestors and a plain current crumb, never the id', async () => {
@@ -422,13 +459,15 @@ describe('AdminShell search', () => {
     delete process.env.EXPO_PUBLIC_API_BASE_URL;
   });
 
-  it('S26: wide, the search input renders without a QueryClient', async () => {
+  it('S26: wide, the search input renders and sends no request until someone types', async () => {
+    const fetchSpy = jest.spyOn(globalThis, 'fetch');
     await signInAs('Admin');
     await renderShell(1024);
 
     expect(screen.getByLabelText('Search admin')).toBeTruthy();
     expect(screen.getByText('Store Admin')).toBeTruthy();
     expect(screen.getByText('Body')).toBeTruthy();
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 
   it('S27: narrow, the search input is visible with the menu closed', async () => {
@@ -497,12 +536,15 @@ describe('AdminShell badges', () => {
 
   async function renderWithBadges(width: number, shellBadges: NavBadges) {
     mockUseWindowDimensions.mockReturnValue({ width, height: 800, scale: 1, fontScale: 1 });
+    const client = createTestQueryClient();
     return await renderRouter(
       {
         index: () => (
-          <AdminShell badges={shellBadges}>
-            <Text>Body</Text>
-          </AdminShell>
+          <QueryClientProvider client={client}>
+            <AdminShell badges={shellBadges}>
+              <Text>Body</Text>
+            </AdminShell>
+          </QueryClientProvider>
         ),
       },
       { initialUrl: '/' },
@@ -532,12 +574,15 @@ describe('AdminShell badges', () => {
   async function renderPaidBadgeAt(width: number) {
     mockUseWindowDimensions.mockReturnValue({ width, height: 800, scale: 1, fontScale: 1 });
     const stub = (name: string) => () => <Text>{`${name} page`}</Text>;
+    const client = createTestQueryClient();
     return await renderRouter(
       {
         _layout: () => (
-          <AdminShell badges={paidBadge}>
-            <Slot />
-          </AdminShell>
+          <QueryClientProvider client={client}>
+            <AdminShell badges={paidBadge}>
+              <Slot />
+            </AdminShell>
+          </QueryClientProvider>
         ),
         index: stub('Home'),
         'admin/orders/index': stub('Orders'),
@@ -598,12 +643,15 @@ describe('AdminShell needs attention card', () => {
   async function renderWithAttention(attention?: AttentionState) {
     mockUseWindowDimensions.mockReturnValue({ width: 1024, height: 800, scale: 1, fontScale: 1 });
     const stub = (name: string) => () => <Text>{`${name} page`}</Text>;
+    const client = createTestQueryClient();
     return await renderRouter(
       {
         index: () => (
-          <AdminShell attention={attention}>
-            <Text>Body</Text>
-          </AdminShell>
+          <QueryClientProvider client={client}>
+            <AdminShell attention={attention}>
+              <Text>Body</Text>
+            </AdminShell>
+          </QueryClientProvider>
         ),
         'admin/index': stub('Admin'),
         'admin/inventory': stub('Inventory'),
@@ -645,12 +693,15 @@ describe('AdminShell needs attention card', () => {
       items: [{ text: '2 low-stock variants', href: '/admin/inventory', tone: 'warning' }],
     };
     // The shell lives in a layout so it survives navigation, as the real admin layout does.
+    const client = createTestQueryClient();
     await renderRouter(
       {
         _layout: () => (
-          <AdminShell attention={attention}>
-            <Slot />
-          </AdminShell>
+          <QueryClientProvider client={client}>
+            <AdminShell attention={attention}>
+              <Slot />
+            </AdminShell>
+          </QueryClientProvider>
         ),
         index: () => <Text>Home page</Text>,
         'admin/inventory': () => <Text>Inventory page</Text>,

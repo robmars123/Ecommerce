@@ -1,5 +1,5 @@
 import { OrderListView } from '@/features/orders/components/OrderListView';
-import { RequireSignIn } from '@/features/orders/components/RequireSignIn';
+import { RequireSignIn } from '@/features/auth/components/RequireSignIn';
 
 export default function OrderListScreen() {
   return (

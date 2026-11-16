@@ -21,32 +21,25 @@ internal static class AdminOrderReadsEndpoints
         group.MapGet("orders/{id:guid}", Get);
     }
 
-    // The query values are string[] so a repeated key uses the first value, as MVC did (a plain string would join them as "a,b").
     private static async Task<Results<Ok<AdminOrderListResponse>, ValidationProblem>> List(
-        [FromQuery] string[]? page,
-        [FromQuery] string[]? pageSize,
-        [FromQuery] string[]? status,
-        [FromQuery] string[]? from,
-        [FromQuery] string[]? to,
-        [FromQuery] string[]? customer,
-        [FromQuery] string[]? orderNumber,
+        [AsParameters] AdminOrderListRawQuery raw,
         [FromServices] OrderQueryService orders,
         [FromServices] IValidator<AdminOrderListQuery> validator,
         CancellationToken ct)
     {
         // Bad numbers and dates are reported alone, before the validator, with MVC's PascalCase keys.
         Dictionary<string, string[]> bindingErrors = new Dictionary<string, string[]>();
-        int? pageNumber = QueryValues.ReadInt(page, "Page", bindingErrors);
-        int? pageSizeNumber = QueryValues.ReadInt(pageSize, "PageSize", bindingErrors);
-        DateOnly? fromDate = QueryValues.ReadDate(from, "From", bindingErrors);
-        DateOnly? toDate = QueryValues.ReadDate(to, "To", bindingErrors);
+        int? pageNumber = QueryValues.ReadInt(raw.Page, "Page", bindingErrors);
+        int? pageSizeNumber = QueryValues.ReadInt(raw.PageSize, "PageSize", bindingErrors);
+        DateOnly? fromDate = QueryValues.ReadDate(raw.From, "From", bindingErrors);
+        DateOnly? toDate = QueryValues.ReadDate(raw.To, "To", bindingErrors);
         if (bindingErrors.Count > 0)
         {
             return TypedResults.ValidationProblem(bindingErrors);
         }
 
         AdminOrderListQuery query = new AdminOrderListQuery(
-            pageNumber, pageSizeNumber, FirstText(status), fromDate, toDate, FirstText(customer), FirstText(orderNumber));
+            pageNumber, pageSizeNumber, FirstText(raw.Status), fromDate, toDate, FirstText(raw.Customer), FirstText(raw.OrderNumber));
         ValidationResult validation = await validator.ValidateAsync(query, ct);
         if (!validation.IsValid)
         {

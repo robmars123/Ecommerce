@@ -26,15 +26,14 @@ internal static class AdminInventoryEndpoints
     }
 
     private static async Task<Results<Ok<InventoryListResponse>, ValidationProblem>> List(
-        [FromQuery] string[]? page,
-        [FromQuery] string[]? pageSize,
+        [AsParameters] InventoryListQuery query,
         [FromServices] InventoryAdminService inventory,
         CancellationToken ct)
     {
         // Same order as MVC: a value that is not a number is reported alone, before the range checks.
         Dictionary<string, string[]> errors = [];
-        int? pageNumber = QueryValues.ReadInt(page, "page", errors);
-        int? size = QueryValues.ReadInt(pageSize, "pageSize", errors);
+        int? pageNumber = QueryValues.ReadInt(query.Page, "page", errors);
+        int? size = QueryValues.ReadInt(query.PageSize, "pageSize", errors);
         if (errors.Count > 0)
         {
             return TypedResults.ValidationProblem(errors);
